@@ -76,6 +76,9 @@ if __name__=="__main__":
     ################################################## CREATE GROUND STATIONS AND LANDER ###################################
     ########################################################################################################################
 
+    # Creation Dictionary for Ground Stations
+    ground_station_dict = {}
+
     with open(os.path.dirname(os.path.realpath(__file__))+'\gs_locations.dat') as file:
         lines = file.read().splitlines()
         
@@ -83,11 +86,21 @@ if __name__=="__main__":
         skiplines = 29
         eachgroundstationlines = 6
 
-        # Creation Dictionary
-        ground_station_dict = {}
-
         lines = lines[skiplines:]
-        number_ground_stations_file = len(lines)/eachgroundstationlines
+        number_ground_stations_file = int(len(lines)/eachgroundstationlines)
 
         for pointer_ground_station in range(0,number_ground_stations_file):
-        
+            name_line_ground_station = lines[pointer_ground_station*eachgroundstationlines+1]
+            coordinates_line_ground_station = lines[pointer_ground_station*eachgroundstationlines+2]
+            
+            if len(name_line_ground_station.split("DBNAME=",1)) == 2:
+                name_ground_station = name_line_ground_station.split("DBNAME=",1)[1].split()[0]
+            elif len(name_line_ground_station.split("DBCODE=",1)) == 2:
+                name_ground_station = name_line_ground_station.split("DBCODE=",1)[1].split()[0]
+            x_coordinate_ground_station = float(coordinates_line_ground_station.split("X=",1)[1].split()[0])
+            y_coordinate_ground_station = float(coordinates_line_ground_station.split("Y=",1)[1].split()[0])
+            z_coordinate_ground_station = float(coordinates_line_ground_station.split("Z=",1)[1].split()[0])
+
+            ground_station_dict[name_ground_station] = (x_coordinate_ground_station,y_coordinate_ground_station,z_coordinate_ground_station)
+            
+    print(ground_station_dict)
