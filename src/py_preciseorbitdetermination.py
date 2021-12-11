@@ -79,15 +79,16 @@ if __name__=="__main__":
     # Creation Dictionary for Ground Stations
     ground_station_dict = {}
 
+    # Read the text file containing the name and cartesian coordinates of the ground stations
     with open(os.path.dirname(os.path.realpath(__file__))+'\gs_locations.dat') as file:
         lines = file.read().splitlines()
         
         # Variables
-        skiplines = 29
-        eachgroundstationlines = 6
+        skiplines = 29 #lines to be removed from the description at the beginning of the text file
+        eachgroundstationlines = 6 #lines of specs that contains each ground stations
 
         lines = lines[skiplines:]
-        number_ground_stations_file = int(len(lines)/eachgroundstationlines)
+        number_ground_stations_file = int(len(lines)/eachgroundstationlines) #total number of ground stations 
 
         for pointer_ground_station in range(0,number_ground_stations_file):
             name_line_ground_station = lines[pointer_ground_station*eachgroundstationlines+1]
