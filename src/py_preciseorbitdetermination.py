@@ -9,6 +9,7 @@ if __name__=="__main__":
     ################################################## IMPORT PACKAGES #####################################################
     ########################################################################################################################
 
+    import os
     import numpy as np
     from tudatpy.kernel import constants
     from tudatpy.kernel.interface import spice_interface
@@ -74,3 +75,19 @@ if __name__=="__main__":
     ########################################################################################################################
     ################################################## CREATE GROUND STATIONS AND LANDER ###################################
     ########################################################################################################################
+
+    with open(os.path.dirname(os.path.realpath(__file__))+'\gs_locations.dat') as file:
+        lines = file.read().splitlines()
+        
+        # Variables
+        skiplines = 29
+        eachgroundstationlines = 6
+
+        # Creation Dictionary
+        ground_station_dict = {}
+
+        lines = lines[skiplines:]
+        number_ground_stations_file = len(lines)/eachgroundstationlines
+
+        for pointer_ground_station in range(0,number_ground_stations_file):
+        
