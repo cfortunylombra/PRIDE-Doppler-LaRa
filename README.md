@@ -48,6 +48,6 @@ conda env create -f environment.yaml
 
 ### Help
 
-In case a problem or issue related to code is found, please create a new issue in GitHub
+In case a problem or issue related to code is found, please create a new issue in GitHub.
 
 ---
