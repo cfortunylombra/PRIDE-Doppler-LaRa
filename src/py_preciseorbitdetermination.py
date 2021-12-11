@@ -104,7 +104,9 @@ if __name__=="__main__":
 
             ground_station_dict[name_ground_station] = np.array([x_coordinate_ground_station,y_coordinate_ground_station,z_coordinate_ground_station])
             
-    # Ground Station Creation
+    # Earth-based Ground Station Creation
     for pointer_ground_station in range(0,len(ground_station_dict.keys())):
         environment_setup.add_ground_station(bodies.get_body("Earth"),list(ground_station_dict.keys())[pointer_ground_station],ground_station_dict[list(ground_station_dict.keys())[pointer_ground_station]])
-    print(environment_setup.get_ground_station_list(bodies.get_body("Earth")))
+    
+    # Mars-based Ground Station Creation
+    environment_setup.add_ground_station(bodies.get_body("Mars"),"LaRa",)
