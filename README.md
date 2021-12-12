@@ -2,7 +2,7 @@
 
 PRIDE-Doppler-LaRa is an object-oriented Python tool for research in the field of PRIDE (Planetary Radio Interferometry and Doppler Experiments).
 
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/cfortunylombra/PRIDE-Doppler-LaRa/graphs/commit-activity) ![python 3.9](https://img.shields.io/badge/version-latest-blue.svg) ![python 3.9](https://img.shields.io/badge/python-3.9-blue.svg) ![platform Linux,_MacOs,_Win64](https://img.shields.io/badge/platform-Linux,_macos,_win64-blue.svg)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/cfortunylombra/PRIDE-Doppler-LaRa/graphs/commit-activity) ![python 3.8](https://img.shields.io/badge/version-latest-blue.svg) ![python 3.8](https://img.shields.io/badge/python-3.8-blue.svg) ![platform Linux,_MacOs,_Win64](https://img.shields.io/badge/platform-Linux,_macos,_win64-blue.svg)
 
 ---
 
