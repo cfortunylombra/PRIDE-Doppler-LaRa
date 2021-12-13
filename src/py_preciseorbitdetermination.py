@@ -15,6 +15,7 @@ if __name__=="__main__":
     from tudatpy.kernel.astro import element_conversion
     from tudatpy.kernel.interface import spice_interface
     from tudatpy.kernel.numerical_simulation import environment_setup,propagation_setup,propagation
+    from tudatpy.kernel.numerical_simulation.estimation_setup import observations
 
     ########################################################################################################################
     ################################################## CONSTANTS AND VARIABLES #############################################
@@ -30,8 +31,13 @@ if __name__=="__main__":
     simulation_duration = 700*constants.JULIAN_DAY #seconds
 
     # LaRa landing site
-    LaRa_latitude_deg = 18.4 #North degrees
-    LaRa_longitude_deg = 335.37 #East degrees
+    reflector_name = "LaRa"
+    reflector_latitude_deg = 18.4 #North degrees
+    reflector_longitude_deg = 335.37 #East degrees
+
+    # Earth-based transmitter
+    transmitter_name = "DSS63"
+    transmitter_position_cartesian = np.array([4849092.6814,-360180.5350,4115109.1298]) #Taken from https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat
 
     ########################################################################################################################
     ################################################## CREATE ENVIRONMENT ##################################################
@@ -53,8 +59,8 @@ if __name__=="__main__":
     global_frame_orientation = "ECLIPJ2000"
     body_settings = environment_setup.get_default_body_settings_time_limited(
         bodies_to_create,
-        simulation_start_epoch,
-        simulation_end_epoch,
+        simulation_start_epoch-constants.JULIAN_DAY,
+        simulation_end_epoch+constants.JULIAN_DAY,
         global_frame_origin,
         global_frame_orientation)
 
@@ -75,6 +81,9 @@ if __name__=="__main__":
 
     # Creation dictionary for ground stations
     ground_station_dict = {}
+
+    # Adding transmitter 
+    ground_station_dict [transmitter_name] = transmitter_position_cartesian
 
     # Read the text file containing the name and cartesian coordinates of the ground stations
     with open(os.path.dirname(os.path.realpath(__file__))+'\gs_locations.dat') as file:
@@ -113,8 +122,8 @@ if __name__=="__main__":
     # Mars-based ground station creation
     environment_setup.add_ground_station(
         bodies.get_body("Mars"),
-        "LaRa",
-        np.array([spice_interface.get_average_radius("Mars"),np.deg2rad(LaRa_latitude_deg),np.deg2rad(LaRa_longitude_deg)]),
+        reflector_name,
+        np.array([spice_interface.get_average_radius("Mars"),np.deg2rad(reflector_latitude_deg),np.deg2rad(reflector_longitude_deg)]),
          element_conversion.spherical_position_type)
 
     Mars_ground_station_list = environment_setup.get_ground_station_list(bodies.get_body("Mars"))
@@ -160,8 +169,8 @@ if __name__=="__main__":
 
     # Define integrator settings
     initial_time_step = 1 #second
-    minimum_step_size = initial_time_step #second
-    maximum_step_size = 60 #second
+    minimum_step_size = initial_time_step #seconds
+    maximum_step_size = 60 #seconds
     relative_error_tolerance = 1E-14
     absolute_error_tolerance = 1E-14
 
@@ -173,3 +182,21 @@ if __name__=="__main__":
         maximum_step_size,
         relative_error_tolerance,
         absolute_error_tolerance)
+
+    ########################################################################################################################
+    ################################################## DEFINE LINK ENDS FOR OBSERVATIONS ###################################
+    ######################################################################################################################## 
+
+    # Create list of observation settings
+    observation_settings_list = list()
+
+    # Define link ends
+    for pointer_ground_station_receiver in range(0,len(ground_station_dict.keys())):
+        receiver_name = list(ground_station_dict.keys())[pointer_ground_station_receiver]
+        if receiver_name != transmitter_name:
+            two_way_link_ends = dict()
+            two_way_link_ends[observations.transmitter] = ("Earth", transmitter_name )
+            two_way_link_ends[observations.reflector1] = ( "Mars", reflector_name );
+            two_way_link_ends[observations.receiver] = ( "Earth", receiver_name );
+
+            observation_settings_list.append(two_way_link_ends)
