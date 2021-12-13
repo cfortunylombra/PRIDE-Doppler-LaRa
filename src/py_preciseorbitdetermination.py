@@ -12,14 +12,11 @@ if __name__=="__main__":
     import os
     import numpy as np
     from tudatpy.kernel import constants
+    from tudatpy.kernel.astro import element_conversion
     from tudatpy.kernel.interface import spice_interface
-    from tudatpy.kernel.numerical_simulation import environment_setup
+    from tudatpy.kernel.numerical_simulation import environment_setup,propagation_setup
 
-    #import tudatpy as tudat
     #from tudatpy.kernel import numerical_simulation
-    #from tudatpy.kernel.astro import element_conversion
-    #from tudatpy.kernel.numerical_simulation import propagation_setup
-    #from tudatpy.kernel.numerical_simulation import propagation
 
     ########################################################################################################################
     ################################################## CONSTANTS AND VARIABLES #############################################
@@ -33,6 +30,10 @@ if __name__=="__main__":
 
     # Duration of the simulation
     simulation_duration = 700*constants.JULIAN_DAY #seconds
+
+    # LaRa landing site
+    LaRa_latitude_deg = 18.4 #North degrees
+    LaRa_longitude_deg = 335.37 #East degrees
 
     ########################################################################################################################
     ################################################## CREATE ENVIRONMENT ##################################################
@@ -76,7 +77,7 @@ if __name__=="__main__":
     ################################################## CREATE GROUND STATIONS AND LANDER ###################################
     ########################################################################################################################
 
-    # Creation Dictionary for Ground Stations
+    # Creation dictionary for ground stations
     ground_station_dict = {}
 
     # Read the text file containing the name and cartesian coordinates of the ground stations
@@ -104,9 +105,39 @@ if __name__=="__main__":
 
             ground_station_dict[name_ground_station] = np.array([x_coordinate_ground_station,y_coordinate_ground_station,z_coordinate_ground_station])
             
-    # Earth-based Ground Station Creation
+    # Earth-based ground station creation
     for pointer_ground_station in range(0,len(ground_station_dict.keys())):
         environment_setup.add_ground_station(bodies.get_body("Earth"),list(ground_station_dict.keys())[pointer_ground_station],ground_station_dict[list(ground_station_dict.keys())[pointer_ground_station]])
     
-    # Mars-based Ground Station Creation
-    environment_setup.add_ground_station(bodies.get_body("Mars"),"LaRa",)
+    Earth_ground_station_list = environment_setup.get_ground_station_list(bodies.get_body("Earth"))
+
+    # Mars-based ground station creation
+    environment_setup.add_ground_station(bodies.get_body("Mars"),"LaRa",np.array([spice_interface.get_average_radius("Mars"),np.deg2rad(LaRa_latitude_deg),np.deg2rad(LaRa_longitude_deg)]), element_conversion.spherical_position_type)
+
+    Mars_ground_station_list = environment_setup.get_ground_station_list(bodies.get_body("Mars"))
+
+
+    ########################################################################################################################
+    ################################################## CREATE ACCELERATION MODELS ##########################################
+    ########################################################################################################################
+
+    # Define accelelerations
+    accelerations_settings_Mars = dict(
+        Saturn = [propagation_setup.acceleration.point_mass_gravity()],
+        Jupiter = [propagation_setup.acceleration.point_mass_gravity()],
+        Earth = [propagation_setup.acceleration.point_mass_gravity()],
+        Venus = [propagation_setup.acceleration.point_mass_gravity()],
+        Mercury = [propagation_setup.acceleration.point_mass_gravity()],
+        Sun = [propagation_setup.acceleration.point_mass_gravity()],
+    )
+
+    acceleration_settings = {"Mars": accelerations_settings_Mars}
+
+    # Define list of bodies to propagate
+    bodies_to_propagate = ["Mars"]
+
+    # Define central bodies to use in the propagation
+    central_bodies = ["SSB"]
+
+    # Create acceleration models and propagation settings
+    acceleration_models = propagation_setup.create_acceleration_models(bodies,acceleration_settings,bodies_to_propagate,central_bodies)
