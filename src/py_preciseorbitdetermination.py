@@ -14,9 +14,7 @@ if __name__=="__main__":
     from tudatpy.kernel import constants
     from tudatpy.kernel.astro import element_conversion
     from tudatpy.kernel.interface import spice_interface
-    from tudatpy.kernel.numerical_simulation import environment_setup,propagation_setup
-
-    #from tudatpy.kernel import numerical_simulation
+    from tudatpy.kernel.numerical_simulation import environment_setup,propagation_setup,propagation
 
     ########################################################################################################################
     ################################################## CONSTANTS AND VARIABLES #############################################
@@ -53,23 +51,16 @@ if __name__=="__main__":
 
     global_frame_origin = "SSB" #Barycenter of Solar System
     global_frame_orientation = "ECLIPJ2000"
-    body_settings = environment_setup.get_default_body_settings(bodies_to_create, global_frame_origin, global_frame_orientation )
+    body_settings = environment_setup.get_default_body_settings_time_limited(bodies_to_create,simulation_start_epoch,simulation_end_epoch,global_frame_origin, global_frame_orientation)
 
-    #body_settings=environment_setup.get_default_body_settings_time_limited(bodies_to_create, initial_time, final_time, global_frame_origin, global_frame_orientation, time_step)
+    # Reset frame origin
+    environment_setup.ephemeris.frame_origin = "Sun"
 
-    #In Documentation and does not work
-    #body_settings.get( "Sun" ).gravity_field_settings = environment_setup.gravity_field.point_mass( 1.32712440042E20 )
-    #https://tudat-space.readthedocs.io/en/latest/_src_user_guide/state_propagation/environment_setup/create_bodies/create_body_settings.html#create-celestial-body-settings
+    # Simple rotation model before moving to the more realistic Mars rotation model
+    body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.simple_from_spice("ECLIPJ2000","IAU_Mars","IAU_Mars",simulation_start_epoch)
 
-    #Functions not defined
-    #v1
-    #https://github.com/tudat-team/tudatpy/blob/master/tudatpy/kernel/expose_simulation/expose_environment_setup.cpp
-    #body_settings.get("Moon").ephemeris_settings = environment_setup.ephemeris.reset_frame_origin("Sun")
+    # Complex rotation model 
     #body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.getHighAccuracyMarsRotationModel(simulation_start_epoch,simulation_end_epoch)
-    #v2
-    #https://tudat-space.readthedocs.io/en/latest/_src_user_guide/state_propagation/environment_setup/create_models/available.html?highlight=simple%20rotational%20model#rotational
-    #bodySettings[ "Mars" ]->rotationModelSettings = std::make_shared< SimpleRotationModelSettings >("ECLIPJ2000", "IAU_Mars", spice_interface::computeRotationQuaternionBetweenFrames("ECLIPJ2000", "IAU_Mars", initialEphemerisTime ),initialEphemerisTime, 2.0 * mathematical_constants::PI /( physical_constants::JULIAN_DAY + 40.0 * 60.0 ) );
-    #body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.simple("ECLIPJ2000", "IAU_Mars",spice_interface.compute_rotation_quaternion_between_frames("ECLIPJ2000", "IAU_Mars", simulation_start_epoch),simulation_end_epoch, 2*math.pi/(constants.JULIAN_DAY+40*60))
 
     bodies = environment_setup.create_system_of_bodies(body_settings)
 
@@ -141,3 +132,24 @@ if __name__=="__main__":
 
     # Create acceleration models and propagation settings
     acceleration_models = propagation_setup.create_acceleration_models(bodies,acceleration_settings,bodies_to_propagate,central_bodies)
+
+    ########################################################################################################################
+    ################################################## CREATE PROPAGATION SETTINGS #########################################
+    ########################################################################################################################   
+
+    # Define intitial state system state
+    initial_state = propagation.get_state_of_bodies(bodies_to_propagate,central_bodies,bodies,simulation_start_epoch)
+
+    # Define termination condition
+    termination_condition = propagation_setup.propagator.time_termination(simulation_end_epoch)
+
+    # Define propagator settings
+    propagator_settings = propagation_setup.propagator.translational(central_bodies,acceleration_models,bodies_to_propagate,initial_state,termination_condition)
+
+    # Define integrator settings
+    initial_time_step = 1 #second
+    minimum_step_size = initial_time_step #second
+    maximum_step_size = 60 #second
+    relative_error_tolerance = 1E-14
+    absolute_error_tolerance = 1E-14
+
