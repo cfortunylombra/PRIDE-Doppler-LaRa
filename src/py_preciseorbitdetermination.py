@@ -51,7 +51,12 @@ if __name__=="__main__":
 
     global_frame_origin = "SSB" #Barycenter of Solar System
     global_frame_orientation = "ECLIPJ2000"
-    body_settings = environment_setup.get_default_body_settings_time_limited(bodies_to_create,simulation_start_epoch,simulation_end_epoch,global_frame_origin, global_frame_orientation)
+    body_settings = environment_setup.get_default_body_settings_time_limited(
+        bodies_to_create,
+        simulation_start_epoch,
+        simulation_end_epoch,
+        global_frame_origin,
+        global_frame_orientation)
 
     # Reset frame origin
     environment_setup.ephemeris.frame_origin = "Sun"
@@ -98,12 +103,19 @@ if __name__=="__main__":
             
     # Earth-based ground station creation
     for pointer_ground_station in range(0,len(ground_station_dict.keys())):
-        environment_setup.add_ground_station(bodies.get_body("Earth"),list(ground_station_dict.keys())[pointer_ground_station],ground_station_dict[list(ground_station_dict.keys())[pointer_ground_station]])
+        environment_setup.add_ground_station(
+            bodies.get_body("Earth"),
+            list(ground_station_dict.keys())[pointer_ground_station],
+            ground_station_dict[list(ground_station_dict.keys())[pointer_ground_station]])
     
     Earth_ground_station_list = environment_setup.get_ground_station_list(bodies.get_body("Earth"))
 
     # Mars-based ground station creation
-    environment_setup.add_ground_station(bodies.get_body("Mars"),"LaRa",np.array([spice_interface.get_average_radius("Mars"),np.deg2rad(LaRa_latitude_deg),np.deg2rad(LaRa_longitude_deg)]), element_conversion.spherical_position_type)
+    environment_setup.add_ground_station(
+        bodies.get_body("Mars"),
+        "LaRa",
+        np.array([spice_interface.get_average_radius("Mars"),np.deg2rad(LaRa_latitude_deg),np.deg2rad(LaRa_longitude_deg)]),
+         element_conversion.spherical_position_type)
 
     Mars_ground_station_list = environment_setup.get_ground_station_list(bodies.get_body("Mars"))
 
@@ -153,3 +165,11 @@ if __name__=="__main__":
     relative_error_tolerance = 1E-14
     absolute_error_tolerance = 1E-14
 
+    integrator_settings = propagation_setup.integrator.runge_kutta_variable_step_size(
+        simulation_start_epoch,
+        initial_time_step,
+        propagation_setup.integrator.rkf_78,
+        minimum_step_size,
+        maximum_step_size,
+        relative_error_tolerance,
+        absolute_error_tolerance)
