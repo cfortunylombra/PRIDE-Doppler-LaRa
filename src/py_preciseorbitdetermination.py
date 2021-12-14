@@ -209,6 +209,24 @@ if __name__=="__main__":
             two_way_link_ends[observations.receiver] = ( "Earth", receiver_name );
 
             observation_settings_list.append(two_way_link_ends)
+    
+    # Create the uplink list
+    observation_settings_uplink_list = list()
+    observation_settings_uplink_list.append(observation_settings_list[0])
+
+    # Copy the entire list of dictionaries for downlink
+    observation_settings_downlink_list = copy.deepcopy(observation_settings_list)
+
+    # Remove receiver for uplink, and rename the reflector to receiver
+    del observation_settings_uplink_list[0][observations.receiver]
+    observation_settings_uplink_list[0][observations.receiver] =  observation_settings_uplink_list[
+        0].pop(observations.reflector1)
+
+    for pointer_link_ends in range(0,len(observation_settings_list)):
+        # Remove transmitter for downlink, and rename the reflector to transmitter
+        del observation_settings_downlink_list[pointer_link_ends][observations.transmitter]
+        observation_settings_downlink_list[pointer_link_ends][observations.transmitter] =  observation_settings_downlink_list[
+            pointer_link_ends].pop(observations.reflector1)
 
     ########################################################################################################################
     ################################################## DEFINE PARAMETERS TO ESTIMATE #######################################
@@ -233,24 +251,6 @@ if __name__=="__main__":
 
     # Define settings for light-time calculations
     light_time_correction_settings = [observations.first_order_relativistic_light_time_correction(['Sun'])]
-
-    # Create the uplink list
-    observation_settings_uplink_list = list()
-    observation_settings_uplink_list.append(observation_settings_list[0])
-
-    # Copy the entire list of dictionaries for downlink
-    observation_settings_downlink_list = copy.deepcopy(observation_settings_list)
-
-    # Remove receiver for uplink, and rename the reflector to receiver
-    del observation_settings_uplink_list[0][observations.receiver]
-    observation_settings_uplink_list[0][observations.receiver] =  observation_settings_uplink_list[
-        0].pop(observations.reflector1)
-
-    for pointer_link_ends in range(0,len(observation_settings_list)):
-        # Remove transmitter for downlink, and rename the reflector to transmitter
-        del observation_settings_downlink_list[pointer_link_ends][observations.transmitter]
-        observation_settings_downlink_list[pointer_link_ends][observations.transmitter] =  observation_settings_downlink_list[
-            pointer_link_ends].pop(observations.reflector1)
 
     # Define uplink oneway Doppler observation settings
     uplink_one_way_doppler_observation_settings = list() 
@@ -280,10 +280,10 @@ if __name__=="__main__":
     ######################################################################################################################## 
 
     # Create observation simulators
-    observation_simulators = observations.create_observation_simulators(uplink_one_way_doppler_observation_settings,bodies)
+    observation_simulators = observations.create_observation_simulators(downlink_one_way_doppler_observation_settings,bodies) #two_way_doppler_observation_settings NOTE
 
     # Create physical environment (as set of physical bodies)
-    estimator = numerical_simulation.Estimator(bodies,parameters_set,uplink_one_way_doppler_observation_settings,
+    estimator = numerical_simulation.Estimator(bodies,parameters_set,downlink_one_way_doppler_observation_settings, #two_way_doppler_observation_settings NOTE
         integrator_settings,propagator_settings)
 
     # Variational equations and dynamics
@@ -314,6 +314,13 @@ if __name__=="__main__":
 
     # Create measurement simulation input
     observation_simulation_settings_list = list()
-    
+
+    for pointer_link_ends in range(0,len(observation_settings_downlink_list)): #observation_settings_list NOTE
+        observation_simulation_settings_list.append(observations.create_tabulated_simulation_settings(
+            observations.one_way_doppler_type, #observations.two_way_doppler_type NOTE
+            observation_settings_downlink_list[pointer_link_ends],
+            observation_times_list
+        ))
+
 
 print("--- %s seconds ---" % (time.time() - run_time))
