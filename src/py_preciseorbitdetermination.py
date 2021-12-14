@@ -225,8 +225,8 @@ if __name__=="__main__":
     light_time_correction_settings = [observations.first_order_relativistic_light_time_correction(['Sun'])]
 
     # Create the uplink list
-    observation_settings_uplink_list = copy.deepcopy(observation_settings_list)
-    observation_settings_uplink_list = list([observation_settings_uplink_list[0]])
+    observation_settings_uplink_list = list()
+    observation_settings_uplink_list.append(observation_settings_list[0])
 
     # Copy the entire list of dictionaries for downlink
     observation_settings_downlink_list = copy.deepcopy(observation_settings_list)
@@ -242,6 +242,27 @@ if __name__=="__main__":
         observation_settings_downlink_list[pointer_link_ends][observations.transmitter] =  observation_settings_downlink_list[
             pointer_link_ends].pop(observations.reflector1)
 
+    # Define uplink oneway Doppler observation settings
+    uplink_one_way_doppler_observation_settings = list() 
+    uplink_one_way_doppler_observation_settings.append(observations.one_way_open_loop_doppler(observation_settings_uplink_list[0],
+    light_time_correction_settings = light_time_correction_settings))
+    #transmitter_proper_time_rate_settings = bodies.get_body("Earth"),
+    #receiver_proper_time_rate_settings = bodies.get_body("Mars"))
+
+    # Define downlink oneway Doppler observation settings
+    downlink_one_way_doppler_observation_settings = list()
+    for pointer_link_ends in range(0,len(observation_settings_downlink_list)):
+        downlink_one_way_doppler_observation_settings.append(observations.one_way_open_loop_doppler(
+            observation_settings_downlink_list[pointer_link_ends],
+            light_time_correction_settings = light_time_correction_settings))
+            #transmitter_proper_time_rate_settings = bodies.get_body("Mars"),
+            #receiver_proper_time_rate_settings = bodies.get_body("Earth"))
     
+    #Define twoway Doppler observation settings
+    two_way_doppler_observation_settings = list()
+    for pointer_link_ends in range(0,len(observation_settings_downlink_list)):
+        two_way_doppler_observation_settings.append(observations.two_way_open_loop_doppler(
+            uplink_one_way_doppler_observation_settings[0],
+            downlink_one_way_doppler_observation_settings[pointer_link_ends]))
 
 
