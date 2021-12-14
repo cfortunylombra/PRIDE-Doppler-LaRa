@@ -3,7 +3,8 @@ Description: Environment Setup for the Precise Orbit Determination
 
 Author: C. Fortuny-Lombraña
 """
-
+import time
+run_time = time.time()
 if __name__=="__main__":
     ########################################################################################################################
     ################################################## IMPORT PACKAGES #####################################################
@@ -25,11 +26,19 @@ if __name__=="__main__":
     # J2000 epoch
     J2000_in_Julian_days = 2451545.0
 
+    # days in a week
+    days_in_a_week = 7 #days
+
+    # Days of observations per week
+    observation_days_per_week = 2 
+
     # Initial date of the simulation
     start_date = 2459215.5 #in Julian days (J2000) = 01/01/2021 00:00:00
 
     # Duration of the simulation
-    simulation_duration = 700*constants.JULIAN_DAY #seconds
+    simulation_duration_days = 700 #days
+    simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
+    simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
     # LaRa landing site
     reflector_name = "LaRa"
@@ -48,7 +57,6 @@ if __name__=="__main__":
     spice_interface.load_standard_kernels()
 
     # Initial and end time of the simulation
-
     simulation_start_epoch = (start_date-J2000_in_Julian_days)*constants.JULIAN_DAY #seconds
     simulation_end_epoch = simulation_start_epoch+simulation_duration #seconds
 
@@ -278,5 +286,34 @@ if __name__=="__main__":
     estimator = numerical_simulation.Estimator(bodies,parameters_set,uplink_one_way_doppler_observation_settings,
         integrator_settings,propagator_settings)
 
+    # Variational equations and dynamics
+    #variational_equations_simulator = estimator.variational_solver
+    #dynamics_simulator = variational_equations_simulator.dynamics_simulator
+
     # Extract observation simulators
-    #observation_simulators = estimator.observation_simulators
+    observation_simulators = estimator.observation_simulators
+
+    ########################################################################################################################
+    ################################################## SIMULATE OBSERVATIONS ###############################################
+    ########################################################################################################################
+
+    # Define time of first observation
+    observation_start_epoch = simulation_start_epoch + constants.JULIAN_DAY
+    
+    # Define time between two observations
+    observation_interval = 60 #seconds
+
+    # Define observation simulation times for each link
+    observation_times_list = list()
+    for pointer_weeks in range(0,int(simulation_duration_weeks)):
+        for pointer_days_per_week in range(0,int(observation_days_per_week)):
+            for pointer_interval in range(0,int(constants.JULIAN_DAY/observation_interval)):
+                observation_times_list.append(observation_start_epoch+pointer_weeks*days_in_a_week*constants.JULIAN_DAY \
+                    +pointer_days_per_week*(days_in_a_week/2)*constants.JULIAN_DAY \
+                        +pointer_interval*observation_interval)
+
+    # Create measurement simulation input
+    observation_simulation_settings_list = list()
+    
+
+print("--- %s seconds ---" % (time.time() - run_time))
