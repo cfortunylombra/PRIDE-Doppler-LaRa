@@ -224,23 +224,24 @@ if __name__=="__main__":
     # Define settings for light-time calculations
     light_time_correction_settings = [observations.first_order_relativistic_light_time_correction(['Sun'])]
 
-    # Copy the entire list of dictionaries
+    # Create the uplink list
     observation_settings_uplink_list = copy.deepcopy(observation_settings_list)
+    observation_settings_uplink_list = list([observation_settings_uplink_list[0]])
+
+    # Copy the entire list of dictionaries for downlink
     observation_settings_downlink_list = copy.deepcopy(observation_settings_list)
 
-    for pointer_link_ends in range(0,len(observation_settings_list)):
-        # Remove receiver for uplink, and rename the reflector to receiver
-        del observation_settings_uplink_list[pointer_link_ends][observations.receiver]
-        observation_settings_uplink_list[pointer_link_ends][observations.receiver] =  observation_settings_uplink_list[
-            pointer_link_ends].pop(observations.reflector1)
+    # Remove receiver for uplink, and rename the reflector to receiver
+    del observation_settings_uplink_list[0][observations.receiver]
+    observation_settings_uplink_list[0][observations.receiver] =  observation_settings_uplink_list[
+        0].pop(observations.reflector1)
 
+    for pointer_link_ends in range(0,len(observation_settings_list)):
         # Remove transmitter for downlink, and rename the reflector to transmitter
         del observation_settings_downlink_list[pointer_link_ends][observations.transmitter]
         observation_settings_downlink_list[pointer_link_ends][observations.transmitter] =  observation_settings_downlink_list[
             pointer_link_ends].pop(observations.reflector1)
 
-    # Define uplink oneway Doppler observation settings
-    #downlink_trans
-    #print(observation_settings_list[0].items()[0:2])
+    
 
 
