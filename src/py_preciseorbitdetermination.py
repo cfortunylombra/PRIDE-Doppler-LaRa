@@ -10,11 +10,12 @@ if __name__=="__main__":
     ########################################################################################################################
 
     import os
+    import copy
     import numpy as np
     from tudatpy.kernel import constants
     from tudatpy.kernel.astro import element_conversion
     from tudatpy.kernel.interface import spice_interface
-    from tudatpy.kernel.numerical_simulation import environment_setup,propagation_setup,propagation
+    from tudatpy.kernel.numerical_simulation import environment_setup,propagation_setup,propagation,estimation_setup
     from tudatpy.kernel.numerical_simulation.estimation_setup import observations
 
     ########################################################################################################################
@@ -200,3 +201,46 @@ if __name__=="__main__":
             two_way_link_ends[observations.receiver] = ( "Earth", receiver_name );
 
             observation_settings_list.append(two_way_link_ends)
+
+    ########################################################################################################################
+    ################################################## DEFINE PARAMETERS TO ESTIMATE #######################################
+    ######################################################################################################################## 
+
+    # Create list of parameters that are to be estimated
+    parameter_settings = estimation_setup.parameter.initial_states(propagator_settings,bodies)
+    parameter_settings.append(estimation_setup.parameter.ground_station_position("Mars", reflector_name))
+    #parameter_settings.append(estimation_setup.parameter.core_factor("Mars"))
+    #parameter_settings.append(estimation_setup.parameter.free_core_nutation_rate("Mars"))
+    #parameter_settings.append(estimation_setup.parameter.periodic_spin_variation("Mars"))
+    #parameter_settings.append(estimation_setup.parameter.polar_motion_amplitude("Mars"))
+
+    # Print identifiers and indices of parameters to terminal
+    #print(parameter_settings.index) 
+
+    ########################################################################################################################
+    ################################################## CREATE OBSERVATION SETTINGS #########################################
+    ######################################################################################################################## 
+
+    # Define settings for light-time calculations
+    light_time_correction_settings = [observations.first_order_relativistic_light_time_correction(['Sun'])]
+
+    # Copy the entire list of dictionaries
+    observation_settings_uplink_list = copy.deepcopy(observation_settings_list)
+    observation_settings_downlink_list = copy.deepcopy(observation_settings_list)
+
+    for pointer_link_ends in range(0,len(observation_settings_list)):
+        # Remove receiver for uplink, and rename the reflector to receiver
+        del observation_settings_uplink_list[pointer_link_ends][observations.receiver]
+        observation_settings_uplink_list[pointer_link_ends][observations.receiver] =  observation_settings_uplink_list[
+            pointer_link_ends].pop(observations.reflector1)
+
+        # Remove transmitter for downlink, and rename the reflector to transmitter
+        del observation_settings_downlink_list[pointer_link_ends][observations.transmitter]
+        observation_settings_downlink_list[pointer_link_ends][observations.transmitter] =  observation_settings_downlink_list[
+            pointer_link_ends].pop(observations.reflector1)
+
+    # Define uplink oneway Doppler observation settings
+    #downlink_trans
+    #print(observation_settings_list[0].items()[0:2])
+
+
