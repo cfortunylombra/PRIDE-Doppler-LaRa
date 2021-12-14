@@ -12,7 +12,7 @@ if __name__=="__main__":
     import os
     import copy
     import numpy as np
-    from tudatpy.kernel import constants
+    from tudatpy.kernel import constants, numerical_simulation
     from tudatpy.kernel.astro import element_conversion
     from tudatpy.kernel.interface import spice_interface
     from tudatpy.kernel.numerical_simulation import environment_setup,propagation_setup,propagation,estimation_setup
@@ -214,8 +214,10 @@ if __name__=="__main__":
     #parameter_settings.append(estimation_setup.parameter.periodic_spin_variation("Mars"))
     #parameter_settings.append(estimation_setup.parameter.polar_motion_amplitude("Mars"))
 
+    parameters_set = estimation_setup.create_parameters_to_estimate(parameter_settings,bodies,propagator_settings)
+
     # Print identifiers and indices of parameters to terminal
-    #print(parameter_settings.index) 
+    #print(parameters_set.indices_for_parameter_type(estimation_setup.parameter.ground_station_position_type)) 
 
     ########################################################################################################################
     ################################################## CREATE OBSERVATION SETTINGS #########################################
@@ -260,9 +262,21 @@ if __name__=="__main__":
     
     #Define twoway Doppler observation settings
     two_way_doppler_observation_settings = list()
-    for pointer_link_ends in range(0,len(observation_settings_downlink_list)):
-        two_way_doppler_observation_settings.append(observations.two_way_open_loop_doppler(
-            uplink_one_way_doppler_observation_settings[0],
-            downlink_one_way_doppler_observation_settings[pointer_link_ends]))
+    #for pointer_link_ends in range(0,len(observation_settings_downlink_list)):
+        #two_way_doppler_observation_settings.append(observations.two_way_open_loop_doppler(
+        #    uplink_one_way_doppler_observation_settings[0],
+        #    downlink_one_way_doppler_observation_settings[pointer_link_ends]))
 
+    ########################################################################################################################
+    ################################################## INITIALIZE OD  ######################################################
+    ######################################################################################################################## 
 
+    # Create observation simulators
+    observation_simulators = observations.create_observation_simulators(uplink_one_way_doppler_observation_settings,bodies)
+
+    # Create physical environment (as set of physical bodies)
+    estimator = numerical_simulation.Estimator(bodies,parameters_set,uplink_one_way_doppler_observation_settings,
+        integrator_settings,propagator_settings)
+
+    # Extract observation simulators
+    #observation_simulators = estimator.observation_simulators
