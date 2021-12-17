@@ -313,14 +313,26 @@ if __name__=="__main__":
                         +pointer_interval*observation_interval)
 
     # Create measurement simulation input
-    observation_simulation_settings_list = list()
+    observation_simulation_settings = observations.create_tabulated_simulation_settings(
+        dict({observations.one_way_doppler_type:observation_settings_downlink_list}),observation_times_list) #observations.two_way_doppler_type NOTE
 
-    for pointer_link_ends in range(0,len(observation_settings_downlink_list)): #observation_settings_list NOTE
-        observation_simulation_settings_list.append(observations.create_tabulated_simulation_settings(
-            observations.one_way_doppler_type, #observations.two_way_doppler_type NOTE
-            observation_settings_downlink_list[pointer_link_ends],
-            observation_times_list
-        ))
+    # Create observation viability settings and calculators
+    viability_settings_list = list()
+    viability_settings_list.append(observations.elevation_angle_viability(["Earth",""],np.deg2rad(20)))
+    viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(35)))
+    viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(45))) #NOTE maximum elevation angle viability
+    viability_settings_list.append(observations.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(20)))
+    viability_settings_list.append(observations.body_occultation_viability(["Earth",""],"Moon"))
 
+    #observations.add_viability_check_to_settings(observation_simulation_settings,viability_settings_list) #NOTE does not exist
+
+
+    # Define noise levels
+    doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT
+
+    # Simulate required observation
+    simulated_observations = observations.simulate_observations(
+        observation_simulation_settings, observation_simulators, bodies
+    )
 
 print("--- %s seconds ---" % (time.time() - run_time))
