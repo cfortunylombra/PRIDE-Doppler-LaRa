@@ -36,7 +36,7 @@ if __name__=="__main__":
     start_date = 2459215.5 #in Julian days (J2000) = 01/01/2021 00:00:00
 
     # Duration of the simulation
-    simulation_duration_days = 700 #days
+    simulation_duration_days = 100#700 #days #NOTE
     simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
@@ -301,7 +301,7 @@ if __name__=="__main__":
     observation_start_epoch = simulation_start_epoch + constants.JULIAN_DAY
     
     # Define time between two observations
-    observation_interval = 60 #seconds
+    observation_interval = 60*60 #seconds #NOTE
 
     # Define observation simulation times for each link
     observation_times_list = list()
@@ -346,7 +346,7 @@ if __name__=="__main__":
 
     # Estimate parameters
     pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size,apriori_parameter_correction = initial_parameter_deviation)
-    pod_input.define_estimation_settings(reintegrate_variational_equations = False)
+    #pod_input.define_estimation_settings(reintegrate_variational_equations = False)
 
     # Define noise levels
     doppler_noise = 0.075e-3/constants.SPEED_OF_LIGHT 
@@ -358,5 +358,26 @@ if __name__=="__main__":
 
     # Create noise functions
     #observations.add_gaussian_noise_to_settings(observation_simulation_settings,doppler_noise,observations.one_way_doppler_type) #observations.two_way_doppler_type NOTE
+
+    ########################################################################################################################
+    ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
+    ########################################################################################################################
+
+    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('\src','\output')
+    os.makedirs(output_folder_path,exist_ok=True)
+
+    estimation_error = pod_output.parameter_history[:,-1]-parameters_set.values
+    formal_error = pod_output.formal_errors
+    true_to_form_estimation_error_ratio = estimation_error/formal_error #NOTE
+    estimation_information_matrix = pod_output.design_matrix
+    estimation_information_matrix_normalization = pod_output.normalized_design_matrix
+    #concatenated_times = simulated_observations.concatenated_times #NOTE
+    #concatenated_observations = simulated_observations.concatenated_observations #NOTE
+
+    np.savetxt(output_folder_path+"\estimation_information_matrix.dat",estimation_information_matrix,fmt='%.16e')
+    np.savetxt(output_folder_path+"\estimation_information_matrix_normalization.dat",
+        estimation_information_matrix_normalization,fmt='%.16e')
+    #np.savetxt(output_folder_path+'concatenated_times.dat',concatenated_times,fmt='%.16e')
+    #np.savetxt(output_folder_path+'concatenated_observations.dat',concatenated_observations,fmt='%.16e')
 
 print("--- %s seconds ---" % (time.time() - run_time))
