@@ -16,7 +16,7 @@ if __name__=="__main__":
     from tudatpy.kernel import constants, numerical_simulation
     from tudatpy.kernel.astro import element_conversion
     from tudatpy.kernel.interface import spice_interface
-    from tudatpy.kernel.numerical_simulation import environment_setup,propagation_setup,propagation,estimation_setup
+    from tudatpy.kernel.numerical_simulation import environment_setup,propagation_setup,propagation,estimation_setup,estimation
     from tudatpy.kernel.numerical_simulation.estimation_setup import observations
 
     ########################################################################################################################
@@ -243,7 +243,7 @@ if __name__=="__main__":
     parameters_set = estimation_setup.create_parameters_to_estimate(parameter_settings,bodies,propagator_settings)
 
     # Print identifiers and indices of parameters to terminal
-    #print(parameters_set.indices_for_parameter_type(estimation_setup.parameter.ground_station_position_type)) 
+    print(parameters_set.values) 
 
     ########################################################################################################################
     ################################################## CREATE OBSERVATION SETTINGS #########################################
@@ -326,13 +326,37 @@ if __name__=="__main__":
 
     #observations.add_viability_check_to_settings(observation_simulation_settings,viability_settings_list) #NOTE does not exist
 
+    # Simulate required observation
+    simulated_observations = observations.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
+
+    # Perturbation
+    parameter_perturbation = np.zeros(parameters_set.parameter_set_size)
+    # Mars ground station x-position
+    parameter_perturbation[6] = 19e3 #meters
+    # Mars ground station y-position
+    parameter_perturbation[7] = 159e3 #meters
+    # Mars ground station z-position
+    parameter_perturbation[8] = 53e3 #meters
+
+    # Perturb estimate
+    initial_parameter_deviation =  parameters_set.values + parameter_perturbation
+
+    # Define a priori covariance
+    #inverse_a_priori_covariance = np.zeros((parameters_set.parameter_set_size,parameters_set.parameter_set_size))
+
+    # Estimate parameters
+    pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size,apriori_parameter_correction = initial_parameter_deviation)
+    pod_input.define_estimation_settings(reintegrate_variational_equations = False)
 
     # Define noise levels
-    doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT
+    doppler_noise = 0.075e-3/constants.SPEED_OF_LIGHT 
+    weights_per_observable = dict({observations.one_way_doppler_type:doppler_noise**(-2)}) #observations.two_way_doppler_type NOTE
+    pod_input.set_constant_weight_per_observable(weights_per_observable)
 
-    # Simulate required observation
-    simulated_observations = observations.simulate_observations(
-        observation_simulation_settings, observation_simulators, bodies
-    )
+    # Perform estimation
+    pod_output = estimator.perform_estimation(pod_input)
+
+    # Create noise functions
+    #observations.add_gaussian_noise_to_settings(observation_simulation_settings,doppler_noise,observations.one_way_doppler_type) #observations.two_way_doppler_type NOTE
 
 print("--- %s seconds ---" % (time.time() - run_time))
