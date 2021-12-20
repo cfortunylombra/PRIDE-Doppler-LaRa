@@ -14,10 +14,10 @@ if __name__=="__main__":
     import copy
     import numpy as np
     from tudatpy.kernel import constants, numerical_simulation
-    from tudatpy.kernel.astro import element_conversion
+    from tudatpy.kernel.astro import element_conversion, frame_conversion
     from tudatpy.kernel.interface import spice_interface
     from tudatpy.kernel.numerical_simulation import environment_setup,propagation_setup,propagation,estimation_setup,estimation
-    from tudatpy.kernel.numerical_simulation.estimation_setup import observations
+    from tudatpy.kernel.numerical_simulation.estimation_setup import parameter,observations
 
     ########################################################################################################################
     ################################################## CONSTANTS AND VARIABLES #############################################
@@ -133,5 +133,36 @@ if __name__=="__main__":
          element_conversion.spherical_position_type)
 
     Mars_ground_station_list = environment_setup.get_ground_station_list(bodies.get_body("Mars"))
+
+    ########################################################################################################################
+    ################################################## GROUND STATIONS ELVATION HISTORY ####################################
+    ########################################################################################################################
+
+    # Define time of first observation
+    observation_start_epoch = simulation_start_epoch + constants.JULIAN_DAY
+    
+    # Define time between two observations
+    observation_interval = 60 #seconds
+
+    # Define observation simulation times for each link
+    observation_times_list = list()
+    for pointer_weeks in range(0,int(simulation_duration_weeks)):
+        for pointer_days_per_week in range(0,int(observation_days_per_week)):
+            for pointer_interval in range(0,int(constants.JULIAN_DAY/observation_interval)):
+                observation_times_list.append(observation_start_epoch+pointer_weeks*days_in_a_week*constants.JULIAN_DAY \
+                    +pointer_days_per_week*(days_in_a_week/2)*constants.JULIAN_DAY \
+                        +pointer_interval*observation_interval)
+
+    # Specifications of the reflector
+    reflector_station = parameter.ground_station_position("Mars",reflector_name)
+    #reflector_nominal_state_object = reflector_station.nominal_station_state() #NOTE
+    #reflector_pointing_angle_calculator_object = reflector_station.pointing_angles_calculator() #NOTE
+    #rotation_from_Mars_body_frame_to_inertial_frame = frame_conversion.body_fixed_to_inertial_rotation_matrix(pole_declination: float, pole_right_ascension: float, pole_meridian: float) #NOTE
+
+    # Specifications of the transmitter
+    transmitter_station = parameter.ground_station_position("Earth",transmitter_name)
+    #transmitter_nominal_state_object = transmitter_station.nominal_station_state() #NOTE
+    #transmitter_pointing_angle_calculator_object = transmitter_station.pointing_angles_calculator() #NOTE
+    #rotation_from_Earth_body_frame_to_inertial_frame = frame_conversion.body_fixed_to_inertial_rotation_matrix(pole_declination: float, pole_right_ascension: float, pole_meridian: float) #NOTE
 
 print("--- %s seconds ---" % (time.time() - run_time))
