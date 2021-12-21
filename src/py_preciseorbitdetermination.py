@@ -320,7 +320,7 @@ if __name__=="__main__":
     viability_settings_list = list()
     viability_settings_list.append(observations.elevation_angle_viability(["Earth",""],np.deg2rad(20)))
     viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(35)))
-    viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(45))) #NOTE maximum elevation angle viability
+    #viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(45))) #NOTE maximum elevation angle viability
     viability_settings_list.append(observations.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(20)))
     viability_settings_list.append(observations.body_occultation_viability(["Earth",""],"Moon"))
 
