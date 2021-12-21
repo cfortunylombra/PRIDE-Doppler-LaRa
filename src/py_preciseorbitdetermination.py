@@ -10,6 +10,9 @@ if __name__=="__main__":
     ################################################## IMPORT PACKAGES #####################################################
     ########################################################################################################################
 
+    import sys
+    sys.path.insert(0, "\\wsl$\Ubuntu-20.04\home\cfortunylombra\tudat-bundle\cmake-build-release-wsl\")
+    print(sys.path)
     import os
     import copy
     import numpy as np
@@ -236,9 +239,9 @@ if __name__=="__main__":
     parameter_settings = estimation_setup.parameter.initial_states(propagator_settings,bodies)
     parameter_settings.append(estimation_setup.parameter.ground_station_position("Mars", reflector_name))
     #parameter_settings.append(estimation_setup.parameter.core_factor("Mars"))
-    #parameter_settings.append(estimation_setup.parameter.free_core_nutation_rate("Mars"))
-    #parameter_settings.append(estimation_setup.parameter.periodic_spin_variation("Mars"))
-    #parameter_settings.append(estimation_setup.parameter.polar_motion_amplitude("Mars"))
+    parameter_settings.append(estimation_setup.parameter.free_core_nutation_rate("Mars"))
+    parameter_settings.append(estimation_setup.parameter.periodic_spin_variation("Mars"))
+    parameter_settings.append(estimation_setup.parameter.polar_motion_amplitude("Mars"))
 
     parameters_set = estimation_setup.create_parameters_to_estimate(parameter_settings,bodies,propagator_settings)
 
