@@ -10,6 +10,8 @@ if __name__=="__main__":
     ################################################## IMPORT PACKAGES #####################################################
     ########################################################################################################################
 
+    import sys
+    sys.path.insert(0, "/home/cfortunylombra/tudat-bundle/cmake-build-release-wsl/tudatpy/")
     import os
     import copy
     import numpy as np
@@ -78,6 +80,7 @@ if __name__=="__main__":
 
     # Simple rotation model before moving to the more realistic Mars rotation model
     body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.simple_from_spice("ECLIPJ2000","IAU_Mars","IAU_Mars",simulation_start_epoch)
+    #body_settings.get("Mars").ephemeris_settings = environment_setup.ephemeris.direct_spice("SSB","ECLIPJ2000","Mars")
 
     # Complex rotation model 
     #body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.getHighAccuracyMarsRotationModel(simulation_start_epoch,simulation_end_epoch)
@@ -95,7 +98,7 @@ if __name__=="__main__":
     ground_station_dict [transmitter_name] = transmitter_position_cartesian
 
     # Read the text file containing the name and cartesian coordinates of the ground stations
-    with open(os.path.dirname(os.path.realpath(__file__))+'\gs_locations.dat') as file:
+    with open(os.path.dirname(os.path.realpath(__file__))+'/gs_locations.dat') as file:
         lines = file.read().splitlines()
         
         # Variables
@@ -256,8 +259,6 @@ if __name__=="__main__":
     uplink_one_way_doppler_observation_settings = list() 
     uplink_one_way_doppler_observation_settings.append(observations.one_way_open_loop_doppler(observation_settings_uplink_list[0],
     light_time_correction_settings = light_time_correction_settings))
-    #transmitter_proper_time_rate_settings = bodies.get_body("Earth"),
-    #receiver_proper_time_rate_settings = bodies.get_body("Mars"))
 
     # Define downlink oneway Doppler observation settings
     downlink_one_way_doppler_observation_settings = list()
@@ -265,15 +266,13 @@ if __name__=="__main__":
         downlink_one_way_doppler_observation_settings.append(observations.one_way_open_loop_doppler(
             observation_settings_downlink_list[pointer_link_ends],
             light_time_correction_settings = light_time_correction_settings))
-            #transmitter_proper_time_rate_settings = bodies.get_body("Mars"),
-            #receiver_proper_time_rate_settings = bodies.get_body("Earth"))
     
-    #Define twoway Doppler observation settings
-    two_way_doppler_observation_settings = list()
+    # Define twoway Doppler observation settings
+    #two_way_doppler_observation_settings = list()
     #for pointer_link_ends in range(0,len(observation_settings_downlink_list)):
-        #two_way_doppler_observation_settings.append(observations.two_way_open_loop_doppler(
-        #    uplink_one_way_doppler_observation_settings[0],
-        #    downlink_one_way_doppler_observation_settings[pointer_link_ends]))
+    #    two_way_doppler_observation_settings.append(observations.two_way_open_loop_doppler(
+    #        uplink_one_way_doppler_observation_settings[0],
+    #        downlink_one_way_doppler_observation_settings[pointer_link_ends]))
 
     ########################################################################################################################
     ################################################## INITIALIZE OD  ######################################################
@@ -287,8 +286,8 @@ if __name__=="__main__":
         integrator_settings,propagator_settings)
 
     # Variational equations and dynamics
-    #variational_equations_simulator = estimator.variational_solver
-    #dynamics_simulator = variational_equations_simulator.dynamics_simulator
+    variational_equations_simulator = estimator.variational_solver
+    dynamics_simulator = variational_equations_simulator.dynamics_simulator
 
     # Extract observation simulators
     observation_simulators = estimator.observation_simulators
@@ -324,7 +323,7 @@ if __name__=="__main__":
     viability_settings_list.append(observations.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(20)))
     viability_settings_list.append(observations.body_occultation_viability(["Earth",""],"Moon"))
 
-    #observations.add_viability_check_to_settings(observation_simulation_settings,viability_settings_list) #NOTE does not exist
+    observations.add_viability_check_to_settings(observation_simulation_settings,viability_settings_list) #NOTE does not exist
 
     # Simulate required observation
     simulated_observations = observations.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
@@ -363,7 +362,7 @@ if __name__=="__main__":
     ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
     ########################################################################################################################
 
-    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('\src','\output')
+    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output')
     os.makedirs(output_folder_path,exist_ok=True)
 
     estimation_error = pod_output.parameter_history[:,-1]-parameters_set.values
@@ -371,13 +370,13 @@ if __name__=="__main__":
     true_to_form_estimation_error_ratio = estimation_error/formal_error #NOTE
     estimation_information_matrix = pod_output.design_matrix
     estimation_information_matrix_normalization = pod_output.normalized_design_matrix
-    #concatenated_times = simulated_observations.concatenated_times #NOTE
-    #concatenated_observations = simulated_observations.concatenated_observations #NOTE
+    concatenated_times = simulated_observations.concatenated_times 
+    concatenated_observations = simulated_observations.concatenated_observations 
 
     np.savetxt(output_folder_path+"\estimation_information_matrix.dat",estimation_information_matrix,fmt='%.16e')
     np.savetxt(output_folder_path+"\estimation_information_matrix_normalization.dat",
         estimation_information_matrix_normalization,fmt='%.16e')
-    #np.savetxt(output_folder_path+'concatenated_times.dat',concatenated_times,fmt='%.16e')
-    #np.savetxt(output_folder_path+'concatenated_observations.dat',concatenated_observations,fmt='%.16e')
+    np.savetxt(output_folder_path+'concatenated_times.dat',concatenated_times,fmt='%.16e')
+    np.savetxt(output_folder_path+'concatenated_observations.dat',concatenated_observations,fmt='%.16e')
 
 print("--- %s seconds ---" % (time.time() - run_time))
