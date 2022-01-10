@@ -86,16 +86,14 @@ int main( )
     double finalEphemerisTime = initialEphemerisTime + numberOfSimulationDays * physical_constants::JULIAN_DAY;
 
     // Create bodies needed in simulation
-    std::map< std::string, std::shared_ptr< BodySettings > > bodySettings =
-            getDefaultBodySettings(bodyNames, initialEphemerisTime - physical_constants::JULIAN_DAY, finalEphemerisTime + physical_constants::JULIAN_DAY);
+    BodyListSettings bodySettings =
+            getDefaultBodySettings( bodyNames, "SSB", "ECLIPJ2000" );
 
-    bodySettings[ "Moon" ]->ephemerisSettings->resetFrameOrigin( "Sun" );
+    bodySettings.get( "Moon" )->ephemerisSettings->resetFrameOrigin( "Sun" );
 
-    bodySettings[ "Mars" ]->rotationModelSettings = getHighAccuracyMarsRotationModel( initialEphemerisTime, finalEphemerisTime );
+    //bodySettings.get( "Mars" )->rotationModelSettings = getHighAccuracyMarsRotationModel( initialEphemerisTime, finalEphemerisTime );
 
-    NamedBodyMap bodyMap = createBodies( bodySettings );
-
-    setGlobalFrameBodyEphemerides( bodyMap, "SSB", "ECLIPJ2000" );
+    SystemOfBodies bodyMap = createSystemOfBodies( bodySettings );
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////     CREATE GROUND STATIONS AND LANDER      ////////////////////////////////////////////////////
@@ -103,12 +101,12 @@ int main( )
 
     // Create transmitter ground stations from GroundStationDatabase.
     std::vector< std::string > groundStationNames;
-//    groundStationNames.push_back( "DSS14" );
+    //    groundStationNames.push_back( "DSS14" );
     groundStationNames.push_back( "DSS63" );
-//    groundStationNames.push_back( "TIDBIN64" ); //DSS43
+    //    groundStationNames.push_back( "TIDBIN64" ); //DSS43
 
     // Creat PRIDE ground stations from GroundStationDatabase.
-    std::ifstream readFile (".src/gs_location.txt");
+    std::ifstream readFile ("/home/cfortunylombra/tudat-bundle/tudat/examples/tudat/LaRa_POD/src/gs_location.txt");
 
     int num_lines = 0;
 
@@ -129,8 +127,8 @@ int main( )
         std::cerr << "Couldn't open gs_location.txt for reading.\n";
     }
 
-
-    createGroundStations( bodyMap.at( "Earth" ), groundStationNames );
+    // Dominic comment: this line won't work, you need names and states of stations
+    //createGroundStations( bodyMap.at( "Earth" ), groundStationNames );
 
     createGroundStation( bodyMap.at( "Mars" ), "LaRa",
                          ( Eigen::Vector3d( ) << spice_interface::getAverageRadius("Mars"),
@@ -146,12 +144,12 @@ int main( )
 
     SelectedAccelerationMap accelerationMap;
 
-    accelerationMap[ "Mars" ][ "Saturn" ].push_back( std::make_shared< AccelerationSettings >( central_gravity ) );
-    accelerationMap[ "Mars" ][ "Jupiter" ].push_back( std::make_shared< AccelerationSettings >( central_gravity ) );
-    accelerationMap[ "Mars" ][ "Earth" ].push_back( std::make_shared< AccelerationSettings >( central_gravity ) );
-    accelerationMap[ "Mars" ][ "Venus" ].push_back( std::make_shared< AccelerationSettings >( central_gravity ) );
-    accelerationMap[ "Mars" ][ "Mercury" ].push_back( std::make_shared< AccelerationSettings >( central_gravity ) );
-    accelerationMap[ "Mars" ][ "Sun" ].push_back( std::make_shared< AccelerationSettings >( central_gravity ) );
+    accelerationMap[ "Mars" ][ "Saturn" ].push_back( std::make_shared< AccelerationSettings >( point_mass_gravity ) );
+    accelerationMap[ "Mars" ][ "Jupiter" ].push_back( std::make_shared< AccelerationSettings >( point_mass_gravity ) );
+    accelerationMap[ "Mars" ][ "Earth" ].push_back( std::make_shared< AccelerationSettings >( point_mass_gravity ) );
+    accelerationMap[ "Mars" ][ "Venus" ].push_back( std::make_shared< AccelerationSettings >( point_mass_gravity ) );
+    accelerationMap[ "Mars" ][ "Mercury" ].push_back( std::make_shared< AccelerationSettings >( point_mass_gravity ) );
+    accelerationMap[ "Mars" ][ "Sun" ].push_back( std::make_shared< AccelerationSettings >( point_mass_gravity ) );
 
     // Define list of bodies to propagate
     std::vector< std::string > bodiesToPropagate;
@@ -176,7 +174,7 @@ int main( )
                 bodiesToPropagate, centralBodies, bodyMap, initialEphemerisTime );
 
     // Define propagator settings.
-    std::shared_ptr< TranslationalStatePropagatorSettings< double > > TraslationalpropagatorSettings =
+    std::shared_ptr< TranslationalStatePropagatorSettings< double > > propagatorSettings =
             std::make_shared< TranslationalStatePropagatorSettings< double > >
             ( centralBodies, accelerationModelMap, bodiesToPropagate, systemInitialState, finalEphemerisTime );
 
@@ -225,14 +223,14 @@ int main( )
     parameterNames.push_back( std::make_shared< InitialTranslationalStateEstimatableParameterSettings< double > >(
                                   "Mars", systemInitialState, "SSB" ) );
     parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Mars", ground_station_position, "LaRa" ) );
-    parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Mars", core_factor ) );
-    parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Mars", free_core_nutation_rate ) );
-    parameterNames.push_back(  std::make_shared< EstimatableParameterSettings >( "Mars", periodic_spin_variation ) );
-    parameterNames.push_back(  std::make_shared< EstimatableParameterSettings >( "Mars", polar_motion_amplitude ) );
+    //parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Mars", core_factor ) );
+    //parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Mars", free_core_nutation_rate ) );
+    //parameterNames.push_back(  std::make_shared< EstimatableParameterSettings >( "Mars", periodic_spin_variation ) );
+    //parameterNames.push_back(  std::make_shared< EstimatableParameterSettings >( "Mars", polar_motion_amplitude ) );
 
     // Create parameters
     std::shared_ptr< estimatable_parameters::EstimatableParameterSet< double > > parametersToEstimate =
-            createParametersToEstimate( parameterNames, bodyMap, accelerationModelMap );
+            createParametersToEstimate< double >( parameterNames, bodyMap, propagatorSettings );
 
     // Print identifiers and indices of parameters to terminal.
     printEstimatableParameterEntries( parametersToEstimate );
@@ -255,36 +253,35 @@ int main( )
             std::make_shared< DirectFirstOrderDopplerProperTimeRateSettings >( "Earth" );
     std::shared_ptr< DirectFirstOrderDopplerProperTimeRateSettings > uplinkreceiverProperTimeRateSettings =
             std::make_shared< DirectFirstOrderDopplerProperTimeRateSettings >( "Mars" );
-    std::shared_ptr< OneWayDopplerObservationSettings > uplinkOneWayDopplerSettings =
-            std::make_shared< OneWayDopplerObservationSettings >(
-                lightTimeCorrections, uplinktransmitterProperTimeRateSettings, uplinkreceiverProperTimeRateSettings );
 
     // Define Downlink OneWay Doppler Observation Settings
     std::shared_ptr< DirectFirstOrderDopplerProperTimeRateSettings > downlinktransmitterProperTimeRateSettings =
             std::make_shared< DirectFirstOrderDopplerProperTimeRateSettings >( "Mars" );
     std::shared_ptr< DirectFirstOrderDopplerProperTimeRateSettings > downlinkreceiverProperTimeRateSettings =
             std::make_shared< DirectFirstOrderDopplerProperTimeRateSettings >( "Earth" );
-    std::shared_ptr< OneWayDopplerObservationSettings > downlinkOneWayDopplerSettings =
-            std::make_shared< OneWayDopplerObservationSettings >(
-                lightTimeCorrections, downlinktransmitterProperTimeRateSettings, downlinkreceiverProperTimeRateSettings );
 
-    // Define TwoWay Doppler Observation Settings
-    std::shared_ptr< TwoWayDopplerObservationSettings > observationSettings =
-            std::make_shared< TwoWayDopplerObservationSettings >(
-                uplinkOneWayDopplerSettings, downlinkOneWayDopplerSettings );
+
 
     // Iterate over all observable types and associated link ends, and creating settings for observation
-    observation_models::ObservationSettingsMap observationSettingsMap;
-    for( std::map< ObservableType, std::vector< LinkEnds > >::iterator linkEndIterator = linkEndsPerObservable.begin( );
-         linkEndIterator != linkEndsPerObservable.end( ); linkEndIterator++ )
-    {
-        std::vector< LinkEnds > currentLinkEndsList = linkEndIterator->second;
+    std::vector< std::shared_ptr< ObservationModelSettings > > observationSettingsList;
 
-        // Define ObservationSettingsMap
-        for( unsigned int i = 0; i < currentLinkEndsList.size( ); i++ )
-        {
-            observationSettingsMap.insert( std::make_pair( currentLinkEndsList.at( i ), observationSettings ) );
-        }
+    // Define ObservationSettingsMap
+    for( unsigned int i = 0; i < twoWayLinkEnds.size( ); i++ )
+    {
+        std::shared_ptr< OneWayDopplerObservationSettings > uplinkOneWayDopplerSettings =
+                std::make_shared< OneWayDopplerObservationSettings >(
+                    getUplinkFromTwoWayLinkEnds( twoWayLinkEnds.at( i ) ), lightTimeCorrections,
+                    uplinktransmitterProperTimeRateSettings, uplinkreceiverProperTimeRateSettings );
+        std::shared_ptr< OneWayDopplerObservationSettings > downlinkOneWayDopplerSettings =
+                std::make_shared< OneWayDopplerObservationSettings >(
+                    getDownlinkFromTwoWayLinkEnds( twoWayLinkEnds.at( i ) ), lightTimeCorrections,
+                    downlinktransmitterProperTimeRateSettings, downlinkreceiverProperTimeRateSettings );
+        std::shared_ptr< TwoWayDopplerObservationSettings > twoWayObservationSettings =
+                std::make_shared< TwoWayDopplerObservationSettings >(
+                    uplinkOneWayDopplerSettings, downlinkOneWayDopplerSettings );
+
+        observationSettingsList.push_back( twoWayObservationSettings );
+
     }
 
 
@@ -296,8 +293,8 @@ int main( )
     // Create orbit determination object (propagate orbit, create observation models)
     OrbitDeterminationManager< double, double > orbitDeterminationManager =
             OrbitDeterminationManager< double, double >(
-                bodyMap, parametersToEstimate, observationSettingsMap,
-                integratorSettings, TraslationalpropagatorSettings );
+                bodyMap, parametersToEstimate, observationSettingsList,
+                integratorSettings, propagatorSettings );
 
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -323,16 +320,16 @@ int main( )
             for( int obsPerWeek = 0; obsPerWeek < 2; obsPerWeek++ )
             {
 
-            baseTimeList.push_back( observationTimeStart + static_cast< double >( i ) * 7.0 * physical_constants::JULIAN_DAY +
-                                    static_cast< double >( obsPerWeek ) * 3.25 * physical_constants::JULIAN_DAY +
-                                    static_cast< double >( j ) * observationInterval );
+                baseTimeList.push_back( observationTimeStart + static_cast< double >( i ) * 7.0 * physical_constants::JULIAN_DAY +
+                                        static_cast< double >( obsPerWeek ) * 3.25 * physical_constants::JULIAN_DAY +
+                                        static_cast< double >( j ) * observationInterval );
             }
         }
     }
 
     // Create measureement simulation input
-    std::map< ObservableType, std::map< LinkEnds, std::shared_ptr< ObservationSimulationTimeSettings< double > > > >
-            measurementSimulationInput;
+    std::vector< std::shared_ptr< ObservationSimulationSettings< double > > > measurementSimulationInput;
+
     for( std::map< ObservableType, std::vector< LinkEnds > >::iterator linkEndIterator = linkEndsPerObservable.begin( );
          linkEndIterator != linkEndsPerObservable.end( ); linkEndIterator++ )
     {
@@ -343,8 +340,9 @@ int main( )
         // Define observation times and reference link ends
         for( unsigned int i = 0; i < currentLinkEndsList.size( ); i++ )
         {
-            measurementSimulationInput[ currentObservable ][ currentLinkEndsList.at( i ) ] =
-                    std::make_shared< TabulatedObservationSimulationTimeSettings< double > >( transmitter, baseTimeList );
+            measurementSimulationInput.push_back(
+                        std::make_shared< TabulatedObservationSimulationSettings< > >(
+                            currentObservable, currentLinkEndsList.at( i ), baseTimeList, transmitter ) );
         }
     }
 
@@ -356,16 +354,19 @@ int main( )
     observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
                                                 minimum_elevation_angle, std::make_pair( "Mars", "" ), "",
                                                 unit_conversions::convertDegreesToRadians( 35.0 ) ) );
-    observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
-                                                maximum_elevation_angle, std::make_pair( "Mars", "" ), "",
-                                                unit_conversions::convertDegreesToRadians( 45.0 ) ) );
+//    observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
+//                                                maximum_elevation_angle, std::make_pair( "Mars", "" ), "",
+//                                                unit_conversions::convertDegreesToRadians( 45.0 ) ) );
     observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
                                                 body_avoidance_angle, std::make_pair( "Earth", "" ), "Sun",
                                                 unit_conversions::convertDegreesToRadians( 20.0 ) ) );
     observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
                                                 body_occultation, std::make_pair( "Earth", "" ), "Moon" ) );
-    PerObservableObservationViabilityCalculatorList viabilityCalculators = createObservationViabilityCalculators(
-                bodyMap, linkEndsPerObservable, observationViabilitySettings );
+
+    addViabilityToObservationSimulationSettings(
+            measurementSimulationInput,
+            observationViabilitySettings );
+
 
     // Set typedefs for POD input (observation types, observation link ends, observation values, associated times with
     // reference link ends.
@@ -386,9 +387,8 @@ int main( )
                            normal_boost_distribution, { 0.0, dopplerNoise }, 0.0 ), std::placeholders::_1 );
 
     // Simulate observations
-    PodInputDataType observationsAndTimes = simulateObservationsWithNoise< double, double >(
-                measurementSimulationInput, orbitDeterminationManager.getObservationSimulators( ), noiseFunctions,
-                viabilityCalculators );
+    std::shared_ptr< observation_models::ObservationCollection< double, double > > observationsAndTimes = simulateObservations< >(
+                measurementSimulationInput, orbitDeterminationManager.getObservationSimulators( ), bodyMap );
 
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -402,10 +402,10 @@ int main( )
     Eigen::Matrix< double, Eigen::Dynamic, 1 > truthParameters = initialParameterEstimate;
     Eigen::Matrix< double, Eigen::Dynamic, 1 > parameterPerturbation =
             Eigen::Matrix< double, Eigen::Dynamic, 1 >::Zero( truthParameters.rows( ) );
-//    parameterPerturbation.segment( 0, 3 ) = Eigen::Vector3d::Constant( 100.0 ); // Mars position [m]
-//    parameterPerturbation.segment(  3, 3 ) = Eigen::Vector3d::Constant( 1.0 ); // Mars velocity [m/s]
-//    parameterPerturbation( 6 ) =  0 ; // core factor of the celestial body of (Mars) [rad]
-//    parameterPerturbation( 7 ) =  0 ; // free core nutation rate of the celestial bodyof (Mars) [rad/s]
+    //    parameterPerturbation.segment( 0, 3 ) = Eigen::Vector3d::Constant( 100.0 ); // Mars position [m]
+    //    parameterPerturbation.segment(  3, 3 ) = Eigen::Vector3d::Constant( 1.0 ); // Mars velocity [m/s]
+    //    parameterPerturbation( 6 ) =  0 ; // core factor of the celestial body of (Mars) [rad]
+    //    parameterPerturbation( 7 ) =  0 ; // free core nutation rate of the celestial bodyof (Mars) [rad/s]
     parameterPerturbation( 8 ) =  19E3 ; // Lander x-position [m]
     parameterPerturbation( 9 ) =  159E3 ; // Lander y-position [m]
     parameterPerturbation( 10 ) =  53E3 ; // Lander z-position [m]
@@ -418,27 +418,27 @@ int main( )
     Eigen::MatrixXd InverseAPriopriCovariance =
             Eigen::MatrixXd::Zero( initialParameterEstimate.rows(), initialParameterEstimate.rows() );
 
-//    for( unsigned int i = 0; i <= 5; i++ )
-//    {
-//        InverseAPriopriCovariance( i, i ) = 1.0 ;
-//    }
-//    InverseAPriopriCovariance( 6, 6 ) =  1.0 / std::pow( 200E3, 2 );
-//    InverseAPriopriCovariance( 7, 7 ) =  1.0 / std::pow( 200E3, 2 );
-//    InverseAPriopriCovariance( 8, 8 ) =  1.0 / std::pow( 200E3, 2 );
+    //    for( unsigned int i = 0; i <= 5; i++ )
+    //    {
+    //        InverseAPriopriCovariance( i, i ) = 1.0 ;
+    //    }
+    //    InverseAPriopriCovariance( 6, 6 ) =  1.0 / std::pow( 200E3, 2 );
+    //    InverseAPriopriCovariance( 7, 7 ) =  1.0 / std::pow( 200E3, 2 );
+    //    InverseAPriopriCovariance( 8, 8 ) =  1.0 / std::pow( 200E3, 2 );
 
     std::shared_ptr< PodInput< double, double > > podInput = std::make_shared< PodInput< double, double > >(
                 observationsAndTimes, ( initialParameterEstimate ).rows( ) );
 
-//    // Define estimation input
-//    std::shared_ptr< PodInput< double, double > > podInput =
-//            std::make_shared< PodInput< double, double > >(
-//                observationsAndTimes, initialParameterEstimate.rows( ),
-//                 InverseAPriopriCovariance, initialParameterEstimate - truthParameters);
+    //    // Define estimation input
+    //    std::shared_ptr< PodInput< double, double > > podInput =
+    //            std::make_shared< PodInput< double, double > >(
+    //                observationsAndTimes, initialParameterEstimate.rows( ),
+    //                 InverseAPriopriCovariance, initialParameterEstimate - truthParameters);
 
-//    // Define observation weights (constant per observable type)
-//    std::map< observation_models::ObservableType, double > weightPerObservable;
-//    weightPerObservable[ two_way_doppler ] = 1.0 / ( dopplerNoise * dopplerNoise );
-//    podInput->setConstantPerObservableWeightsMatrix( weightPerObservable );
+    //    // Define observation weights (constant per observable type)
+    //    std::map< observation_models::ObservableType, double > weightPerObservable;
+    //    weightPerObservable[ two_way_doppler ] = 1.0 / ( dopplerNoise * dopplerNoise );
+    //    podInput->setConstantPerObservableWeightsMatrix( weightPerObservable );
 
     // Perform estimation
     std::shared_ptr< PodOutput< double > > podOutput = orbitDeterminationManager.estimateParameters(
@@ -450,7 +450,7 @@ int main( )
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    std::string outputFolder = ".src/";
+    std::string outputFolder = "/home/cfortunylombra/tudat-bundle/tudat/examples/tudat/LaRa_POD/src/";
 
     // Print true estimation error, limited mostly by numerical error
     Eigen::VectorXd estimationError = podOutput->parameterEstimate_ - truthParameters;
@@ -466,18 +466,16 @@ int main( )
     input_output::writeMatrixToFile( podOutput->informationMatrixTransformationDiagonal_,
                                      "EstimationInformationMatrixNormalization.dat", 16,
                                      outputFolder );
-    input_output::writeMatrixToFile( utilities::convertStlVectorToEigenVector(
-                                         getConcatenatedTimeVector( podInput->getObservationsAndTimes( ) ) ),
+    input_output::writeMatrixToFile( utilities::convertStlVectorToEigenVector( observationsAndTimes->getConcatenatedTimeVector( ) ),
                                      "ObservationTimes.dat", 16,
                                      outputFolder );
-    input_output::writeMatrixToFile( utilities::convertStlVectorToEigenVector(
-                                         getConcatenatedGroundStationIndex( podInput->getObservationsAndTimes( ) ).first ),
-                                     "ObservationLinkEnds.dat", 16,
-                                     outputFolder );
+//    input_output::writeMatrixToFile( utilities::convertStlVectorToEigenVector(
+//                                         getConcatenatedGroundStationIndex( podInput->getObservationsAndTimes( ) ).first ),
+//                                     "ObservationLinkEnds.dat", 16,
+//                                     outputFolder );
 
     // Final statement.
     // The exit code EXIT_SUCCESS indicates that the program was successfully executed.
     return EXIT_SUCCESS;
 
 }
-
