@@ -10,6 +10,8 @@ if __name__=="__main__":
     ################################################## IMPORT PACKAGES #####################################################
     ########################################################################################################################
 
+    import sys
+    sys.path.insert(0, "/home/cfortunylombra/tudat-bundle/cmake-build-release-wsl/tudatpy/")
     import os
     import copy
     import numpy as np
@@ -17,7 +19,7 @@ if __name__=="__main__":
     from tudatpy.kernel.astro import element_conversion
     from tudatpy.kernel.interface import spice_interface
     from tudatpy.kernel.numerical_simulation import environment_setup,propagation_setup,propagation,estimation_setup,estimation
-    from tudatpy.kernel.numerical_simulation.estimation_setup import observations
+    from tudatpy.kernel.numerical_simulation.estimation_setup import observation
 
     ########################################################################################################################
     ################################################## CONSTANTS AND VARIABLES #############################################
@@ -77,7 +79,9 @@ if __name__=="__main__":
     environment_setup.ephemeris.frame_origin = "Sun"
 
     # Simple rotation model before moving to the more realistic Mars rotation model
-    body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.simple_from_spice("ECLIPJ2000","IAU_Mars","IAU_Mars",simulation_start_epoch)
+    body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.mars_high_accuracy()
+    #environment_setup.rotation_model.simple_from_spice("ECLIPJ2000","IAU_Mars","IAU_Mars",simulation_start_epoch)
+    #body_settings.get("Mars").ephemeris_settings = environment_setup.ephemeris.direct_spice("SSB","ECLIPJ2000","Mars")
 
     # Complex rotation model 
     #body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.getHighAccuracyMarsRotationModel(simulation_start_epoch,simulation_end_epoch)
@@ -95,7 +99,7 @@ if __name__=="__main__":
     ground_station_dict [transmitter_name] = transmitter_position_cartesian
 
     # Read the text file containing the name and cartesian coordinates of the ground stations
-    with open(os.path.dirname(os.path.realpath(__file__))+'\gs_locations.dat') as file:
+    with open(os.path.dirname(os.path.realpath(__file__))+'/gs_locations.dat') as file:
         lines = file.read().splitlines()
         
         # Variables
@@ -204,9 +208,9 @@ if __name__=="__main__":
         receiver_name = list(ground_station_dict.keys())[pointer_ground_station_receiver]
         if receiver_name != transmitter_name:
             two_way_link_ends = dict()
-            two_way_link_ends[observations.transmitter] = ("Earth", transmitter_name )
-            two_way_link_ends[observations.reflector1] = ( "Mars", reflector_name );
-            two_way_link_ends[observations.receiver] = ( "Earth", receiver_name );
+            two_way_link_ends[observation.transmitter] = ("Earth", transmitter_name )
+            two_way_link_ends[observation.reflector1] = ( "Mars", reflector_name )
+            two_way_link_ends[observation.receiver] = ( "Earth", receiver_name )
 
             observation_settings_list.append(two_way_link_ends)
     
@@ -218,15 +222,15 @@ if __name__=="__main__":
     observation_settings_downlink_list = copy.deepcopy(observation_settings_list)
 
     # Remove receiver for uplink, and rename the reflector to receiver
-    del observation_settings_uplink_list[0][observations.receiver]
-    observation_settings_uplink_list[0][observations.receiver] =  observation_settings_uplink_list[
-        0].pop(observations.reflector1)
+    del observation_settings_uplink_list[0][observation.receiver]
+    observation_settings_uplink_list[0][observation.receiver] =  observation_settings_uplink_list[
+        0].pop(observation.reflector1)
 
     for pointer_link_ends in range(0,len(observation_settings_list)):
         # Remove transmitter for downlink, and rename the reflector to transmitter
-        del observation_settings_downlink_list[pointer_link_ends][observations.transmitter]
-        observation_settings_downlink_list[pointer_link_ends][observations.transmitter] =  observation_settings_downlink_list[
-            pointer_link_ends].pop(observations.reflector1)
+        del observation_settings_downlink_list[pointer_link_ends][observation.transmitter]
+        observation_settings_downlink_list[pointer_link_ends][observation.transmitter] =  observation_settings_downlink_list[
+            pointer_link_ends].pop(observation.reflector1)
 
     ########################################################################################################################
     ################################################## DEFINE PARAMETERS TO ESTIMATE #######################################
@@ -235,10 +239,10 @@ if __name__=="__main__":
     # Create list of parameters that are to be estimated
     parameter_settings = estimation_setup.parameter.initial_states(propagator_settings,bodies)
     parameter_settings.append(estimation_setup.parameter.ground_station_position("Mars", reflector_name))
-    #parameter_settings.append(estimation_setup.parameter.core_factor("Mars"))
-    #parameter_settings.append(estimation_setup.parameter.free_core_nutation_rate("Mars"))
-    #parameter_settings.append(estimation_setup.parameter.periodic_spin_variation("Mars"))
-    #parameter_settings.append(estimation_setup.parameter.polar_motion_amplitude("Mars"))
+    parameter_settings.append(estimation_setup.parameter.core_factor("Mars"))
+    parameter_settings.append(estimation_setup.parameter.free_core_nutation_rate("Mars"))
+    parameter_settings.append(estimation_setup.parameter.periodic_spin_variations("Mars"))
+    parameter_settings.append(estimation_setup.parameter.polar_motion_amplitudes("Mars"))
 
     parameters_set = estimation_setup.create_parameters_to_estimate(parameter_settings,bodies,propagator_settings)
 
@@ -250,45 +254,41 @@ if __name__=="__main__":
     ######################################################################################################################## 
 
     # Define settings for light-time calculations
-    light_time_correction_settings = [observations.first_order_relativistic_light_time_correction(['Sun'])]
+    light_time_correction_settings = [observation.first_order_relativistic_light_time_correction(['Sun'])]
 
     # Define uplink oneway Doppler observation settings
     uplink_one_way_doppler_observation_settings = list() 
-    uplink_one_way_doppler_observation_settings.append(observations.one_way_open_loop_doppler(observation_settings_uplink_list[0],
+    uplink_one_way_doppler_observation_settings.append(observation.one_way_open_loop_doppler(observation_settings_uplink_list[0],
     light_time_correction_settings = light_time_correction_settings))
-    #transmitter_proper_time_rate_settings = bodies.get_body("Earth"),
-    #receiver_proper_time_rate_settings = bodies.get_body("Mars"))
 
     # Define downlink oneway Doppler observation settings
     downlink_one_way_doppler_observation_settings = list()
     for pointer_link_ends in range(0,len(observation_settings_downlink_list)):
-        downlink_one_way_doppler_observation_settings.append(observations.one_way_open_loop_doppler(
+        downlink_one_way_doppler_observation_settings.append(observation.one_way_open_loop_doppler(
             observation_settings_downlink_list[pointer_link_ends],
             light_time_correction_settings = light_time_correction_settings))
-            #transmitter_proper_time_rate_settings = bodies.get_body("Mars"),
-            #receiver_proper_time_rate_settings = bodies.get_body("Earth"))
     
-    #Define twoway Doppler observation settings
+    # Define twoway Doppler observation settings
     two_way_doppler_observation_settings = list()
-    #for pointer_link_ends in range(0,len(observation_settings_downlink_list)):
-        #two_way_doppler_observation_settings.append(observations.two_way_open_loop_doppler(
-        #    uplink_one_way_doppler_observation_settings[0],
-        #    downlink_one_way_doppler_observation_settings[pointer_link_ends]))
+    for pointer_link_ends in range(0,len(observation_settings_downlink_list)):
+        two_way_doppler_observation_settings.append(observation.two_way_open_loop_doppler(
+            uplink_one_way_doppler_observation_settings[0],
+            downlink_one_way_doppler_observation_settings[pointer_link_ends]))
 
     ########################################################################################################################
     ################################################## INITIALIZE OD  ######################################################
     ######################################################################################################################## 
 
     # Create observation simulators
-    observation_simulators = observations.create_observation_simulators(downlink_one_way_doppler_observation_settings,bodies) #two_way_doppler_observation_settings NOTE
+    observation_simulators = observation.create_observation_simulators(two_way_doppler_observation_settings,bodies) 
 
     # Create physical environment (as set of physical bodies)
-    estimator = numerical_simulation.Estimator(bodies,parameters_set,downlink_one_way_doppler_observation_settings, #two_way_doppler_observation_settings NOTE
+    estimator = numerical_simulation.Estimator(bodies,parameters_set,two_way_doppler_observation_settings,
         integrator_settings,propagator_settings)
 
     # Variational equations and dynamics
-    #variational_equations_simulator = estimator.variational_solver
-    #dynamics_simulator = variational_equations_simulator.dynamics_simulator
+    variational_equations_simulator = estimator.variational_solver
+    dynamics_simulator = variational_equations_simulator.dynamics_simulator
 
     # Extract observation simulators
     observation_simulators = estimator.observation_simulators
@@ -313,21 +313,21 @@ if __name__=="__main__":
                         +pointer_interval*observation_interval)
 
     # Create measurement simulation input
-    observation_simulation_settings = observations.create_tabulated_simulation_settings(
-        dict({observations.one_way_doppler_type:observation_settings_downlink_list}),observation_times_list) #observations.two_way_doppler_type NOTE
+    observation_simulation_settings = observation.create_tabulated_simulation_settings(
+        dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list) #observations.two_way_doppler_type NOTE
 
     # Create observation viability settings and calculators
     viability_settings_list = list()
-    viability_settings_list.append(observations.elevation_angle_viability(["Earth",""],np.deg2rad(20)))
-    viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(35)))
+    viability_settings_list.append(observation.elevation_angle_viability(["Earth",""],np.deg2rad(20)))
+    viability_settings_list.append(observation.elevation_angle_viability(["Mars",""],np.deg2rad(35)))
     #viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(45))) #NOTE maximum elevation angle viability
-    viability_settings_list.append(observations.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(20)))
-    viability_settings_list.append(observations.body_occultation_viability(["Earth",""],"Moon"))
+    viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(20)))
+    viability_settings_list.append(observation.body_occultation_viability([("Earth","")],"Moon"))
 
-    #observations.add_viability_check_to_settings(observation_simulation_settings,viability_settings_list) #NOTE does not exist
+    observation.add_viability_check_to_settings(observation_simulation_settings,viability_settings_list) 
 
     # Simulate required observation
-    simulated_observations = observations.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
+    simulated_observations = observation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
 
     # Perturbation
     parameter_perturbation = np.zeros(parameters_set.parameter_set_size)
@@ -350,7 +350,7 @@ if __name__=="__main__":
 
     # Define noise levels
     doppler_noise = 0.075e-3/constants.SPEED_OF_LIGHT 
-    weights_per_observable = dict({observations.one_way_doppler_type:doppler_noise**(-2)}) #observations.two_way_doppler_type NOTE
+    weights_per_observable = dict({observation.two_way_doppler_type:doppler_noise**(-2)}) #observations.two_way_doppler_type NOTE
     pod_input.set_constant_weight_per_observable(weights_per_observable)
 
     # Perform estimation
@@ -363,7 +363,7 @@ if __name__=="__main__":
     ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
     ########################################################################################################################
 
-    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('\src','\output')
+    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output')
     os.makedirs(output_folder_path,exist_ok=True)
 
     estimation_error = pod_output.parameter_history[:,-1]-parameters_set.values
@@ -371,13 +371,13 @@ if __name__=="__main__":
     true_to_form_estimation_error_ratio = estimation_error/formal_error #NOTE
     estimation_information_matrix = pod_output.design_matrix
     estimation_information_matrix_normalization = pod_output.normalized_design_matrix
-    #concatenated_times = simulated_observations.concatenated_times #NOTE
-    #concatenated_observations = simulated_observations.concatenated_observations #NOTE
+    concatenated_times = simulated_observations.concatenated_times 
+    concatenated_observations = simulated_observations.concatenated_observations
 
-    np.savetxt(output_folder_path+"\estimation_information_matrix.dat",estimation_information_matrix,fmt='%.16e')
-    np.savetxt(output_folder_path+"\estimation_information_matrix_normalization.dat",
+    np.savetxt(output_folder_path+"/estimation_information_matrix.dat",estimation_information_matrix,fmt='%.16e')
+    np.savetxt(output_folder_path+"/estimation_information_matrix_normalization.dat",
         estimation_information_matrix_normalization,fmt='%.16e')
-    #np.savetxt(output_folder_path+'concatenated_times.dat',concatenated_times,fmt='%.16e')
-    #np.savetxt(output_folder_path+'concatenated_observations.dat',concatenated_observations,fmt='%.16e')
+    np.savetxt(output_folder_path+"/concatenated_times.dat",concatenated_times,fmt='%.16e')
+    np.savetxt(output_folder_path+"/concatenated_observations.dat",concatenated_observations,fmt='%.16e')
 
 print("--- %s seconds ---" % (time.time() - run_time))

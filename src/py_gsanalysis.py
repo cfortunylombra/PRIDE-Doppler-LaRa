@@ -10,14 +10,16 @@ if __name__=="__main__":
     ################################################## IMPORT PACKAGES #####################################################
     ########################################################################################################################
 
+    import sys
+    sys.path.insert(0, "/home/cfortunylombra/tudat-bundle/cmake-build-release-wsl/tudatpy/")
     import os
     import copy
     import numpy as np
     from tudatpy.kernel import constants, numerical_simulation
     from tudatpy.kernel.astro import element_conversion, frame_conversion
     from tudatpy.kernel.interface import spice_interface
-    from tudatpy.kernel.numerical_simulation import environment_setup,propagation_setup,propagation,estimation_setup,estimation
-    from tudatpy.kernel.numerical_simulation.estimation_setup import parameter,observations
+    from tudatpy.kernel.numerical_simulation import environment_setup,environment,propagation_setup,propagation,estimation_setup,estimation
+    from tudatpy.kernel.numerical_simulation.estimation_setup import parameter,observation
 
     ########################################################################################################################
     ################################################## CONSTANTS AND VARIABLES #############################################
@@ -92,7 +94,7 @@ if __name__=="__main__":
     ground_station_dict [transmitter_name] = transmitter_position_cartesian
 
     # Read the text file containing the name and cartesian coordinates of the ground stations
-    with open(os.path.dirname(os.path.realpath(__file__))+'\gs_locations.dat') as file:
+    with open(os.path.dirname(os.path.realpath(__file__))+'/gs_locations.dat') as file:
         lines = file.read().splitlines()
         
         # Variables
@@ -154,15 +156,31 @@ if __name__=="__main__":
                         +pointer_interval*observation_interval)
 
     # Specifications of the reflector
-    reflector_station = parameter.ground_station_position("Mars",reflector_name)
-    #reflector_nominal_state_object = reflector_station.nominal_station_state() #NOTE
-    #reflector_pointing_angle_calculator_object = reflector_station.pointing_angles_calculator() #NOTE
-    #rotation_from_Mars_body_frame_to_inertial_frame = frame_conversion.body_fixed_to_inertial_rotation_matrix(pole_declination: float, pole_right_ascension: float, pole_meridian: float) #NOTE
+    reflector_station = bodies.get_body("Mars").get_ground_station(reflector_name)
+    reflector_nominal_state_object = reflector_station.station_state
+    reflector_pointing_angle_calculator_object = reflector_station.pointing_angles_calculator
+    rotation_from_Mars_body_frame_to_inertial_frame = bodies.get_body("Mars").body_fixed_to_inertial_frame
 
     # Specifications of the transmitter
-    transmitter_station = parameter.ground_station_position("Earth",transmitter_name)
-    #transmitter_nominal_state_object = transmitter_station.nominal_station_state() #NOTE
-    #transmitter_pointing_angle_calculator_object = transmitter_station.pointing_angles_calculator() #NOTE
-    #rotation_from_Earth_body_frame_to_inertial_frame = frame_conversion.body_fixed_to_inertial_rotation_matrix(pole_declination: float, pole_right_ascension: float, pole_meridian: float) #NOTE
+    transmitter_station = bodies.get_body("Earth").get_ground_station(transmitter_name)
+    transmitter_nominal_state_object = transmitter_station.station_state
+    transmitter_pointing_angle_calculator_object = transmitter_station.pointing_angles_calculator
+    rotation_from_Earth_body_frame_to_inertial_frame = bodies.get_body("Earth").body_fixed_to_inertial_frame
+
+    ########################################################################################################################
+    ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
+    ########################################################################################################################
+
+    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output')
+    os.makedirs(output_folder_path,exist_ok=True)
+
+    np.savetxt(output_folder_path+"/observation_time.dat",observation_time,fmt='%.16e')
+    np.savetxt(output_folder_path+"/DSS63_observation_time.dat",DSS63_observation_time,fmt='%.16e')
+    np.savetxt(output_folder_path+"/DSS63_elevation.dat",DSS63_elevation,fmt='%.16e')
+    np.savetxt(output_folder_path+"/earth_elevation.dat",earth_elevation,fmt='%.16e')
+    np.savetxt(output_folder_path+"/earth_azimuth.dat",earth_azimuth,fmt='%.16e')   
+    np.savetxt(output_folder_path+"/ground_station_observation_time.dat",ground_station_observation_time,fmt='%.16e')
+    np.savetxt(output_folder_path+"/ground_station_elevation.dat",ground_station_elevation,fmt='%.16e')
+    np.savetxt(output_folder_path+"/ground_station_ids.dat",ground_station_ids,fmt='%.16e')         
 
 print("--- %s seconds ---" % (time.time() - run_time))
