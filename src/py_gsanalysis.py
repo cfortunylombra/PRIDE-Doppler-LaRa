@@ -181,7 +181,8 @@ if __name__=="__main__":
                 -np.matmul(rotation_from_Mars_body_frame_to_inertial_frame,reflector_nominal_state_object.get_cartesian_position(pointer_time)),
                 pointer_time))
 
-        if earth_elevation[-1] >= np.deg2rad(35) and earth_elevation[-1] <= np.deg2rad(45):
+        # Angle viability
+        if earth_elevation[-1] >= np.deg2rad(35) and earth_elevation[-1] <= np.deg2rad(45): 
             DSS63_observation_time.append(pointer_time)
             
             DSS63_elevation.append(transmitter_pointing_angle_calculator_object.calculate_elevation_angle(
@@ -189,7 +190,33 @@ if __name__=="__main__":
                     -np.matmul(rotation_from_Earth_body_frame_to_inertial_frame,transmitter_nominal_state_object.get_cartesian_position(pointer_time)),
                     pointer_time))
 
-    
+    ground_station_ids = list()
+    ground_station_observation_time = list()
+    ground_station_elevation = list()
+
+    id = 0
+
+    for Earth_ground_station_pointer in Earth_ground_station_list:
+        if Earth_ground_station_pointer[1] == transmitter_name:
+            continue
+
+        current_station = bodies.get("Earth").get_ground_station(Earth_ground_station_pointer[1])
+        current_nominal_state_object = current_station.station_state
+        current_ground_station_pointing_angle_calculator_object = current_station.pointing_angles_calculator
+        
+        ind = 0
+
+        # Angle viability
+        for pointer_transmitter_time in DSS63_observation_time:
+            if DSS63_elevation[ind] >= np.deg2rad(20):
+                ground_station_observation_time.append(pointer_transmitter_time)
+                ground_station_elevation.append(current_ground_station_pointing_angle_calculator_object.calculate_elevation_angle(
+                    bodies.get_body("Mars").state_in_base_frame_from_ephemeris(pointer_transmitter_time)[:3] \
+                        -np.matmul(rotation_from_Earth_body_frame_to_inertial_frame,current_nominal_state_object.get_cartesian_position(pointer_transmitter_time)),
+                        pointer_transmitter_time))
+                ground_station_ids.append(id)
+            ind+=1
+        id+=1
 
     ########################################################################################################################
     ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
