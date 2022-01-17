@@ -167,11 +167,36 @@ if __name__=="__main__":
     transmitter_pointing_angle_calculator_object = transmitter_station.pointing_angles_calculator
     rotation_from_Earth_body_frame_to_inertial_frame = bodies.get_body("Earth").body_fixed_to_inertial_frame
 
+    observation_time = observation_times_list
+
+    earth_elevation = list()
+    earth_azimuth = list()
+    DSS63_observation_time = list()
+    DSS63_elevation = list()
+
+    for pointer_time in observation_times_list:
+        earth_elevation.append(reflector_pointing_angle_calculator_object.calculate_elevation_angle(
+            bodies.get_body("Earth").state_in_base_frame_from_ephemeris(pointer_time)[:3] \
+                -np.matmul(rotation_from_Mars_body_frame_to_inertial_frame,reflector_nominal_state_object.get_cartesian_position(pointer_time)),
+                pointer_time))
+        earth_azimuth.append(reflector_pointing_angle_calculator_object.calculate_azimuth_angle(
+            bodies.get_body("Earth").state_in_base_frame_from_ephemeris(pointer_time)[:3] \
+                -np.matmul(rotation_from_Mars_body_frame_to_inertial_frame,reflector_nominal_state_object.get_cartesian_position(pointer_time)),
+                pointer_time))
+
+        if earth_elevation[-1] >= np.deg2rad(35) and earth_elevation[-1] <= np.deg2rad(45):
+            DSS63_observation_time.append(pointer_time)
+            
+            DSS63_elevation.append(transmitter_pointing_angle_calculator_object.calculate_elevation_angle(
+                bodies.get_body("Mars").state_in_base_frame_from_ephemeris(pointer_time)[:3] \
+                    -np.matmul(rotation_from_Earth_body_frame_to_inertial_frame,transmitter_nominal_state_object.get_cartesian_position(pointer_time)),
+                    pointer_time))
+
     ########################################################################################################################
     ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
     ########################################################################################################################
 
-    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output')
+    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/GS')
     os.makedirs(output_folder_path,exist_ok=True)
 
     np.savetxt(output_folder_path+"/observation_time.dat",observation_time,fmt='%.16e')
@@ -181,22 +206,6 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/earth_azimuth.dat",earth_azimuth,fmt='%.16e')   
     np.savetxt(output_folder_path+"/ground_station_observation_time.dat",ground_station_observation_time,fmt='%.16e')
     np.savetxt(output_folder_path+"/ground_station_elevation.dat",ground_station_elevation,fmt='%.16e')
-    np.savetxt(output_folder_path+"/ground_station_ids.dat",ground_station_ids,fmt='%.16e')         
-
-    ########################################################################################################################
-    ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
-    ########################################################################################################################
-
-    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output')
-    os.makedirs(output_folder_path,exist_ok=True)
-
-    np.savetxt(output_folder_path+"/observation_time.dat",observation_time,fmt='%.16e')
-    np.savetxt(output_folder_path+"/DSS63_observation_time.dat",DSS63_observation_time,fmt='%.16e')
-    np.savetxt(output_folder_path+"/DSS63_elevation.dat",DSS63_elevation,fmt='%.16e')
-    np.savetxt(output_folder_path+"/earth_elevation.dat",earth_elevation,fmt='%.16e')
-    np.savetxt(output_folder_path+"/earth_azimuth.dat",earth_azimuth,fmt='%.16e')   
-    np.savetxt(output_folder_path+"/ground_station_observation_time.dat",ground_station_observation_time,fmt='%.16e')
-    np.savetxt(output_folder_path+"/ground_station_elevation.dat",ground_station_elevation,fmt='%.16e')
-    np.savetxt(output_folder_path+"/ground_station_ids.dat",ground_station_ids,fmt='%.16e')         
+    np.savetxt(output_folder_path+"/ground_station_ids.dat",ground_station_ids,fmt='%.16e')                 
 
 print("--- %s seconds ---" % (time.time() - run_time))
