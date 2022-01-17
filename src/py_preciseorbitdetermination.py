@@ -358,7 +358,7 @@ if __name__=="__main__":
     ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
     ########################################################################################################################
 
-    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output')
+    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD')
     os.makedirs(output_folder_path,exist_ok=True)
 
     estimation_error = pod_output.parameter_history[:,-1]-parameters_set.values
