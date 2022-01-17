@@ -91,7 +91,7 @@ int main( )
 
     bodySettings.get( "Moon" )->ephemerisSettings->resetFrameOrigin( "Sun" );
 
-    //bodySettings.get( "Mars" )->rotationModelSettings = getHighAccuracyMarsRotationModel( initialEphemerisTime, finalEphemerisTime );
+    bodySettings.get( "Mars" )->rotationModelSettings = simulation_setup::getHighAccuracyMarsRotationModel(); //initialEphemerisTime, finalEphemerisTime
 
     SystemOfBodies bodyMap = createSystemOfBodies( bodySettings );
 
@@ -223,10 +223,10 @@ int main( )
     parameterNames.push_back( std::make_shared< InitialTranslationalStateEstimatableParameterSettings< double > >(
                                   "Mars", systemInitialState, "SSB" ) );
     parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Mars", ground_station_position, "LaRa" ) );
-    //parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Mars", core_factor ) );
-    //parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Mars", free_core_nutation_rate ) );
-    //parameterNames.push_back(  std::make_shared< EstimatableParameterSettings >( "Mars", periodic_spin_variation ) );
-    //parameterNames.push_back(  std::make_shared< EstimatableParameterSettings >( "Mars", polar_motion_amplitude ) );
+    parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Mars", core_factor ) );
+    parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Mars", free_core_nutation_rate ) );
+    parameterNames.push_back(  std::make_shared< EstimatableParameterSettings >( "Mars", periodic_spin_variation ) );
+    parameterNames.push_back(  std::make_shared< EstimatableParameterSettings >( "Mars", polar_motion_amplitude ) );
 
     // Create parameters
     std::shared_ptr< estimatable_parameters::EstimatableParameterSet< double > > parametersToEstimate =

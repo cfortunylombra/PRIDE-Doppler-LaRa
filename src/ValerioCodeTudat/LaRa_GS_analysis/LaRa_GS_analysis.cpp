@@ -80,15 +80,12 @@ int main( )
     double finalEphemerisTime = initialEphemerisTime + numberOfSimulationDays * physical_constants::JULIAN_DAY;
 
     // Create bodies needed in simulation
-    std::map< std::string, std::shared_ptr< BodySettings > > bodySettings =
-            getDefaultBodySettings( bodyNames, initialEphemerisTime - physical_constants::JULIAN_DAY,
-                                    finalEphemerisTime + physical_constants::JULIAN_DAY );
+    BodyListSettings bodySettings =
+            getDefaultBodySettings( bodyNames, "SSB", "ECLIPJ2000" );
 
-    bodySettings[ "Mars" ]->rotationModelSettings = getHighAccuracyMarsRotationModel( initialEphemerisTime, finalEphemerisTime );
+    bodySettings.get( "Mars" )->rotationModelSettings = simulation_setup::getHighAccuracyMarsRotationModel();
 
-    NamedBodyMap bodyMap = createBodies( bodySettings );
-
-    setGlobalFrameBodyEphemerides( bodyMap, "SSB", "ECLIPJ2000" );
+    SystemOfBodies bodyMap = createSystemOfBodies( bodySettings );
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////     CREATE GROUND STATIONS AND LANDER      ////////////////////////////////////////////////////
@@ -99,7 +96,7 @@ int main( )
 //    groundStationNames.push_back( "DSS14" );
     groundStationNames.push_back( "DSS63" );
 
-    std::ifstream readFile (".src/gs_location.txt");
+    std::ifstream readFile ("/home/cfortunylombra/tudat-bundle/tudat/examples/tudat/LaRa_GS_analysis/src/gs_location.txt");
 //    std::ifstream readFile ("/Users/valeriofilice/Tudat/tudatBundle/tudatApplications/Outputs/LaRa_GS_analysis_EVN/EVN_location.txt");
 //    std::ifstream readFile ("/Users/valeriofilice/Tudat/tudatBundle/tudatApplications/Outputs/LaRa_GS_analysis_VLA/VLA_location.txt");
 //    std::ifstream readFile ("/Users/valeriofilice/Tudat/tudatBundle/tudatApplications/Outputs/LaRa_GS_analysis_Extra/Extra_location.txt");
@@ -126,7 +123,7 @@ int main( )
 
     std::cout << num_lines << std::endl;
 
-    createGroundStations( bodyMap.at( "Earth" ), groundStationNames );
+    //createGroundStations( bodyMap.at( "Earth" ), groundStationNames );
 
 //    createGroundStation( bodyMap.at( "Mars" ), "LaRa",
 //                         ( Eigen::Vector3d( ) << spice_interface::getAverageRadius("Mars"),
@@ -170,14 +167,14 @@ int main( )
     std::shared_ptr< PointingAnglesCalculator > LaRaPointingAngleCalculatorObject =
             LaRa->getPointingAnglesCalculator( );
     Eigen::Matrix3d rotationFromMarsLocalFrametoInertialFrame =
-            bodyMap[ "Mars" ]->getCurrentRotationToGlobalFrame( ).toRotationMatrix( );
+            bodyMap.at( "Mars" )->getCurrentRotationToGlobalFrame( ).toRotationMatrix( );
 
     std::shared_ptr< GroundStation > DSS63 = bodyMap.at( "Earth" )->getGroundStation( "DSS63" );
     std::shared_ptr< GroundStationState > DSS63NominalStateObject = DSS63->getNominalStationState( );
     std::shared_ptr< PointingAnglesCalculator > DSS63PointingAngleCalculatorObject =
             DSS63->getPointingAnglesCalculator( );
     Eigen::Matrix3d rotationFromEarthLocalFrametoInertialFrame =
-            bodyMap[ "Earth" ]->getCurrentRotationToGlobalFrame( ).toRotationMatrix( );
+            bodyMap.at( "Earth" )->getCurrentRotationToGlobalFrame( ).toRotationMatrix( );
 
     std::vector< double > observationTimes;
     std::vector< double > earthElevation;
@@ -198,12 +195,12 @@ int main( )
 
         earthElevation.push_back(
                     LaRaPointingAngleCalculatorObject->calculateElevationAngle(
-                        ( bodyMap[ "Earth" ]->getStateInBaseFrameFromEphemeris( currentTime ) ).segment( 0, 3 ) -
+                        ( bodyMap.at("Earth")->getStateInBaseFrameFromEphemeris( currentTime ) ).segment( 0, 3 ) -
                         rotationFromMarsLocalFrametoInertialFrame * LaRaNominalStateObject->getCartesianPositionInTime( currentTime ),
                         currentTime ) );
         earthAzimuth.push_back(
-                    LaRaPointingAngleCalculatorObject->calculationAzimuthAngle(
-                        ( bodyMap[ "Earth" ]->getStateInBaseFrameFromEphemeris( currentTime ) ).segment( 0, 3 ) -
+                    LaRaPointingAngleCalculatorObject->calculateAzimuthAngle(
+                        ( bodyMap.at("Earth")->getStateInBaseFrameFromEphemeris( currentTime ) ).segment( 0, 3 ) -
                         rotationFromMarsLocalFrametoInertialFrame * LaRaNominalStateObject->getCartesianPositionInTime( currentTime ) ,
                         currentTime ) );
 
@@ -215,7 +212,7 @@ int main( )
             DSS63Elevation.push_back(
                         DSS63PointingAngleCalculatorObject->calculateElevationAngle(
 //                            rotationFromMarsLocalFrametoInertialFrame * LaRaNominalStateObject->getCartesianPositionInTime( currentTime ) -
-                            bodyMap[ "Mars" ]->getStateInBaseFrameFromEphemeris( currentTime ).segment( 0, 3 ) -
+                                bodyMap.at( "Mars" )->getStateInBaseFrameFromEphemeris( currentTime ).segment( 0, 3 ) -
                             rotationFromEarthLocalFrametoInertialFrame * DSS63NominalStateObject->getCartesianPositionInTime( currentTime ),
                             currentTime ));
 
@@ -252,7 +249,7 @@ int main( )
                 groundStationElevations.push_back( groudStationPointingAngleCalculatorObject->calculateElevationAngle(
 //                               rotationFromMarsLocalFrametoInertialFrame *
 //                                                       LaRaNominalStateObject->getCartesianPositionInTime( currentTime ) -
-                       bodyMap[ "Mars" ]->getStateInBaseFrameFromEphemeris( currentTime ).segment( 0, 3 ) -
+                        bodyMap.at( "Mars" )->getStateInBaseFrameFromEphemeris( currentTime ).segment( 0, 3 ) -
                        rotationFromEarthLocalFrametoInertialFrame * currentNominalStateObject->getCartesianPositionInTime( currentTime ) ,
                        currentTime ) );
 
