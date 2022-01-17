@@ -78,7 +78,7 @@ if __name__=="__main__":
     # Reset frame origin
     environment_setup.ephemeris.frame_origin = "Sun"
 
-    # Simple rotation model before moving to the more realistic Mars rotation model
+    # Mars rotation model
     body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.mars_high_accuracy()
 
     bodies = environment_setup.create_system_of_bodies(body_settings)
