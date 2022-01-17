@@ -80,11 +80,6 @@ if __name__=="__main__":
 
     # Simple rotation model before moving to the more realistic Mars rotation model
     body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.mars_high_accuracy()
-    #environment_setup.rotation_model.simple_from_spice("ECLIPJ2000","IAU_Mars","IAU_Mars",simulation_start_epoch)
-    #body_settings.get("Mars").ephemeris_settings = environment_setup.ephemeris.direct_spice("SSB","ECLIPJ2000","Mars")
-
-    # Complex rotation model 
-    #body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.getHighAccuracyMarsRotationModel(simulation_start_epoch,simulation_end_epoch)
 
     bodies = environment_setup.create_system_of_bodies(body_settings)
 

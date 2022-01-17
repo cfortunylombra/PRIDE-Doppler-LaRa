@@ -183,4 +183,20 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/ground_station_elevation.dat",ground_station_elevation,fmt='%.16e')
     np.savetxt(output_folder_path+"/ground_station_ids.dat",ground_station_ids,fmt='%.16e')         
 
+    ########################################################################################################################
+    ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
+    ########################################################################################################################
+
+    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output')
+    os.makedirs(output_folder_path,exist_ok=True)
+
+    np.savetxt(output_folder_path+"/observation_time.dat",observation_time,fmt='%.16e')
+    np.savetxt(output_folder_path+"/DSS63_observation_time.dat",DSS63_observation_time,fmt='%.16e')
+    np.savetxt(output_folder_path+"/DSS63_elevation.dat",DSS63_elevation,fmt='%.16e')
+    np.savetxt(output_folder_path+"/earth_elevation.dat",earth_elevation,fmt='%.16e')
+    np.savetxt(output_folder_path+"/earth_azimuth.dat",earth_azimuth,fmt='%.16e')   
+    np.savetxt(output_folder_path+"/ground_station_observation_time.dat",ground_station_observation_time,fmt='%.16e')
+    np.savetxt(output_folder_path+"/ground_station_elevation.dat",ground_station_elevation,fmt='%.16e')
+    np.savetxt(output_folder_path+"/ground_station_ids.dat",ground_station_ids,fmt='%.16e')         
+
 print("--- %s seconds ---" % (time.time() - run_time))
