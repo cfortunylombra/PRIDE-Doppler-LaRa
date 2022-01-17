@@ -75,11 +75,8 @@ if __name__=="__main__":
         global_frame_origin,
         global_frame_orientation)
 
-    # Simple rotation model before moving to the more realistic Mars rotation model
-    body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.simple_from_spice("ECLIPJ2000","IAU_Mars","IAU_Mars",simulation_start_epoch)
-
-    # Complex rotation model 
-    #body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.getHighAccuracyMarsRotationModel(simulation_start_epoch,simulation_end_epoch)
+    # Mars rotation model 
+    body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.mars_high_accuracy()
 
     bodies = environment_setup.create_system_of_bodies(body_settings)
 
@@ -191,6 +188,8 @@ if __name__=="__main__":
                 bodies.get_body("Mars").state_in_base_frame_from_ephemeris(pointer_time)[:3] \
                     -np.matmul(rotation_from_Earth_body_frame_to_inertial_frame,transmitter_nominal_state_object.get_cartesian_position(pointer_time)),
                     pointer_time))
+
+    
 
     ########################################################################################################################
     ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
