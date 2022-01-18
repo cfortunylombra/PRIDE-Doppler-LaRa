@@ -156,13 +156,11 @@ if __name__=="__main__":
     reflector_station = bodies.get_body("Mars").get_ground_station(reflector_name)
     reflector_nominal_state_object = reflector_station.station_state
     reflector_pointing_angle_calculator_object = reflector_station.pointing_angles_calculator
-    rotation_from_Mars_body_frame_to_inertial_frame = bodies.get_body("Mars").body_fixed_to_inertial_frame
 
     # Specifications of the transmitter
     transmitter_station = bodies.get_body("Earth").get_ground_station(transmitter_name)
     transmitter_nominal_state_object = transmitter_station.station_state
     transmitter_pointing_angle_calculator_object = transmitter_station.pointing_angles_calculator
-    rotation_from_Earth_body_frame_to_inertial_frame = bodies.get_body("Earth").body_fixed_to_inertial_frame
 
     observation_time = observation_times_list
 
@@ -172,6 +170,9 @@ if __name__=="__main__":
     DSS63_elevation = list()
 
     for pointer_time in observation_times_list:
+        rotation_from_Mars_body_frame_to_inertial_frame = bodies.get_body("Mars").rotation_model.body_fixed_to_inertial_rotation(pointer_time)
+        rotation_from_Earth_body_frame_to_inertial_frame = bodies.get_body("Earth").rotation_model.body_fixed_to_inertial_rotation(pointer_time)
+        
         earth_elevation.append(reflector_pointing_angle_calculator_object.calculate_elevation_angle(
             bodies.get_body("Earth").state_in_base_frame_from_ephemeris(pointer_time)[:3] \
                 -np.matmul(rotation_from_Mars_body_frame_to_inertial_frame,reflector_nominal_state_object.get_cartesian_position(pointer_time)),
@@ -209,6 +210,8 @@ if __name__=="__main__":
         # Angle viability
         for pointer_transmitter_time in DSS63_observation_time:
             if DSS63_elevation[ind] >= np.deg2rad(20):
+                rotation_from_Earth_body_frame_to_inertial_frame = bodies.get_body("Earth").rotation_model.body_fixed_to_inertial_rotation(pointer_transmitter_time)
+
                 ground_station_observation_time.append(pointer_transmitter_time)
                 ground_station_elevation.append(current_ground_station_pointing_angle_calculator_object.calculate_elevation_angle(
                     bodies.get_body("Mars").state_in_base_frame_from_ephemeris(pointer_transmitter_time)[:3] \
