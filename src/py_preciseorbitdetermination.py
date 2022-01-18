@@ -78,7 +78,7 @@ if __name__=="__main__":
     # Reset frame origin
     environment_setup.ephemeris.frame_origin = "Sun"
 
-    # Mars rotation model
+    #Mars rotation model
     body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.mars_high_accuracy()
 
     bodies = environment_setup.create_system_of_bodies(body_settings)
@@ -266,9 +266,11 @@ if __name__=="__main__":
     # Define twoway Doppler observation settings
     two_way_doppler_observation_settings = list()
     for pointer_link_ends in range(0,len(observation_settings_downlink_list)):
+        #two_way_doppler_observation_settings.append(observation.two_way_open_loop_doppler_from_one_way_links(
+        #    uplink_one_way_doppler_observation_settings[0],
+        #    downlink_one_way_doppler_observation_settings[pointer_link_ends]))
         two_way_doppler_observation_settings.append(observation.two_way_open_loop_doppler(
-            uplink_one_way_doppler_observation_settings[0],
-            downlink_one_way_doppler_observation_settings[pointer_link_ends]))
+            observation_settings_list[pointer_link_ends]))
 
     ########################################################################################################################
     ################################################## INITIALIZE OD  ######################################################
@@ -319,7 +321,7 @@ if __name__=="__main__":
     viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(20)))
     viability_settings_list.append(observation.body_occultation_viability([("Earth","")],"Moon"))
 
-    observation.add_viability_check_to_settings(observation_simulation_settings,viability_settings_list) 
+    #observation.add_viability_check_to_settings(observation_simulation_settings,viability_settings_list) 
 
     # Simulate required observation
     simulated_observations = observation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
