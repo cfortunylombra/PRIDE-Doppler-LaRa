@@ -321,7 +321,7 @@ if __name__=="__main__":
     viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(20)))
     viability_settings_list.append(observation.body_occultation_viability([("Earth","")],"Moon"))
 
-    #observation.add_viability_check_to_settings(observation_simulation_settings,viability_settings_list) 
+    observation.add_viability_check_to_settings(observation_simulation_settings,viability_settings_list) 
 
     # Simulate required observation
     simulated_observations = observation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
