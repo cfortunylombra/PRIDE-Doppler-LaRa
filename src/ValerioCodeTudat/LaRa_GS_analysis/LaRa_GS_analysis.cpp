@@ -131,6 +131,70 @@ int main( )
 //                           unit_conversions::convertDegreesToRadians( 354.0 )).finished( ),
 //                         spherical_position);
 
+    createGroundStation(bodyMap.at("Earth"), "DSS63",
+                        (Eigen::Vector3d() << 4849092.6814,-360180.5350,4115109.1298). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "BADARY",
+                        (Eigen::Vector3d() <<-838201.2618,3865751.5589,4987670.8708). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "CEDUNA",
+                        (Eigen::Vector3d() <<-3753442.7457,3912709.7530,-3348067.6095). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "HARTRAO",
+                        (Eigen::Vector3d() <<5085442.7721,2668263.9300,-2768696.6299). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "HART15M",
+                        (Eigen::Vector3d() <<5085490.8071,2668161.6274,-2768692.5007). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "HOBART12",
+                        (Eigen::Vector3d() <<-3949991.0556,2522421.2681,-4311707.7596). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "HOBART26",
+                        (Eigen::Vector3d() <<-3950237.6192,2522347.7349,-4311561.5974). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "TIANMA65",
+                        (Eigen::Vector3d() <<-2826708.8081,4679236.9722,3274667.4495). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "WARK30M",
+                        (Eigen::Vector3d() <<-5115423.680,477880.102,-3767040.597). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "EFLSBERG",
+                        (Eigen::Vector3d() <<4033947.1525,486990.8961,4900431.0604). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "IRBENE",
+                        (Eigen::Vector3d() <<3183649.341,1276902.985,5359264.715). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "YEBES40M",
+                        (Eigen::Vector3d() <<4848761.7579,-261484.0570,4123085.1343). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "MEDICINA",
+                        (Eigen::Vector3d() <<4461369.5682,919597.2489,4449559.4702). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "WETTZELL",
+                        (Eigen::Vector3d() <<4075539.5173,931735.6497,4801629.6028). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "ONSALA60",
+                        (Eigen::Vector3d() <<3370605.7035,711917.8146,5349830.9852). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "WRT0",
+                        (Eigen::Vector3d() <<3828767.1338,442446.1588,5064921.5700). finished( ),
+                        cartesian_position);
+
     createGroundStation( bodyMap.at( "Mars" ), "LaRa",
                          ( Eigen::Vector3d( ) << spice_interface::getAverageRadius("Mars"),
                            unit_conversions::convertDegreesToRadians( 18.20 ),
@@ -269,7 +333,7 @@ int main( )
     ///////////////////////        PROVIDE OUTPUT TO CONSOLE AND FILES           //////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    std::string outputFolder = ".src/";
+    std::string outputFolder = "/home/cfortunylombra/tudat-bundle/tudat/examples/tudat/LaRa_GS_analysis/output/";
 
 //    std::string outputSubFolder = "LaRa_GS_analysis_EVN";
 //    std::string outputSubFolder = "LaRa_GS_analysis_VLA/";

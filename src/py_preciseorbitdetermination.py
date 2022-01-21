@@ -210,8 +210,8 @@ if __name__=="__main__":
             observation_settings_list.append(two_way_link_ends)
     
     # Create the uplink list
-    observation_settings_uplink_list = list()
-    observation_settings_uplink_list.append(observation_settings_list[0])
+    observation_settings_uplink_list = copy.deepcopy(observation_settings_list)
+    observation_settings_uplink_list = list([observation_settings_uplink_list[0]])
 
     # Copy the entire list of dictionaries for downlink
     observation_settings_downlink_list = copy.deepcopy(observation_settings_list)
@@ -265,7 +265,7 @@ if __name__=="__main__":
     
     # Define twoway Doppler observation settings
     two_way_doppler_observation_settings = list()
-    for pointer_link_ends in range(0,len(observation_settings_downlink_list)):
+    for pointer_link_ends in range(0,len(observation_settings_list)):
         #two_way_doppler_observation_settings.append(observation.two_way_open_loop_doppler_from_one_way_links(
         #    uplink_one_way_doppler_observation_settings[0],
         #    downlink_one_way_doppler_observation_settings[pointer_link_ends]))
@@ -319,7 +319,7 @@ if __name__=="__main__":
     viability_settings_list.append(observation.elevation_angle_viability(["Mars",""],np.deg2rad(35)))
     #viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(45))) #NOTE maximum elevation angle viability
     viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(20)))
-    viability_settings_list.append(observation.body_occultation_viability([("Earth","")],"Moon"))
+    viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
 
     observation.add_viability_check_to_settings(observation_simulation_settings,viability_settings_list) 
 
