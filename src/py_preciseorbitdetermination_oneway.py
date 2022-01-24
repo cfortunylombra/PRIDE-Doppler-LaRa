@@ -237,12 +237,12 @@ if __name__=="__main__":
     parameter_settings.append(estimation_setup.parameter.core_factor("Mars"))
     parameter_settings.append(estimation_setup.parameter.free_core_nutation_rate("Mars"))
     parameter_settings.append(estimation_setup.parameter.periodic_spin_variations("Mars"))
-    parameter_settings.append(estimation_setup.parameter.polar_motion_amplitudes("Mars"))
+    #parameter_settings.append(estimation_setup.parameter.polar_motion_amplitudes("Mars"))
 
-    parameters_set = estimation_setup.create_parameters_to_estimate(parameter_settings,bodies,propagator_settings)
+    parameters_set = estimation_setup.create_parameter_set(parameter_settings,bodies,propagator_settings)
 
     # Print identifiers and indices of parameters to terminal
-    print(parameters_set.values) 
+    print(parameters_set.parameter_vector) 
 
     ########################################################################################################################
     ################################################## CREATE OBSERVATION SETTINGS #########################################
@@ -262,20 +262,13 @@ if __name__=="__main__":
         downlink_one_way_doppler_observation_settings.append(observation.one_way_open_loop_doppler(
             observation_settings_downlink_list[pointer_link_ends],
             light_time_correction_settings = light_time_correction_settings))
-    
-    # Define twoway Doppler observation settings
-    #two_way_doppler_observation_settings = list()
-    #for pointer_link_ends in range(0,len(observation_settings_downlink_list)):
-    #    two_way_doppler_observation_settings.append(observation.two_way_open_loop_doppler(
-    #        uplink_one_way_doppler_observation_settings[0],
-    #        downlink_one_way_doppler_observation_settings[pointer_link_ends]))
 
     ########################################################################################################################
     ################################################## INITIALIZE OD  ######################################################
     ######################################################################################################################## 
 
     # Create observation simulators
-    observation_simulators = observation.create_observation_simulators(downlink_one_way_doppler_observation_settings,bodies) 
+    observation_simulators = estimation_setup.create_observation_simulators(downlink_one_way_doppler_observation_settings,bodies) 
 
     # Create physical environment (as set of physical bodies)
     estimator = numerical_simulation.Estimator(bodies,parameters_set,downlink_one_way_doppler_observation_settings,
@@ -307,10 +300,6 @@ if __name__=="__main__":
                     +pointer_days_per_week*(days_in_a_week/2)*constants.JULIAN_DAY \
                         +pointer_interval*observation_interval)
 
-    # Create measurement simulation input
-    observation_simulation_settings = observation.create_tabulated_simulation_settings(
-        dict({observation.one_way_doppler_type:observation_settings_downlink_list}),observation_times_list) #observations.two_way_doppler_type NOTE
-
     # Create observation viability settings and calculators
     viability_settings_list = list()
     viability_settings_list.append(observation.elevation_angle_viability(["Earth",""],np.deg2rad(20)))
@@ -319,10 +308,14 @@ if __name__=="__main__":
     viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(20)))
     viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
 
+    # Create measurement simulation input
+    observation_simulation_settings = observation.tabulated_simulation_settings_list(
+        dict({observation.one_way_doppler_type:observation_settings_downlink_list}),observation_times_list,viability_settings = viability_settings_list) 
+
     observation.add_viability_check_to_settings(observation_simulation_settings,viability_settings_list) 
 
     # Simulate required observation
-    simulated_observations = observation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
+    simulated_observations = estimation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
 
     # Perturbation
     parameter_perturbation = np.zeros(parameters_set.parameter_set_size)
@@ -334,7 +327,7 @@ if __name__=="__main__":
     parameter_perturbation[8] = 53e3 #meters
 
     # Perturb estimate
-    initial_parameter_deviation =  parameters_set.values + parameter_perturbation
+    initial_parameter_deviation =  parameters_set.parameter_vector + parameter_perturbation
 
     # Define a priori covariance
     #inverse_a_priori_covariance = np.zeros((parameters_set.parameter_set_size,parameters_set.parameter_set_size))
@@ -345,7 +338,7 @@ if __name__=="__main__":
 
     # Define noise levels
     doppler_noise = 0.075e-3/constants.SPEED_OF_LIGHT 
-    weights_per_observable = dict({observation.two_way_doppler_type:doppler_noise**(-2)}) #observations.two_way_doppler_type NOTE
+    weights_per_observable = dict({observation.one_way_doppler_type:doppler_noise**(-2)})
     pod_input.set_constant_weight_per_observable(weights_per_observable)
 
     # Perform estimation
@@ -361,7 +354,7 @@ if __name__=="__main__":
     output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD')
     os.makedirs(output_folder_path,exist_ok=True)
 
-    estimation_error = pod_output.parameter_history[:,-1]-parameters_set.values
+    estimation_error = pod_output.parameter_history[:,-1]-parameters_set.parameter_vector
     formal_error = pod_output.formal_errors
     true_to_form_estimation_error_ratio = estimation_error/formal_error #NOTE
     estimation_information_matrix = pod_output.design_matrix
