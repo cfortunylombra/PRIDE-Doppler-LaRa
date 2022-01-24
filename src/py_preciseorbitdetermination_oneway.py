@@ -210,8 +210,8 @@ if __name__=="__main__":
             observation_settings_list.append(two_way_link_ends)
     
     # Create the uplink list
-    observation_settings_uplink_list = list()
-    observation_settings_uplink_list.append(observation_settings_list[0])
+    observation_settings_uplink_list = copy.deepcopy(observation_settings_list)
+    observation_settings_uplink_list = list([observation_settings_uplink_list[0]])
 
     # Copy the entire list of dictionaries for downlink
     observation_settings_downlink_list = copy.deepcopy(observation_settings_list)
