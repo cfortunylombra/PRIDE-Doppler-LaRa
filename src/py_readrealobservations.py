@@ -100,18 +100,21 @@ if __name__=="__main__":
     ########################################################################################################################
 
     # Initialize dataset
-    data = dict()
+    data_fdets = dict()
+    data_phases = dict()
 
-    # List with all the folders inside the ED045 folder
+    # List all the folders inside the ED045 folder
     folders_per_time_scan = glob.glob(os.path.dirname(os.path.realpath(__file__))+'/ED045/*')
 
     # Iterate along the folders inside the ED045 folder
     for folder_time_scan_pointer in range(0,len(folders_per_time_scan)):
+
+        # List all the files that start with Fdets 
         files_fdets = glob.glob(folders_per_time_scan[folder_time_scan_pointer]+'/Fdets*.txt')
 
         # Iterate along the Fdets files 
         for fdets_pointer in range(0,len(files_fdets)):
-            print(files_fdets[fdets_pointer])
+            #print(files_fdets[fdets_pointer])
             file_name = os.path.basename(files_fdets[fdets_pointer])
             file_name_split = file_name.split('.')
             station_name = file_name_split[4]
@@ -134,7 +137,7 @@ if __name__=="__main__":
                         skip_rows +=1
                     
                     # Taking the information about base frequency, dF and dT
-                    if skip_rows == 2:
+                    if pointer_line == 1:
                         base_frequency_mhz = float(line_split[line_split.index('frequency:')+1:line_split.index('frequency:')+2][0])
                         #print(base_frequency_mhz)
                         boolean_df = False
@@ -148,8 +151,8 @@ if __name__=="__main__":
                             #print(dt_s)
                             boolean_dt = True
 
-                    # Taking the column names as a list for the dataframe
-                    if skip_rows == 3:
+                    # Taking the column names as a list for the dictionary
+                    if pointer_line == 2:
                         if ':' in line_split:
                             columns = line_split[line_split.index(':')+1:]
                         elif 'Format:' in line_split:
@@ -170,41 +173,133 @@ if __name__=="__main__":
                                     column_element +=  ' ' + columns[string_pointer]
 
             # Build a pandas frame for each file
-            dataframe = pd.read_csv(files_fdets[fdets_pointer], sep=' ', names=column_names,skiprows = skip_rows)
-            mjd_column = column_names[0]
-            utc_column = column_names[1]
-            snr_column = column_names[2]
-            spectral_column = column_names[3]
-            freqdetection_column = column_names[4]
-            dopplernoise_column = column_names[5]
-            date_tuple = jd_to_date(mjd_to_jd(dataframe[mjd_column][0]))
-            time_tuple = UTC_to_h_min_s(dataframe[utc_column][0])
+            dataframe_fdets = pd.read_csv(files_fdets[fdets_pointer], sep=' ', names=column_names,skiprows = skip_rows)
+
+            # Date tuple (year, month, day)
+            date_tuple = jd_to_date(mjd_to_jd(dataframe_fdets[column_names[0]][0]))
+
+            # Time tuple (hours, minutes, seconds)
+            time_tuple = UTC_to_h_min_s(dataframe_fdets[column_names[1]][0])
+
+            # Create a time stamp
             datetime_tuple = date_tuple+time_tuple
             time_stamp = datetime.datetime(datetime_tuple[0],datetime_tuple[1],datetime_tuple[2],datetime_tuple[3],datetime_tuple[4],datetime_tuple[5])
-            print(time_stamp)
+            #print(time_stamp)
 
-            if not station_name in data.keys():
-                data[station_name] = dict()
-            data[station_name][str(time_stamp)] = dict()
-            #dataframe = dataframe.to_json()
-            #data[station_name][str(time_stamp)]['DataFrame']=dataframe
-            data[station_name][str(time_stamp)][mjd_column]=list(dataframe[mjd_column])
-            data[station_name][str(time_stamp)][utc_column]=list(dataframe[utc_column])
-            data[station_name][str(time_stamp)][snr_column]=list(dataframe[snr_column])
-            data[station_name][str(time_stamp)][spectral_column]=list(dataframe[spectral_column])
-            data[station_name][str(time_stamp)][freqdetection_column]=list(dataframe[freqdetection_column])
-            data[station_name][str(time_stamp)][dopplernoise_column]=list(dataframe[dopplernoise_column])
-            data[station_name][str(time_stamp)]['Base Frequency [MHz]']=base_frequency_mhz
+            # Insert all the information into a dictionary
+            if not station_name in data_fdets.keys():
+                data_fdets[station_name] = dict()
+            data_fdets[station_name][str(time_stamp)] = dict()
+
+            for column_pointer in range(0,len(column_names)):
+                data_fdets[station_name][str(time_stamp)][column_names[column_pointer]]=list(dataframe_fdets[column_names[column_pointer]])
+            
+            data_fdets[station_name][str(time_stamp)]['Base Frequency [MHz]']=base_frequency_mhz
             if boolean_df:
-                data[station_name][str(time_stamp)]['dF [Hz]']=df_hz
+                data_fdets[station_name][str(time_stamp)]['dF [Hz]']=df_hz
             if boolean_dt:
-                data[station_name][str(time_stamp)]['dT [s]']=dt_s
-            #break
-        #break
+                data_fdets[station_name][str(time_stamp)]['dT [s]']=dt_s
 
+        # Iterate along the Phases files 
+        files_phases = glob.glob(folders_per_time_scan[folder_time_scan_pointer]+'/Phases*.txt')
+        for phases_pointer in range(0,len(files_phases)):
+            #print(files_phases[phases_pointer])
+            file_name = os.path.basename(files_phases[phases_pointer])
+            file_name_split = file_name.split('.')
+            station_name = file_name_split[4]
 
+            # Read each file
+            with open(files_phases[phases_pointer]) as file:
+                lines = file.read().splitlines()
+
+                # Count the skip rows with counting the times of the # element
+                skip_rows = 0
+
+                # Read each line
+                for pointer_line in range(0,len(lines)):
+                    line = lines[pointer_line]
+                    # Split the line
+                    line_split = line.split()
+
+                    # Counting how many skip rows
+                    if line.count('#') == 1:
+                        skip_rows +=1
+
+                    # Taking the column names as a list for the dictionary
+                    if pointer_line == 1:
+                        labels = line_split[line_split.index('#')+1:]
+                        labels_names = list()
+                        label_element = ''
+                        for string_pointer in range(0,len(labels)):
+                            if labels[string_pointer] == '-':
+                                labels_names.append(label_element)
+                                label_element = ''
+                            elif string_pointer == len(labels)-1:
+                                label_element +=  ' ' + labels[string_pointer]
+                                labels_names.append(label_element)
+                            else:
+                                if label_element == '':
+                                    label_element = labels[string_pointer]
+                                else:
+                                    label_element +=  ' ' + labels[string_pointer]
+
+                    # Taking the values as a list for the dictionary
+                    if pointer_line == 2:
+                        specs = line_split[line_split.index('#')+1:]
+                        specs[0] = specs[0].replace('\\', '')
+                        specs = list(np.float_(specs))
+
+                    # Taking the column names as a list for the dictionary
+                    if pointer_line == 3:
+                        columns = line_split[line_split.index('#')+1:]
+                        column_names = list()
+                        column_element = ''
+                        for string_pointer in range(0,len(columns)):
+                            if columns[string_pointer] == '|':
+                                column_names.append(column_element)
+                                column_element = ''
+                            elif string_pointer == len(columns)-1:
+                                column_element +=  ' ' + columns[string_pointer]
+                                column_names.append(column_element)
+                            else:
+                                if column_element == '':
+                                    column_element = columns[string_pointer]
+                                else:
+                                    column_element +=  ' ' + columns[string_pointer]
+
+            # Build a pandas frame for each file
+            dataframe_phases = pd.read_csv(files_phases[phases_pointer], sep=' ', names=column_names,skiprows = skip_rows)
+            #print(dataframe_phases)
+             
+            # Date tuple (year, month, day)
+            date_tuple = jd_to_date(mjd_to_jd(specs[0]))
+
+            # Time tuple (hours, minutes, seconds)
+            time_tuple = UTC_to_h_min_s(specs[1])
+
+            # Create a time stamp
+            datetime_tuple = date_tuple+time_tuple
+            time_stamp = datetime.datetime(datetime_tuple[0],datetime_tuple[1],datetime_tuple[2],datetime_tuple[3],datetime_tuple[4],datetime_tuple[5])          
+            #print(time_stamp)
+
+            # Insert all the information into a dictionary
+            if not station_name in data_phases.keys():
+                data_phases[station_name] = dict()
+            data_phases[station_name][str(time_stamp)] = dict()
+
+            for column_pointer in range(0,len(column_names)):
+                data_phases[station_name][str(time_stamp)][column_names[column_pointer]]=list(dataframe_phases[column_names[column_pointer]])
+            
+            for specs_pointer in range(0,len(specs)):
+                data_phases[station_name][str(time_stamp)][labels_names[specs_pointer]]=specs[specs_pointer]
+                
+    # Save all the data into JSON files
     output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output')
+
     with open(output_folder_path+'/Fdets_data.json', 'w') as fp:
-        json.dump(data, fp)
+        json.dump(data_fdets, fp)
+
+    with open(output_folder_path+'/Phases_data.json', 'w') as fp:
+        json.dump(data_phases, fp)
 
 print("--- %s seconds ---" % (time.time() - run_time))
