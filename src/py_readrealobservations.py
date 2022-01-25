@@ -178,10 +178,10 @@ if __name__=="__main__":
             freqdetection_column = column_names[4]
             dopplernoise_column = column_names[5]
             date_tuple = jd_to_date(mjd_to_jd(dataframe[mjd_column][0]))
-            #print(dataframe[utc_column][0])
             time_tuple = UTC_to_h_min_s(dataframe[utc_column][0])
             datetime_tuple = date_tuple+time_tuple
             time_stamp = datetime.datetime(datetime_tuple[0],datetime_tuple[1],datetime_tuple[2],datetime_tuple[3],datetime_tuple[4],datetime_tuple[5])
+            print(time_stamp)
 
             if not station_name in data.keys():
                 data[station_name] = dict()
@@ -204,7 +204,7 @@ if __name__=="__main__":
 
 
     output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output')
-    with open(output_folder_path+'/data.json', 'w') as fp:
+    with open(output_folder_path+'/Fdets_data.json', 'w') as fp:
         json.dump(data, fp)
 
 print("--- %s seconds ---" % (time.time() - run_time))
