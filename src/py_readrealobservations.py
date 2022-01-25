@@ -294,7 +294,8 @@ if __name__=="__main__":
                 data_phases[station_name][str(time_stamp)][labels_names[specs_pointer]]=specs[specs_pointer]
                 
     # Save all the data into JSON files
-    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output')
+    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/InSight')
+    os.makedirs(output_folder_path,exist_ok=True)
 
     with open(output_folder_path+'/Fdets_data.json', 'w') as fp:
         json.dump(data_fdets, fp)
