@@ -14,8 +14,7 @@ if __name__=="__main__":
     import os
     import glob
     import numpy as np
-    #Install pip install pandas
-    import pandas as pd
+    import pandas as pd # This package might be not installed, please `pip install pandas`
     import math
     import datetime
     import json
@@ -109,6 +108,10 @@ if __name__=="__main__":
     # Iterate along the folders inside the ED045 folder
     for folder_time_scan_pointer in range(0,len(folders_per_time_scan)):
 
+    ########################################################################################################################
+    ################################################## FDETS FILES #######################################################
+    ########################################################################################################################
+
         # List all the files that start with Fdets 
         files_fdets = glob.glob(folders_per_time_scan[folder_time_scan_pointer]+'/Fdets*.txt')
 
@@ -199,6 +202,10 @@ if __name__=="__main__":
                 data_fdets[station_name][str(time_stamp)]['dF [Hz]']=df_hz
             if boolean_dt:
                 data_fdets[station_name][str(time_stamp)]['dT [s]']=dt_s
+
+    ########################################################################################################################
+    ################################################## PHASES FILES #######################################################
+    ########################################################################################################################
 
         # Iterate along the Phases files 
         files_phases = glob.glob(folders_per_time_scan[folder_time_scan_pointer]+'/Phases*.txt')
