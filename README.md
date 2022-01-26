@@ -2,11 +2,7 @@
 
 PRIDE-Doppler-LaRa is an object-oriented Python tool for research in the field of PRIDE (Planetary Radio Interferometry and Doppler Experiments).
 
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/cfortunylombra/PRIDE-Doppler-LaRa/graphs/commit-activity) ![python 3.8](https://img.shields.io/badge/version-latest-blue.svg) ![python 3.8](https://img.shields.io/badge/python-3.8-blue.svg) ![platform Linux,_MacOs,_Win64](https://img.shields.io/badge/platform-Linux,_macos,_win64-blue.svg)
-
----
-
-### Features
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/cfortunylombra/PRIDE-Doppler-LaRa/graphs/commit-activity) ![python 3.8](https://img.shields.io/badge/version-latest-blue.svg) ![python 3.8](https://img.shields.io/badge/python-3.8-blue.svg) ![platform Linux,macos](https://img.shields.io/badge/platform-Linux,_macos-blue.svg)
 
 ---
 
@@ -19,25 +15,18 @@ PRIDE-Doppler-LaRa is an object-oriented Python tool for research in the field o
 ---
 
 ### Pre-requisites
-##### [Anaconda](https://docs.anaconda.com/anaconda/install/)
-##### [TudatPy](https://tudat-space.readthedocs.io)
-To install Tudat(Py), we recommend the use of a terminal (command line) interface. On Unix system (Linux and Mac), `conda` should be integrated with the terminal, and you can open your terminal directly. On Windows, you can find a program called `Anaconda Prompt` in the Windows search. The `Anaconda Prompt` is equivalent to the terminal use of `conda` on Unix. Some Unix commands are made available in this prompt, although most usage is equivalent to the Windows shell (see below for some useful terminal commands).
+* For Windows Users: Windows Subsystem for Linux ([Installing WSL](https://docs.microsoft.com/en-us/windows/wsl/install))
+	- All procedures, including the following prerequisite, assume the use of WSL. Power users who wish to do otherwise, must do so at their own risk, with reduced support from the team.
+    - Note that WSL is entirely separated from Windows. This means that even if Anaconda/Miniconda, Python, or any other software is already installed on Windows, it needs to be installed again in WSL, as a Linux install.
+* Anaconda installation ([Installing Anaconda](https://docs.anaconda.com/anaconda/install/))
+* `tudat-bundle` ([Installing `tudat-bundle`](https://github.com/tudat-team/tudat-bundle))
 
-Open a terminal. Then, first verify that `conda` is installed via using the following command:
-```shell
-conda --version
-```
+To install `tudat-bundle`, please follow carefully the [setup instructions](https://github.com/tudat-team/tudat-bundle#setup).
 
-Then, ensure that `conda` is updated.
-```shell
-conda update conda
-```
-Download this [environment.yaml](https://github.com/cfortunylombra/PRIDE-Doppler-LaRa/blob/main/environment.yaml).
+### Documentation
 
-In your terminal navigate to the directory containing this file (with the `cd` command), and use the following command:
-```shell
-conda env create -f environment.yaml
-```
+* [TudatPy](https://tudat-space.readthedocs.io)
+* [Tudat](https://tudat.tudelft.nl/)
 
 ---
 
