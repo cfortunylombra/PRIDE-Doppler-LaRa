@@ -333,7 +333,7 @@ if __name__=="__main__":
     parameter_perturbation[8] = 53e3 #meters
 
     # Perturb estimate
-    initial_parameter_deviation =  parameters_set.parameter_vector + parameter_perturbation
+    initial_parameter_deviation = parameter_perturbation
 
     # Define a priori covariance
     #inverse_a_priori_covariance = np.zeros((parameters_set.parameter_set_size,parameters_set.parameter_set_size))
