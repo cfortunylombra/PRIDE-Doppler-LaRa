@@ -182,7 +182,7 @@ for Set = 16 : 16 : length( groundStationNames )
     for groundStationIDindex = startIndex : endIndex
 
         currentGroundStationObservationTimes = ...
-            groundStationObservationTimes( groundStationIDs == groundStationIDindex & groundStationElevations >= deg2rad( 0 ));
+            groundStationObservationTimes( groundStationIDs == groundStationIDindex & groundStationElevations >= deg2rad( 20 ));
         groundSationNumberObservations = [ groundSationNumberObservations length( currentGroundStationObservationTimes )];
         
         scatter( currentGroundStationObservationTimes / 86400, ...

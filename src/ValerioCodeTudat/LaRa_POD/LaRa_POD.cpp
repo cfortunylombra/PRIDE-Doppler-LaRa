@@ -101,34 +101,87 @@ int main( )
 
     // Create transmitter ground stations from GroundStationDatabase.
     std::vector< std::string > groundStationNames;
-    //    groundStationNames.push_back( "DSS14" );
     groundStationNames.push_back( "DSS63" );
-    //    groundStationNames.push_back( "TIDBIN64" ); //DSS43
+    groundStationNames.push_back( "BADARY" );
+    groundStationNames.push_back( "CEDUNA" );
+    groundStationNames.push_back( "HARTRAO" );
+    groundStationNames.push_back( "HART15M" );
+    groundStationNames.push_back( "HOBART12" );
+    groundStationNames.push_back( "HOBART26" );
+    groundStationNames.push_back( "TIANMA65" );
+    groundStationNames.push_back( "WARK30M" );
+    groundStationNames.push_back( "EFLSBERG" );
+    groundStationNames.push_back( "IRBENE" );
+    groundStationNames.push_back( "YEBES40M" );
+    groundStationNames.push_back( "MEDICINA" );
+    groundStationNames.push_back( "WETTZELL" );
+    groundStationNames.push_back( "ONSALA60" );
+    groundStationNames.push_back( "WRT0" );
 
-    // Creat PRIDE ground stations from GroundStationDatabase.
-    std::ifstream readFile ("/home/cfortunylombra/tudat-bundle/tudat/examples/tudat/LaRa_POD/src/gs_location.txt");
+    createGroundStation(bodyMap.at("Earth"), "DSS63",
+                        (Eigen::Vector3d() << 4849092.6814,-360180.5350,4115109.1298). finished( ),
+                        cartesian_position);
 
-    int num_lines = 0;
+    createGroundStation(bodyMap.at("Earth"), "BADARY",
+                        (Eigen::Vector3d() <<-838201.2618,3865751.5589,4987670.8708). finished( ),
+                        cartesian_position);
 
-    if ( readFile.is_open( ) )
-    {
-        std::string line;
+    createGroundStation(bodyMap.at("Earth"), "CEDUNA",
+                        (Eigen::Vector3d() <<-3753442.7457,3912709.7530,-3348067.6095). finished( ),
+                        cartesian_position);
 
-        while ( getline(readFile, line) )
-        {
-            groundStationNames.push_back( line );
+    createGroundStation(bodyMap.at("Earth"), "HARTRAO",
+                        (Eigen::Vector3d() <<5085442.7721,2668263.9300,-2768696.6299). finished( ),
+                        cartesian_position);
 
-            ++num_lines;
-        }
+    createGroundStation(bodyMap.at("Earth"), "HART15M",
+                        (Eigen::Vector3d() <<5085490.8071,2668161.6274,-2768692.5007). finished( ),
+                        cartesian_position);
 
-    }
-    else
-    {
-        std::cerr << "Couldn't open gs_location.txt for reading.\n";
-    }
+    createGroundStation(bodyMap.at("Earth"), "HOBART12",
+                        (Eigen::Vector3d() <<-3949991.0556,2522421.2681,-4311707.7596). finished( ),
+                        cartesian_position);
 
-    // Dominic comment: this line won't work, you need names and states of stations
-    //createGroundStations( bodyMap.at( "Earth" ), groundStationNames );
+    createGroundStation(bodyMap.at("Earth"), "HOBART26",
+                        (Eigen::Vector3d() <<-3950237.6192,2522347.7349,-4311561.5974). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "TIANMA65",
+                        (Eigen::Vector3d() <<-2826708.8081,4679236.9722,3274667.4495). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "WARK30M",
+                        (Eigen::Vector3d() <<-5115423.680,477880.102,-3767040.597). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "EFLSBERG",
+                        (Eigen::Vector3d() <<4033947.1525,486990.8961,4900431.0604). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "IRBENE",
+                        (Eigen::Vector3d() <<3183649.341,1276902.985,5359264.715). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "YEBES40M",
+                        (Eigen::Vector3d() <<4848761.7579,-261484.0570,4123085.1343). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "MEDICINA",
+                        (Eigen::Vector3d() <<4461369.5682,919597.2489,4449559.4702). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "WETTZELL",
+                        (Eigen::Vector3d() <<4075539.5173,931735.6497,4801629.6028). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "ONSALA60",
+                        (Eigen::Vector3d() <<3370605.7035,711917.8146,5349830.9852). finished( ),
+                        cartesian_position);
+
+    createGroundStation(bodyMap.at("Earth"), "WRT0",
+                        (Eigen::Vector3d() <<3828767.1338,442446.1588,5064921.5700). finished( ),
+                        cartesian_position);
+
 
     createGroundStation( bodyMap.at( "Mars" ), "LaRa",
                          ( Eigen::Vector3d( ) << spice_interface::getAverageRadius("Mars"),
@@ -235,7 +288,6 @@ int main( )
     // Print identifiers and indices of parameters to terminal.
     printEstimatableParameterEntries( parametersToEstimate );
 
-
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////             CREATE OBSERVATION SETTINGS            ////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -284,7 +336,6 @@ int main( )
 
     }
 
-
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////          INITIALIZE ORBIT DETERMINATION OBJECT     ////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -296,8 +347,7 @@ int main( )
                 bodyMap, parametersToEstimate, observationSettingsList,
                 integratorSettings, propagatorSettings );
 
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////          SIMULATE OBSERVATIONS                     ////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -376,15 +426,15 @@ int main( )
     typedef std::map< ObservableType, SingleObservablePodInputType > PodInputDataType;
 
     // Define noise levels
-    double dopplerNoise = 0.05E-3 / physical_constants::SPEED_OF_LIGHT ; // Doppler error budget Denhant et all (2009)
+    //double dopplerNoise = 0.05E-3 / physical_constants::SPEED_OF_LIGHT ; // Doppler error budget Denhant et all (2009)
 
     // Create noise functions per observable
-    std::map< ObservableType, std::function< double( const double ) > > noiseFunctions;
+    //std::map< ObservableType, std::function< double( const double ) > > noiseFunctions;
 
-    noiseFunctions[ two_way_doppler ] =
-            std::bind( &utilities::evaluateFunctionWithoutInputArgumentDependency< double, const double >,
-                       createBoostContinuousRandomVariableGeneratorFunction(
-                           normal_boost_distribution, { 0.0, dopplerNoise }, 0.0 ), std::placeholders::_1 );
+    //noiseFunctions[ two_way_doppler ] =
+    //        std::bind( &utilities::evaluateFunctionWithoutInputArgumentDependency< double, const double >,
+    //                   createBoostContinuousRandomVariableGeneratorFunction(
+    //                       normal_boost_distribution, { 0.0, dopplerNoise }, 0.0 ), std::placeholders::_1 );
 
     // Simulate observations
     std::shared_ptr< observation_models::ObservationCollection< double, double > > observationsAndTimes = simulateObservations< >(
@@ -406,17 +456,17 @@ int main( )
     //    parameterPerturbation.segment(  3, 3 ) = Eigen::Vector3d::Constant( 1.0 ); // Mars velocity [m/s]
     //    parameterPerturbation( 6 ) =  0 ; // core factor of the celestial body of (Mars) [rad]
     //    parameterPerturbation( 7 ) =  0 ; // free core nutation rate of the celestial bodyof (Mars) [rad/s]
-    parameterPerturbation( 8 ) =  19E3 ; // Lander x-position [m]
-    parameterPerturbation( 9 ) =  159E3 ; // Lander y-position [m]
-    parameterPerturbation( 10 ) =  53E3 ; // Lander z-position [m]
+    //parameterPerturbation( 8 ) =  19E3 ; // Lander x-position [m]
+    //parameterPerturbation( 9 ) =  159E3 ; // Lander y-position [m]
+    //parameterPerturbation( 10 ) =  53E3 ; // Lander z-position [m]
 
 
 
     initialParameterEstimate += parameterPerturbation;
 
     // Define a priori covariance
-    Eigen::MatrixXd InverseAPriopriCovariance =
-            Eigen::MatrixXd::Zero( initialParameterEstimate.rows(), initialParameterEstimate.rows() );
+    //Eigen::MatrixXd InverseAPriopriCovariance =
+    //       Eigen::MatrixXd::Zero( initialParameterEstimate.rows(), initialParameterEstimate.rows() );
 
     //    for( unsigned int i = 0; i <= 5; i++ )
     //    {
@@ -476,6 +526,6 @@ int main( )
 
     // Final statement.
     // The exit code EXIT_SUCCESS indicates that the program was successfully executed.
-    return EXIT_SUCCESS;
+    return EXIT_SUCCESS;*/
 
 }
