@@ -26,7 +26,7 @@ if __name__=="__main__":
     ########################################################################################################################
 
     # J2000 epoch
-    J2000_in_Julian_days = 2451545.0
+    J2000_in_Julian_days = constants.JULIAN_DAY_ON_J2000
 
     # days in a week
     days_in_a_week = 7 #days
@@ -38,14 +38,16 @@ if __name__=="__main__":
     start_date = 2459215.5 #in Julian days (J2000) = 01/01/2021 00:00:00
 
     # Duration of the simulation
-    simulation_duration_days = 100#700 #days #NOTE
+    simulation_duration_days = 49 #700 #days #NOTE
     simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
     # LaRa landing site
     reflector_name = "LaRa"
-    reflector_latitude_deg = 18.4 #North degrees
-    reflector_longitude_deg = 335.37 #East degrees
+    #reflector_latitude_deg = 18.4 #North degrees
+    #reflector_longitude_deg = 335.37 #East degrees
+    reflector_latitude_deg = 18.2 #North degrees
+    reflector_longitude_deg = 335.45 #East degrees
 
     # Earth-based transmitter
     transmitter_name = "DSS63"
@@ -65,18 +67,19 @@ if __name__=="__main__":
     # Define bodies in the simulation
     bodies_to_create = ["Saturn","Jupiter","Mars","Moon","Earth","Venus","Mercury","Sun"]
 
-
     global_frame_origin = "SSB" #Barycenter of Solar System
     global_frame_orientation = "ECLIPJ2000"
+
     body_settings = environment_setup.get_default_body_settings_time_limited(
         bodies_to_create,
         simulation_start_epoch-constants.JULIAN_DAY,
         simulation_end_epoch+constants.JULIAN_DAY,
         global_frame_origin,
-        global_frame_orientation)
+        global_frame_orientation,
+        time_step = 60)
 
     # Reset frame origin
-    environment_setup.ephemeris.frame_origin = "Sun"
+    #environment_setup.ephemeris.frame_origin = "Sun"
 
     #Mars rotation model
     body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.mars_high_accuracy()
@@ -117,7 +120,7 @@ if __name__=="__main__":
             z_coordinate_ground_station = float(coordinates_line_ground_station.split("Z=",1)[1].split()[0])
 
             ground_station_dict[name_ground_station] = np.array([x_coordinate_ground_station,y_coordinate_ground_station,z_coordinate_ground_station])
-            
+
     # Earth-based ground station creation
     for pointer_ground_station in range(0,len(ground_station_dict.keys())):
         environment_setup.add_ground_station(
@@ -135,7 +138,6 @@ if __name__=="__main__":
          element_conversion.spherical_position_type)
 
     Mars_ground_station_list = environment_setup.get_ground_station_list(bodies.get_body("Mars"))
-
 
     ########################################################################################################################
     ################################################## CREATE ACCELERATION MODELS ##########################################
@@ -179,8 +181,8 @@ if __name__=="__main__":
     initial_time_step = 1 #second
     minimum_step_size = initial_time_step #seconds
     maximum_step_size = 60 #seconds
-    relative_error_tolerance = 1E-14
-    absolute_error_tolerance = 1E-14
+    relative_error_tolerance = 1.0E-14
+    absolute_error_tolerance = 1.0E-14
 
     integrator_settings = propagation_setup.integrator.runge_kutta_variable_step_size(
         simulation_start_epoch,
@@ -236,32 +238,18 @@ if __name__=="__main__":
     parameter_settings.append(estimation_setup.parameter.ground_station_position("Mars", reflector_name))
     parameter_settings.append(estimation_setup.parameter.core_factor("Mars"))
     parameter_settings.append(estimation_setup.parameter.free_core_nutation_rate("Mars"))
-    parameter_settings.append(estimation_setup.parameter.periodic_spin_variations("Mars"))
+    #parameter_settings.append(estimation_setup.parameter.periodic_spin_variations("Mars"))
     #parameter_settings.append(estimation_setup.parameter.polar_motion_amplitudes("Mars"))
 
     parameters_set = estimation_setup.create_parameter_set(parameter_settings,bodies,propagator_settings)
 
     # Print identifiers and indices of parameters to terminal
+    print('Initial parameter estimate is: ')
     print(parameters_set.parameter_vector) 
 
     ########################################################################################################################
     ################################################## CREATE OBSERVATION SETTINGS #########################################
     ######################################################################################################################## 
-
-    # Define settings for light-time calculations
-    light_time_correction_settings = [observation.first_order_relativistic_light_time_correction(['Sun'])]
-
-    # Define uplink oneway Doppler observation settings
-    uplink_one_way_doppler_observation_settings = list() 
-    uplink_one_way_doppler_observation_settings.append(observation.one_way_open_loop_doppler(observation_settings_uplink_list[0],
-    light_time_correction_settings = light_time_correction_settings))
-
-    # Define downlink oneway Doppler observation settings
-    downlink_one_way_doppler_observation_settings = list()
-    for pointer_link_ends in range(0,len(observation_settings_downlink_list)):
-        downlink_one_way_doppler_observation_settings.append(observation.one_way_open_loop_doppler(
-            observation_settings_downlink_list[pointer_link_ends],
-            light_time_correction_settings = light_time_correction_settings))
     
     # Define twoway Doppler observation settings
     two_way_doppler_observation_settings = list()
@@ -281,8 +269,8 @@ if __name__=="__main__":
         integrator_settings,propagator_settings)
 
     # Variational equations and dynamics
-    variational_equations_simulator = estimator.variational_solver
-    dynamics_simulator = variational_equations_simulator.dynamics_simulator
+    #variational_equations_simulator = estimator.variational_solver
+    #dynamics_simulator = variational_equations_simulator.dynamics_simulator
 
     # Extract observation simulators
     observation_simulators = estimator.observation_simulators
@@ -300,52 +288,58 @@ if __name__=="__main__":
     # Define observation simulation times for each link
     observation_times_list = list()
     for pointer_weeks in range(0,int(simulation_duration_weeks)):
-        for pointer_days_per_week in range(0,int(observation_days_per_week)):
-            for pointer_interval in range(0,int(constants.JULIAN_DAY/observation_interval)):
+        for pointer_interval in range(0,int(constants.JULIAN_DAY/observation_interval)):
+            for pointer_days_per_week in range(0,int(observation_days_per_week)):
                 observation_times_list.append(observation_start_epoch+pointer_weeks*days_in_a_week*constants.JULIAN_DAY \
-                    +pointer_days_per_week*(days_in_a_week/2)*constants.JULIAN_DAY \
+                    +pointer_days_per_week*3.25*constants.JULIAN_DAY \
                         +pointer_interval*observation_interval)
 
     # Create observation viability settings and calculators
-    viability_settings_list = list()
-    viability_settings_list.append(observation.elevation_angle_viability(["Earth",""],np.deg2rad(20)))
-    viability_settings_list.append(observation.elevation_angle_viability(["Mars",""],np.deg2rad(35)))
+    #viability_settings_list = list()
+    #viability_settings_list.append(observation.elevation_angle_viability(["Earth",""],np.deg2rad(20)))
+    #viability_settings_list.append(observation.elevation_angle_viability(["Mars",""],np.deg2rad(35)))
     #viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(45))) #NOTE maximum elevation angle viability
-    viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(20)))
-    viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
+    #viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(20)))
+    #viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
 
     # Create measurement simulation input
-    observation_simulation_settings = observation.tabulated_simulation_settings_list(
-        dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list,viability_settings = viability_settings_list) 
-
-    observation.add_viability_check_to_settings(observation_simulation_settings,viability_settings_list) 
+    observation_simulation_settings = list()
+    observation_simulation_settings.extend(observation.tabulated_simulation_settings_list(
+        dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list,reference_link_end_type = observation.transmitter))
+    #for link_end_pointer in range(0,len(observation_settings_list)):
+    #    observation_simulation_settings.extend(observation.tabulated_simulation_settings_list(
+    #        dict({observation.two_way_doppler_type:[observation_settings_list[link_end_pointer]]}),observation_times_list,
+            #viability_settings = viability_settings_list,
+    #         reference_link_end_type = observation.transmitter))
+    
+    #observation.add_viability_check_to_settings(observation_simulation_settings,viability_settings_list) 
 
     # Simulate required observation
     simulated_observations = estimation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
 
     # Perturbation
-    parameter_perturbation = np.zeros(parameters_set.parameter_set_size)
+    #parameter_perturbation = np.zeros(parameters_set.parameter_set_size)
     # Mars ground station x-position
-    parameter_perturbation[6] = 19e3 #meters
+    #parameter_perturbation[6] = 19e3 #meters
     # Mars ground station y-position
-    parameter_perturbation[7] = 159e3 #meters
+    #parameter_perturbation[7] = 159e3 #meters
     # Mars ground station z-position
-    parameter_perturbation[8] = 53e3 #meters
+    #parameter_perturbation[8] = 53e3 #meters
 
     # Perturb estimate
-    initial_parameter_deviation = parameter_perturbation
+    #initial_parameter_deviation = parameter_perturbation
 
     # Define a priori covariance
     #inverse_a_priori_covariance = np.zeros((parameters_set.parameter_set_size,parameters_set.parameter_set_size))
 
     # Estimate parameters
-    pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size,apriori_parameter_correction = initial_parameter_deviation)
+    pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size) #apriori_parameter_correction = initial_parameter_deviation)
     #pod_input.define_estimation_settings(reintegrate_variational_equations = False)
 
     # Define noise levels
-    doppler_noise = 0.075e-3/constants.SPEED_OF_LIGHT 
-    weights_per_observable = dict({observation.two_way_doppler_type:doppler_noise**(-2)}) #observations.two_way_doppler_type NOTE
-    pod_input.set_constant_weight_per_observable(weights_per_observable)
+    #doppler_noise = 0.075e-3/constants.SPEED_OF_LIGHT 
+    #weights_per_observable = dict({observation.two_way_doppler_type:doppler_noise**(-2)}) #observations.two_way_doppler_type NOTE
+    #pod_input.set_constant_weight_per_observable(weights_per_observable)
 
     # Perform estimation
     pod_output = estimator.perform_estimation(pod_input)
@@ -361,8 +355,14 @@ if __name__=="__main__":
     os.makedirs(output_folder_path,exist_ok=True)
 
     estimation_error = pod_output.parameter_history[:,-1]-parameters_set.parameter_vector
+    print('True estimation error is:')
+    print(estimation_error)
     formal_error = pod_output.formal_errors
-    true_to_form_estimation_error_ratio = estimation_error/formal_error #NOTE
+    print('Formal estimation error is:')
+    print(formal_error)
+    true_to_form_estimation_error_ratio = estimation_error/formal_error 
+    print('True to form estimation error is:')
+    print(true_to_form_estimation_error_ratio)
     estimation_information_matrix = pod_output.design_matrix
     estimation_information_matrix_normalization = pod_output.normalized_design_matrix
     concatenated_times = simulated_observations.concatenated_times 

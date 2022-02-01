@@ -97,7 +97,7 @@ xlabel('Azimuth angle [deg]')
 ylabel('Elevation angle [deg]')
 set(gcf,'Position', get(0, 'Screensize'));
         
-%% Transmitter Elevation History
+%% Transmitter Elevation History, Mean Elevation
 
 figure(2)
 set(gca,'FontSize',20)
@@ -127,7 +127,7 @@ set(gca,'FontSize',20)
 % col = jet(length( groundStationID ));
 set(0,'defaultaxeslinestyleorder',{'-*','-+','-o','-x','-s'})
 hold on
-for groundStationIDindex = 2 : length( groundStationNames )
+for groundStationIDindex = 1 : length( groundStationNames )
     
     % Angle viability due to Sun
     % If it is not satisfied, the next ground station is evaluated
@@ -145,7 +145,7 @@ for groundStationIDindex = 2 : length( groundStationNames )
         groundStationElevations( groundStationIDs == groundStationIDindex ), 4);
     
     plot((0:(12.5*86400):EphemerisTime(end)) / 86400, rad2deg( polyval( fit,0:(12.5*86400):EphemerisTime(end), [], mu )))    
-    
+    plot(groundStationObservationTimes( groundStationIDs == groundStationIDindex ) / 86400, rad2deg( groundStationElevations( groundStationIDs == groundStationIDindex )),'o')  
 end
 hold off
 ylim([0 90])
@@ -209,50 +209,6 @@ for Set = 16 : 16 : length( groundStationNames )
     xlabel('Number of Observations')
     set(gcf, 'Position', get(0, 'Screensize'));
         
-end
-
-if Set < length( groundStationNames )
-            
-    groundStationID = {groundStationNames{ Set : end }};
-    startIndex = Set ;
-    endIndex = length( groundStationNames ) ;
-    
-        figure
-    subplot(1,2,1)
-    hold on
-    groundSationNumberObservations = [];
-
-    countFor = 1;
-    for groundStationIDindex = startIndex : endIndex
-
-        currentGroundStationObservationTimes = ...
-            groundStationObservationTimes( groundStationIDs == groundStationIDindex & groundStationElevations >= deg2rad( 20 ));
-        groundSationNumberObservations = [ groundSationNumberObservations length( currentGroundStationObservationTimes )];
-        
-        scatter( currentGroundStationObservationTimes / 86400, ...
-            repmat( countFor, 1, length( currentGroundStationObservationTimes )), 'o')
-        countFor = countFor + 1;
-    end
-    hold off
-    ay = gca;
-    ay.YTick = 1:numel(groundStationID);
-    ay.YTickLabel = groundStationID;
-    ay.YLim = [0 numel(groundStationID)+1];
-    ay.XLim = [-10 inf];
-    ay.XLabel.String = 'Observation Time [gg]';
-    % ay.XGrid = 'on';
-    ay.XMinorGrid = 'on';
-    
-    subplot(1,2,2)
-    barh( categorical( groundStationID, groundStationID ), groundSationNumberObservations )
-    text( groundSationNumberObservations + 5 , 1:length( groundSationNumberObservations ), ...
-        num2str( groundSationNumberObservations' ),'vert','middle','horiz','left');
-    box off
-    ax = gca;
-    xlim([ -50 ax.XLim( 2 ) + 500])
-    xlabel('Number of Observations')
-    set(gcf, 'Position', get(0, 'Screensize'));
-    
 end
 
     
