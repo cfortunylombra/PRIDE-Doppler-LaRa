@@ -235,9 +235,9 @@ if __name__=="__main__":
 
     # Create list of parameters that are to be estimated
     parameter_settings = estimation_setup.parameter.initial_states(propagator_settings,bodies)
-    parameter_settings.append(estimation_setup.parameter.ground_station_position("Mars", reflector_name))
     parameter_settings.append(estimation_setup.parameter.core_factor("Mars"))
     parameter_settings.append(estimation_setup.parameter.free_core_nutation_rate("Mars"))
+    parameter_settings.append(estimation_setup.parameter.ground_station_position("Mars", reflector_name))
     #parameter_settings.append(estimation_setup.parameter.periodic_spin_variations("Mars"))
     #parameter_settings.append(estimation_setup.parameter.polar_motion_amplitudes("Mars"))
 
