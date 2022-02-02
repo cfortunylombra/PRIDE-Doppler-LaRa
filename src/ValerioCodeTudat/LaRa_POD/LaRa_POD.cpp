@@ -60,7 +60,7 @@ int main( )
     using namespace tudat::observation_models;
     using namespace tudat::statistics;
 
-    //std::cout.precision(17);
+    std::cout.precision(15);
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////     CREATE ENVIRONMENT AND VEHICLE       //////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -81,7 +81,7 @@ int main( )
     bodyNames.push_back( "Sun" );
 
     // Specify initial and final time
-    double initialEphemerisTime = ( 2459215.5 - JULIAN_DAY_ON_J2000 ) *physical_constants::JULIAN_DAY; //86400; // 1/01/2021 00:00:00
+    double initialEphemerisTime = ( 2459215.5 - JULIAN_DAY_ON_J2000 ) * physical_constants::JULIAN_DAY; //86400; // 1/01/2021 00:00:00
     double numberOfSimulationDays = 49.0; // le Maistre simulation
     double finalEphemerisTime = initialEphemerisTime + numberOfSimulationDays * physical_constants::JULIAN_DAY;
 
@@ -231,7 +231,7 @@ int main( )
     // Define propagator settings.
     std::shared_ptr< TranslationalStatePropagatorSettings< double > > propagatorSettings =
             std::make_shared< TranslationalStatePropagatorSettings< double > >
-            ( centralBodies, accelerationModelMap, bodiesToPropagate, systemInitialState, terminationSettings );
+            ( centralBodies, accelerationModelMap, bodiesToPropagate, systemInitialState, finalEphemerisTime );
 
     double initialTimeStep = 1.0;
     double minimumStepSize = initialTimeStep;
@@ -327,7 +327,7 @@ int main( )
     double observationTimeStart = initialEphemerisTime + physical_constants::JULIAN_DAY;
 
     // Define time between two observations
-    double  observationInterval = 60*60;
+    double  observationInterval = 60.0*60.0;
 
     // Define numbers of weeks
     double numberOfSimulationWeeks = numberOfSimulationDays / 7.0;
@@ -423,19 +423,21 @@ int main( )
 
     std::cout << "Initial parameter estimate is: " << std::endl << (initialParameterEstimate).transpose() << std::endl;
     Eigen::Matrix< double, Eigen::Dynamic, 1 > truthParameters = initialParameterEstimate;
-    //Eigen::Matrix< double, Eigen::Dynamic, 1 > parameterPerturbation =
-    //        Eigen::Matrix< double, Eigen::Dynamic, 1 >::Zero( truthParameters.rows( ) );
-    //    parameterPerturbation.segment( 0, 3 ) = Eigen::Vector3d::Constant( 100.0 ); // Mars position [m]
-    //    parameterPerturbation.segment(  3, 3 ) = Eigen::Vector3d::Constant( 1.0 ); // Mars velocity [m/s]
+    Eigen::Matrix< double, Eigen::Dynamic, 1 > parameterPerturbation =
+            Eigen::Matrix< double, Eigen::Dynamic, 1 >::Zero( truthParameters.rows( ) );
+    //parameterPerturbation.segment( 0, 3 ) = Eigen::Vector3d::Constant( 100.0 ); // Mars position [m]
+    //parameterPerturbation.segment(  3, 3 ) = Eigen::Vector3d::Constant( 1.0 ); // Mars velocity [m/s]
     //    parameterPerturbation( 6 ) =  0 ; // core factor of the celestial body of (Mars) [rad]
     //    parameterPerturbation( 7 ) =  0 ; // free core nutation rate of the celestial bodyof (Mars) [rad/s]
     //parameterPerturbation( 8 ) =  19E3 ; // Lander x-position [m]
     //parameterPerturbation( 9 ) =  159E3 ; // Lander y-position [m]
     //parameterPerturbation( 10 ) =  53E3 ; // Lander z-position [m]
+    //parameterPerturbation( 6 ) =  1E-5 ;
+    //parameterPerturbation( 7 ) =  1E-8 ;
+    //parameterPerturbation.segment(  8, 3 ) = Eigen::Vector3d::Constant( 10.0 );
+    //parameterPerturbation.segment(  11, 28 ) = Eigen::Vector3d::Constant( 1E-11 );
 
-
-
-    //initialParameterEstimate = parameterPerturbation;
+    std::cout << "Perturbation vector is: " << std::endl << (parameterPerturbation).transpose() << std::endl;
 
     // Define a priori covariance
     //Eigen::MatrixXd InverseAPriopriCovariance =
@@ -450,7 +452,7 @@ int main( )
     //    InverseAPriopriCovariance( 8, 8 ) =  1.0 / std::pow( 200E3, 2 );
 
     std::shared_ptr< PodInput< double, double > > podInput = std::make_shared< PodInput< double, double > >(
-                observationsAndTimes, ( initialParameterEstimate ).rows( ) );
+                observationsAndTimes, ( initialParameterEstimate ).rows( ), Eigen::MatrixXd::Zero( 0, 0 ), parameterPerturbation);
 
     //    // Define estimation input
     //    std::shared_ptr< PodInput< double, double > > podInput =
@@ -465,7 +467,7 @@ int main( )
 
     // Perform estimation
     std::shared_ptr< PodOutput< double > > podOutput = orbitDeterminationManager.estimateParameters(
-                podInput);// std::make_shared< EstimationConvergenceChecker >( 1 ) );
+                podInput);//, std::make_shared< EstimationConvergenceChecker >( 1 ) );
 
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

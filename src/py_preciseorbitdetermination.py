@@ -21,6 +21,7 @@ if __name__=="__main__":
     from tudatpy.kernel.numerical_simulation import environment_setup,propagation_setup,propagation,estimation_setup,estimation
     from tudatpy.kernel.numerical_simulation.estimation_setup import observation
 
+    np.set_printoptions(suppress=True,precision=15)
     ########################################################################################################################
     ################################################## CONSTANTS AND VARIABLES #############################################
     ########################################################################################################################
@@ -46,12 +47,12 @@ if __name__=="__main__":
     reflector_name = "LaRa"
     #reflector_latitude_deg = 18.4 #North degrees
     #reflector_longitude_deg = 335.37 #East degrees
-    reflector_latitude_deg = 18.2 #North degrees
+    reflector_latitude_deg = 18.20 #North degrees
     reflector_longitude_deg = 335.45 #East degrees
 
     # Earth-based transmitter
     transmitter_name = "DSS63"
-    transmitter_position_cartesian = np.array([4849092.6814,-360180.5350,4115109.1298]) #Taken from https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat
+    transmitter_position_cartesian = np.array([4849092.6814,-360180.5350,4115109.1298], dtype='d') #Taken from https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat
 
     ########################################################################################################################
     ################################################## CREATE ENVIRONMENT ##################################################
@@ -119,7 +120,7 @@ if __name__=="__main__":
             y_coordinate_ground_station = float(coordinates_line_ground_station.split("Y=",1)[1].split()[0])
             z_coordinate_ground_station = float(coordinates_line_ground_station.split("Z=",1)[1].split()[0])
 
-            ground_station_dict[name_ground_station] = np.array([x_coordinate_ground_station,y_coordinate_ground_station,z_coordinate_ground_station])
+            ground_station_dict[name_ground_station] = np.array([x_coordinate_ground_station,y_coordinate_ground_station,z_coordinate_ground_station],dtype='d')
 
     # Earth-based ground station creation
     for pointer_ground_station in range(0,len(ground_station_dict.keys())):
@@ -134,7 +135,7 @@ if __name__=="__main__":
     environment_setup.add_ground_station(
         bodies.get_body("Mars"),
         reflector_name,
-        np.array([spice_interface.get_average_radius("Mars"),np.deg2rad(reflector_latitude_deg),np.deg2rad(reflector_longitude_deg)]),
+        np.array([spice_interface.get_average_radius("Mars"),np.deg2rad(reflector_latitude_deg,dtype='d'),np.deg2rad(reflector_longitude_deg,dtype='d')]),
          element_conversion.spherical_position_type)
 
     Mars_ground_station_list = environment_setup.get_ground_station_list(bodies.get_body("Mars"))
@@ -180,7 +181,7 @@ if __name__=="__main__":
     # Define integrator settings
     initial_time_step = 1 #second
     minimum_step_size = initial_time_step #seconds
-    maximum_step_size = 60 #seconds
+    maximum_step_size = 60.0 #seconds
     relative_error_tolerance = 1.0E-14
     absolute_error_tolerance = 1.0E-14
 
@@ -244,6 +245,7 @@ if __name__=="__main__":
     parameters_set = estimation_setup.create_parameter_set(parameter_settings,bodies,propagator_settings)
 
     # Print identifiers and indices of parameters to terminal
+    estimation_setup.print_parameter_names(parameters_set)
     print('Initial parameter estimate is: ')
     print(parameters_set.parameter_vector) 
 
@@ -318,22 +320,31 @@ if __name__=="__main__":
     simulated_observations = estimation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
 
     # Perturbation
-    #parameter_perturbation = np.zeros(parameters_set.parameter_set_size)
+    parameter_perturbation = np.zeros(parameters_set.parameter_set_size) #parameters_set.parameter_vector*0.01
+    #parameter_perturbation[0:3]=100*np.ones(3)
+    #parameter_perturbation[3:6]=1*np.ones(3)
+    #parameter_perturbation[6]=1*10**(-5)
+    #parameter_perturbation[7]=1*10**(-8)
+    #parameter_perturbation[8:11]=10*np.ones(3)
+    #parameter_perturbation[11:]=1*10**(-11)*np.ones(28)
     # Mars ground station x-position
-    #parameter_perturbation[6] = 19e3 #meters
+    #parameter_perturbation[8] = 100#19e3 #meters
     # Mars ground station y-position
-    #parameter_perturbation[7] = 159e3 #meters
+    #parameter_perturbation[9] = 100#159e3 #meters
     # Mars ground station z-position
-    #parameter_perturbation[8] = 53e3 #meters
+    #parameter_perturbation[10] = 100#53e3 #meters
+
+    print("Perturbation vector is:")
+    print(parameter_perturbation)
 
     # Perturb estimate
-    #initial_parameter_deviation = parameter_perturbation
+    initial_parameter_deviation = parameter_perturbation
 
     # Define a priori covariance
     #inverse_a_priori_covariance = np.zeros((parameters_set.parameter_set_size,parameters_set.parameter_set_size))
 
     # Estimate parameters
-    pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size) #apriori_parameter_correction = initial_parameter_deviation)
+    pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size, apriori_parameter_correction = initial_parameter_deviation)
     #pod_input.define_estimation_settings(reintegrate_variational_equations = False)
 
     # Define noise levels
@@ -354,7 +365,7 @@ if __name__=="__main__":
     output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD')
     os.makedirs(output_folder_path,exist_ok=True)
 
-    estimation_error = pod_output.parameter_history[:,-1]-parameters_set.parameter_vector
+    estimation_error = pod_output.parameter_estimate-parameters_set.parameter_vector
     print('True estimation error is:')
     print(estimation_error)
     formal_error = pod_output.formal_errors
@@ -363,15 +374,15 @@ if __name__=="__main__":
     true_to_form_estimation_error_ratio = estimation_error/formal_error 
     print('True to form estimation error is:')
     print(true_to_form_estimation_error_ratio)
-    estimation_information_matrix = pod_output.design_matrix
-    estimation_information_matrix_normalization = pod_output.normalized_design_matrix
+    estimation_information_matrix = pod_output.normalized_design_matrix
+    estimation_information_matrix_normalization = pod_output.normalization_terms
     concatenated_times = simulated_observations.concatenated_times 
     concatenated_observations = simulated_observations.concatenated_observations
 
-    np.savetxt(output_folder_path+"/estimation_information_matrix.dat",estimation_information_matrix,fmt='%.16e')
+    np.savetxt(output_folder_path+"/estimation_information_matrix.dat",estimation_information_matrix,fmt='%.15e')
     np.savetxt(output_folder_path+"/estimation_information_matrix_normalization.dat",
-        estimation_information_matrix_normalization,fmt='%.16e')
-    np.savetxt(output_folder_path+"/concatenated_times.dat",concatenated_times,fmt='%.16e')
-    np.savetxt(output_folder_path+"/concatenated_observations.dat",concatenated_observations,fmt='%.16e')
+        estimation_information_matrix_normalization,fmt='%.15e')
+    np.savetxt(output_folder_path+"/concatenated_times.dat",concatenated_times,fmt='%.15e')
+    np.savetxt(output_folder_path+"/concatenated_observations.dat",concatenated_observations,fmt='%.15e')
 
 print("--- %s seconds ---" % (time.time() - run_time))
