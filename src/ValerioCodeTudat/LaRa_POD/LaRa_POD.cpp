@@ -81,8 +81,8 @@ int main( )
     bodyNames.push_back( "Sun" );
 
     // Specify initial and final time
-    double initialEphemerisTime = ( 2459215.5 - JULIAN_DAY_ON_J2000 ) * physical_constants::JULIAN_DAY; //86400; // 1/01/2021 00:00:00
-    double numberOfSimulationDays = 49.0; // le Maistre simulation
+    double initialEphemerisTime = ( 2459215.5 - JULIAN_DAY_ON_J2000 ) * physical_constants::JULIAN_DAY;  // 1/01/2021 00:00:00
+    double numberOfSimulationDays = 700.0; // le Maistre simulation
     double finalEphemerisTime = initialEphemerisTime + numberOfSimulationDays * physical_constants::JULIAN_DAY;
 
     // Create bodies needed in simulation
@@ -231,7 +231,7 @@ int main( )
     // Define propagator settings.
     std::shared_ptr< TranslationalStatePropagatorSettings< double > > propagatorSettings =
             std::make_shared< TranslationalStatePropagatorSettings< double > >
-            ( centralBodies, accelerationModelMap, bodiesToPropagate, systemInitialState, finalEphemerisTime );
+            ( centralBodies, accelerationModelMap, bodiesToPropagate, systemInitialState, terminationSettings );
 
     double initialTimeStep = 1.0;
     double minimumStepSize = initialTimeStep;
@@ -280,8 +280,8 @@ int main( )
     parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Mars", ground_station_position, "LaRa" ) );
     parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Mars", core_factor ) );
     parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Mars", free_core_nutation_rate ) );
-    //parameterNames.push_back(  std::make_shared< EstimatableParameterSettings >( "Mars", periodic_spin_variation ) );
-    //parameterNames.push_back(  std::make_shared< EstimatableParameterSettings >( "Mars", polar_motion_amplitude ) );
+    parameterNames.push_back(  std::make_shared< EstimatableParameterSettings >( "Mars", periodic_spin_variation ) );
+    parameterNames.push_back(  std::make_shared< EstimatableParameterSettings >( "Mars", polar_motion_amplitude ) );
 
     // Create parameters
     std::shared_ptr< estimatable_parameters::EstimatableParameterSet< double > > parametersToEstimate =
@@ -375,9 +375,9 @@ int main( )
     //observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
     //                                            minimum_elevation_angle, std::make_pair( "Mars", "" ), "",
     //                                            unit_conversions::convertDegreesToRadians( 35.0 ) ) );
-//    observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
-//                                                maximum_elevation_angle, std::make_pair( "Mars", "" ), "",
-//                                                unit_conversions::convertDegreesToRadians( 45.0 ) ) );
+    //observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
+    //                                            maximum_elevation_angle, std::make_pair( "Mars", "" ), "",
+    //                                            unit_conversions::convertDegreesToRadians( 45.0 ) ) );
     //observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
     //                                            body_avoidance_angle, std::make_pair( "Earth", "" ), "Sun",
     //                                            unit_conversions::convertDegreesToRadians( 20.0 ) ) );
@@ -397,7 +397,7 @@ int main( )
     //typedef std::map< ObservableType, SingleObservablePodInputType > PodInputDataType;
 
     // Define noise levels
-    //double dopplerNoise = 0.05E-3 / physical_constants::SPEED_OF_LIGHT ; // Doppler error budget Denhant et all (2009)
+    double dopplerNoise = 0.05E-3 / physical_constants::SPEED_OF_LIGHT ; // Doppler error budget Denhant et all (2009)
 
     // Create noise functions per observable
     //std::map< ObservableType, std::function< double( const double ) > > noiseFunctions;
@@ -425,17 +425,12 @@ int main( )
     Eigen::Matrix< double, Eigen::Dynamic, 1 > truthParameters = initialParameterEstimate;
     Eigen::Matrix< double, Eigen::Dynamic, 1 > parameterPerturbation =
             Eigen::Matrix< double, Eigen::Dynamic, 1 >::Zero( truthParameters.rows( ) );
-    //parameterPerturbation.segment( 0, 3 ) = Eigen::Vector3d::Constant( 100.0 ); // Mars position [m]
-    //parameterPerturbation.segment(  3, 3 ) = Eigen::Vector3d::Constant( 1.0 ); // Mars velocity [m/s]
-    //    parameterPerturbation( 6 ) =  0 ; // core factor of the celestial body of (Mars) [rad]
-    //    parameterPerturbation( 7 ) =  0 ; // free core nutation rate of the celestial bodyof (Mars) [rad/s]
-    //parameterPerturbation( 8 ) =  19E3 ; // Lander x-position [m]
-    //parameterPerturbation( 9 ) =  159E3 ; // Lander y-position [m]
-    //parameterPerturbation( 10 ) =  53E3 ; // Lander z-position [m]
-    //parameterPerturbation( 6 ) =  1E-5 ;
-    //parameterPerturbation( 7 ) =  1E-8 ;
-    //parameterPerturbation.segment(  8, 3 ) = Eigen::Vector3d::Constant( 10.0 );
-    //parameterPerturbation.segment(  11, 28 ) = Eigen::Vector3d::Constant( 1E-11 );
+    parameterPerturbation.segment( 0, 3 ) = Eigen::Vector3d::Constant( 1000.0 ); // Mars position [m]
+    parameterPerturbation.segment(  3, 3 ) = Eigen::Vector3d::Constant( 10.0 ); // Mars velocity [m/s]
+    parameterPerturbation( 6 ) =  1E-2 ;
+    parameterPerturbation( 7 ) =  1E-7 ;
+    parameterPerturbation.segment(  8, 3 ) = Eigen::Vector3d::Constant( 100.0 );
+    parameterPerturbation.segment(  11, 28 ) = Eigen::Vector3d::Constant( 1E-9 );
 
     std::cout << "Perturbation vector is: " << std::endl << (parameterPerturbation).transpose() << std::endl;
 
@@ -454,16 +449,10 @@ int main( )
     std::shared_ptr< PodInput< double, double > > podInput = std::make_shared< PodInput< double, double > >(
                 observationsAndTimes, ( initialParameterEstimate ).rows( ), Eigen::MatrixXd::Zero( 0, 0 ), parameterPerturbation);
 
-    //    // Define estimation input
-    //    std::shared_ptr< PodInput< double, double > > podInput =
-    //            std::make_shared< PodInput< double, double > >(
-    //                observationsAndTimes, initialParameterEstimate.rows( ),
-    //                 InverseAPriopriCovariance, initialParameterEstimate - truthParameters);
-
     //    // Define observation weights (constant per observable type)
-    //    std::map< observation_models::ObservableType, double > weightPerObservable;
-    //    weightPerObservable[ two_way_doppler ] = 1.0 / ( dopplerNoise * dopplerNoise );
-    //    podInput->setConstantPerObservableWeightsMatrix( weightPerObservable );
+    std::map< observation_models::ObservableType, double > weightPerObservable;
+    weightPerObservable[ two_way_doppler ] = 1.0 / ( dopplerNoise * dopplerNoise );
+    podInput->setConstantPerObservableWeightsMatrix( weightPerObservable );
 
     // Perform estimation
     std::shared_ptr< PodOutput< double > > podOutput = orbitDeterminationManager.estimateParameters(
@@ -494,10 +483,10 @@ int main( )
     input_output::writeMatrixToFile( utilities::convertStlVectorToEigenVector( observationsAndTimes->getConcatenatedTimeVector( ) ),
                                      "ObservationTimes.dat", 16,
                                      outputFolder );
-//    input_output::writeMatrixToFile( utilities::convertStlVectorToEigenVector(
-//                                         getConcatenatedGroundStationIndex( podInput->getObservationsAndTimes( ) ).first ),
-//                                     "ObservationLinkEnds.dat", 16,
-//                                     outputFolder );
+    //input_output::writeMatrixToFile( utilities::convertStlVectorToEigenVector(
+    //                                getConcatenatedGroundStationIndex(podInput->getObservationCollection( ) ).first ),
+    //                                 "ObservationLinkEnds.dat", 16,
+    //                                 outputFolder );
 
     // Final statement.
     // The exit code EXIT_SUCCESS indicates that the program was successfully executed.

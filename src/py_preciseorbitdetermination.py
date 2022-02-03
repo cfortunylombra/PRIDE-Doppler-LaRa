@@ -26,29 +26,24 @@ if __name__=="__main__":
     ################################################## CONSTANTS AND VARIABLES #############################################
     ########################################################################################################################
 
-    # J2000 epoch
-    J2000_in_Julian_days = constants.JULIAN_DAY_ON_J2000
-
     # days in a week
-    days_in_a_week = 7 #days
+    days_in_a_week = np.double(7) #days
 
     # Days of observations per week
-    observation_days_per_week = 2 
+    observation_days_per_week = np.double(2)
 
     # Initial date of the simulation
-    start_date = 2459215.5 #in Julian days (J2000) = 01/01/2021 00:00:00
+    start_date = np.double(2459215.5) #in Julian days (J2000) = 01/01/2021 00:00:00
 
     # Duration of the simulation
-    simulation_duration_days = 49 #700 #days #NOTE
+    simulation_duration_days = 700 #days #NOTE
     simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
     # LaRa landing site
     reflector_name = "LaRa"
-    #reflector_latitude_deg = 18.4 #North degrees
-    #reflector_longitude_deg = 335.37 #East degrees
-    reflector_latitude_deg = 18.20 #North degrees
-    reflector_longitude_deg = 335.45 #East degrees
+    reflector_latitude_deg = 18.20 #18.4 #North degrees
+    reflector_longitude_deg = 335.45 #335.37 #East degrees
 
     # Earth-based transmitter
     transmitter_name = "DSS63"
@@ -62,7 +57,7 @@ if __name__=="__main__":
     spice_interface.load_standard_kernels()
 
     # Initial and end time of the simulation
-    simulation_start_epoch = (start_date-J2000_in_Julian_days)*constants.JULIAN_DAY #seconds
+    simulation_start_epoch = (start_date-constants.JULIAN_DAY_ON_J2000)*constants.JULIAN_DAY #seconds
     simulation_end_epoch = simulation_start_epoch+simulation_duration #seconds
 
     # Define bodies in the simulation
@@ -239,15 +234,16 @@ if __name__=="__main__":
     parameter_settings.append(estimation_setup.parameter.core_factor("Mars"))
     parameter_settings.append(estimation_setup.parameter.free_core_nutation_rate("Mars"))
     parameter_settings.append(estimation_setup.parameter.ground_station_position("Mars", reflector_name))
-    #parameter_settings.append(estimation_setup.parameter.periodic_spin_variations("Mars"))
-    #parameter_settings.append(estimation_setup.parameter.polar_motion_amplitudes("Mars"))
+    parameter_settings.append(estimation_setup.parameter.periodic_spin_variations("Mars"))
+    parameter_settings.append(estimation_setup.parameter.polar_motion_amplitudes("Mars"))
 
     parameters_set = estimation_setup.create_parameter_set(parameter_settings,bodies,propagator_settings)
 
+    truth_parameter = parameters_set.parameter_vector
     # Print identifiers and indices of parameters to terminal
     estimation_setup.print_parameter_names(parameters_set)
     print('Initial parameter estimate is: ')
-    print(parameters_set.parameter_vector) 
+    print(truth_parameter) 
 
     ########################################################################################################################
     ################################################## CREATE OBSERVATION SETTINGS #########################################
@@ -289,8 +285,8 @@ if __name__=="__main__":
 
     # Define observation simulation times for each link
     observation_times_list = list()
-    for pointer_weeks in range(0,int(simulation_duration_weeks)):
-        for pointer_interval in range(0,int(constants.JULIAN_DAY/observation_interval)):
+    for pointer_weeks in range(0,int(np.ceil(simulation_duration_weeks))):
+        for pointer_interval in range(0,int(np.ceil(constants.JULIAN_DAY/observation_interval))):
             for pointer_days_per_week in range(0,int(observation_days_per_week)):
                 observation_times_list.append(observation_start_epoch+pointer_weeks*days_in_a_week*constants.JULIAN_DAY \
                     +pointer_days_per_week*3.25*constants.JULIAN_DAY \
@@ -321,18 +317,12 @@ if __name__=="__main__":
 
     # Perturbation
     parameter_perturbation = np.zeros(parameters_set.parameter_set_size) #parameters_set.parameter_vector*0.01
-    #parameter_perturbation[0:3]=100*np.ones(3)
-    #parameter_perturbation[3:6]=1*np.ones(3)
-    #parameter_perturbation[6]=1*10**(-5)
-    #parameter_perturbation[7]=1*10**(-8)
-    #parameter_perturbation[8:11]=10*np.ones(3)
-    #parameter_perturbation[11:]=1*10**(-11)*np.ones(28)
-    # Mars ground station x-position
-    #parameter_perturbation[8] = 100#19e3 #meters
-    # Mars ground station y-position
-    #parameter_perturbation[9] = 100#159e3 #meters
-    # Mars ground station z-position
-    #parameter_perturbation[10] = 100#53e3 #meters
+    parameter_perturbation[0:3]=1000*np.ones(3)
+    parameter_perturbation[3:6]=10*np.ones(3)
+    parameter_perturbation[6]=1*10**(-2)
+    parameter_perturbation[7]=1*10**(-7)
+    parameter_perturbation[8:11]=100*np.ones(3)
+    parameter_perturbation[11:]=1*10**(-9)*np.ones(28)
 
     print("Perturbation vector is:")
     print(parameter_perturbation)
@@ -348,9 +338,9 @@ if __name__=="__main__":
     #pod_input.define_estimation_settings(reintegrate_variational_equations = False)
 
     # Define noise levels
-    #doppler_noise = 0.075e-3/constants.SPEED_OF_LIGHT 
-    #weights_per_observable = dict({observation.two_way_doppler_type:doppler_noise**(-2)}) #observations.two_way_doppler_type NOTE
-    #pod_input.set_constant_weight_per_observable(weights_per_observable)
+    doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT 
+    weights_per_observable = dict({observation.two_way_doppler_type:doppler_noise**(-2)}) #observations.two_way_doppler_type NOTE
+    pod_input.set_constant_weight_per_observable(weights_per_observable)
 
     # Perform estimation
     pod_output = estimator.perform_estimation(pod_input)
@@ -365,13 +355,13 @@ if __name__=="__main__":
     output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD')
     os.makedirs(output_folder_path,exist_ok=True)
 
-    estimation_error = pod_output.parameter_estimate-parameters_set.parameter_vector
+    estimation_error = np.subtract(pod_output.parameter_estimate,truth_parameter)
     print('True estimation error is:')
-    print(estimation_error)
+    print(estimation_error.astype('d'))
     formal_error = pod_output.formal_errors
     print('Formal estimation error is:')
-    print(formal_error)
-    true_to_form_estimation_error_ratio = estimation_error/formal_error 
+    print(formal_error.astype('d'))
+    true_to_form_estimation_error_ratio = formal_error/estimation_error 
     print('True to form estimation error is:')
     print(true_to_form_estimation_error_ratio)
     estimation_information_matrix = pod_output.normalized_design_matrix
