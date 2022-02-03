@@ -36,7 +36,7 @@ if __name__=="__main__":
 
     # Initial date of the simulation
     start_date = 2459215.5 #in Julian days (J2000) = 01/01/2021 00:00:00
-    #start_date = 2459274.5
+    start_date = 2459274.5
 
     # Duration of the simulation
     simulation_duration_days = 700 #days
@@ -148,11 +148,11 @@ if __name__=="__main__":
 
     # Define observation simulation times for each link
     observation_times_list = list()
-    for pointer_weeks in range(0,int(simulation_duration_weeks)):
-        for pointer_days_per_week in range(0,int(observation_days_per_week)):
-            for pointer_interval in range(0,int(constants.JULIAN_DAY/observation_interval)):
+    for pointer_weeks in range(0,int(np.ceil(simulation_duration_weeks))):
+        for pointer_interval in range(0,int(np.ceil(constants.JULIAN_DAY/observation_interval))):
+            for pointer_days_per_week in range(0,int(observation_days_per_week)):
                 observation_times_list.append(observation_start_epoch+pointer_weeks*days_in_a_week*constants.JULIAN_DAY \
-                    +pointer_days_per_week*(days_in_a_week/2)*constants.JULIAN_DAY \
+                    +pointer_days_per_week*3.25*constants.JULIAN_DAY \
                         +pointer_interval*observation_interval)
 
     # Specifications of the reflector

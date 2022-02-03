@@ -27,13 +27,13 @@ if __name__=="__main__":
     ########################################################################################################################
 
     # days in a week
-    days_in_a_week = np.double(7) #days
+    days_in_a_week = 7 #days
 
     # Days of observations per week
-    observation_days_per_week = np.double(2)
+    observation_days_per_week = 2
 
     # Initial date of the simulation
-    start_date = np.double(2459215.5) #in Julian days (J2000) = 01/01/2021 00:00:00
+    start_date = 2459215.5 #in Julian days (J2000) = 01/01/2021 00:00:00
 
     # Duration of the simulation
     simulation_duration_days = 700 #days #NOTE
@@ -293,22 +293,18 @@ if __name__=="__main__":
                         +pointer_interval*observation_interval)
 
     # Create observation viability settings and calculators
-    #viability_settings_list = list()
-    #viability_settings_list.append(observation.elevation_angle_viability(["Earth",""],np.deg2rad(20)))
-    #viability_settings_list.append(observation.elevation_angle_viability(["Mars",""],np.deg2rad(35)))
+    viability_settings_list = list()
+    viability_settings_list.append(observation.elevation_angle_viability(["Earth",""],np.deg2rad(20)))
+    viability_settings_list.append(observation.elevation_angle_viability(["Mars",""],np.deg2rad(35)))
     #viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(45))) #NOTE maximum elevation angle viability
-    #viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(20)))
-    #viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
+    viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(20)))
+    viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
 
     # Create measurement simulation input
     observation_simulation_settings = list()
     observation_simulation_settings.extend(observation.tabulated_simulation_settings_list(
-        dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list,reference_link_end_type = observation.transmitter))
-    #for link_end_pointer in range(0,len(observation_settings_list)):
-    #    observation_simulation_settings.extend(observation.tabulated_simulation_settings_list(
-    #        dict({observation.two_way_doppler_type:[observation_settings_list[link_end_pointer]]}),observation_times_list,
-            #viability_settings = viability_settings_list,
-    #         reference_link_end_type = observation.transmitter))
+        dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list,
+        reference_link_end_type = observation.transmitter)) #viability_settings = viability_settings_list,
     
     #observation.add_viability_check_to_settings(observation_simulation_settings,viability_settings_list) 
 

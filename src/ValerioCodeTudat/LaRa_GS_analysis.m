@@ -144,8 +144,13 @@ for groundStationIDindex = 1 : length( groundStationNames )
     [fit, S, mu] = polyfit(groundStationObservationTimes( groundStationIDs == groundStationIDindex ), ...
         groundStationElevations( groundStationIDs == groundStationIDindex ), 4);
     
-    plot((0:(12.5*86400):EphemerisTime(end)) / 86400, rad2deg( polyval( fit,0:(12.5*86400):EphemerisTime(end), [], mu )))    
-    plot(groundStationObservationTimes( groundStationIDs == groundStationIDindex ) / 86400, rad2deg( groundStationElevations( groundStationIDs == groundStationIDindex )),'o')  
+    %plot((0:(12.5*86400):EphemerisTime(end)) / 86400, rad2deg( polyval( fit,0:(12.5*86400):EphemerisTime(end), [], mu )))    
+    if groundStationIDindex >=8
+        plot(groundStationObservationTimes( groundStationIDs == groundStationIDindex ) / 86400, rad2deg( groundStationElevations( groundStationIDs == groundStationIDindex )),'o')  
+    else
+        plot(groundStationObservationTimes( groundStationIDs == groundStationIDindex ) / 86400, rad2deg( groundStationElevations( groundStationIDs == groundStationIDindex )),'x')  
+    end
+    
 end
 hold off
 ylim([0 90])
@@ -176,14 +181,14 @@ for Set = 16 : 16 : length( groundStationNames )
     figure
     subplot(1,2,1)
     hold on
-    groundSationNumberObservations = [];
+    groundStationNumberObservations = [];
 
     countFor = 1;
     for groundStationIDindex = startIndex : endIndex
 
         currentGroundStationObservationTimes = ...
             groundStationObservationTimes( groundStationIDs == groundStationIDindex & groundStationElevations >= deg2rad( 20 ));
-        groundSationNumberObservations = [ groundSationNumberObservations length( currentGroundStationObservationTimes )];
+        groundStationNumberObservations = [ groundStationNumberObservations length( currentGroundStationObservationTimes )];
         
         scatter( currentGroundStationObservationTimes / 86400, ...
             repmat( countFor, 1, length( currentGroundStationObservationTimes )), 'o')
@@ -200,9 +205,9 @@ for Set = 16 : 16 : length( groundStationNames )
     ay.XMinorGrid = 'on';
     
     subplot(1,2,2)
-    barh( categorical( groundStationID, groundStationID ), groundSationNumberObservations )
-    text( groundSationNumberObservations + 5 , 1:length( groundSationNumberObservations ), ...
-        num2str( groundSationNumberObservations' ),'vert','middle','horiz','left');
+    barh( categorical( groundStationID, groundStationID ), groundStationNumberObservations )
+    text( groundStationNumberObservations + 5 , 1:length( groundStationNumberObservations ), ...
+        num2str( groundStationNumberObservations' ),'vert','middle','horiz','left');
     box off
     ax = gca;
     xlim([ -5 ax.XLim( 2 ) + 500])
