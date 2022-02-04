@@ -86,7 +86,10 @@ int main( )
     double finalEphemerisTime = initialEphemerisTime + numberOfSimulationDays * physical_constants::JULIAN_DAY;
 
     // Create bodies needed in simulation
-    BodyListSettings bodySettings = getDefaultBodySettings( bodyNames, initialEphemerisTime-physical_constants::JULIAN_DAY, finalEphemerisTime+physical_constants::JULIAN_DAY, "SSB", "ECLIPJ2000", 60 );
+    BodyListSettings bodySettings = getDefaultBodySettings( bodyNames,
+                                                            initialEphemerisTime-physical_constants::JULIAN_DAY,
+                                                            finalEphemerisTime+physical_constants::JULIAN_DAY,
+                                                            "SSB", "ECLIPJ2000", 60 );
 
     //bodySettings.get( "Moon" )->ephemerisSettings->resetFrameOrigin( "Sun" );
 
@@ -368,25 +371,25 @@ int main( )
     }
 
     // Create observation viability settings and calculators
-    //std::vector< std::shared_ptr< ObservationViabilitySettings > > observationViabilitySettings;
-    //observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
-    //                                            minimum_elevation_angle, std::make_pair( "Earth", "" ), "",
-    //                                            unit_conversions::convertDegreesToRadians( 20.0 ) ) );
-    //observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
-    //                                            minimum_elevation_angle, std::make_pair( "Mars", "" ), "",
-    //                                            unit_conversions::convertDegreesToRadians( 35.0 ) ) );
+    std::vector< std::shared_ptr< ObservationViabilitySettings > > observationViabilitySettings;
+    observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
+                                                minimum_elevation_angle, std::make_pair( "Earth", "" ), "",
+                                                unit_conversions::convertDegreesToRadians( 20.0 ) ) );
+    observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
+                                                minimum_elevation_angle, std::make_pair( "Mars", "" ), "",
+                                                unit_conversions::convertDegreesToRadians( 35.0 ) ) );
     //observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
     //                                            maximum_elevation_angle, std::make_pair( "Mars", "" ), "",
     //                                            unit_conversions::convertDegreesToRadians( 45.0 ) ) );
-    //observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
-    //                                            body_avoidance_angle, std::make_pair( "Earth", "" ), "Sun",
-    //                                            unit_conversions::convertDegreesToRadians( 20.0 ) ) );
-    //observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
-    //                                            body_occultation, std::make_pair( "Earth", "" ), "Moon" ) );
+    observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
+                                                body_avoidance_angle, std::make_pair( "Earth", "" ), "Sun",
+                                                unit_conversions::convertDegreesToRadians( 20.0 ) ) );
+    observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
+                                                body_occultation, std::make_pair( "Earth", "" ), "Moon" ) );
 
-    //addViabilityToObservationSimulationSettings(
-    //        measurementSimulationInput,
-    //        observationViabilitySettings );
+    addViabilityToObservationSimulationSettings(
+            measurementSimulationInput,
+            observationViabilitySettings );
 
 
     // Set typedefs for POD input (observation types, observation link ends, observation values, associated times with
