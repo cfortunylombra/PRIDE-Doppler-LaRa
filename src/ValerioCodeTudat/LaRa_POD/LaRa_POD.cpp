@@ -82,7 +82,7 @@ int main( )
 
     // Specify initial and final time
     double initialEphemerisTime = ( 2459215.5 - JULIAN_DAY_ON_J2000 ) * physical_constants::JULIAN_DAY;  // 1/01/2021 00:00:00
-    double numberOfSimulationDays = 700.0; // le Maistre simulation
+    double numberOfSimulationDays = 49.0; // le Maistre simulation
     double finalEphemerisTime = initialEphemerisTime + numberOfSimulationDays * physical_constants::JULIAN_DAY;
 
     // Create bodies needed in simulation
@@ -91,7 +91,7 @@ int main( )
                                                             finalEphemerisTime+physical_constants::JULIAN_DAY,
                                                             "SSB", "ECLIPJ2000", 60 );
 
-    //bodySettings.get( "Moon" )->ephemerisSettings->resetFrameOrigin( "Sun" );
+    bodySettings.get( "Moon" )->ephemerisSettings->resetFrameOrigin( "Sun" );
 
     bodySettings.get( "Mars" )->rotationModelSettings = simulation_setup::getHighAccuracyMarsRotationModel();
 
@@ -387,9 +387,9 @@ int main( )
     observationViabilitySettings.push_back( std::make_shared< ObservationViabilitySettings >(
                                                 body_occultation, std::make_pair( "Earth", "" ), "Moon" ) );
 
-    addViabilityToObservationSimulationSettings(
-            measurementSimulationInput,
-            observationViabilitySettings );
+    //addViabilityToObservationSimulationSettings(
+    //        measurementSimulationInput,
+    //        observationViabilitySettings );
 
 
     // Set typedefs for POD input (observation types, observation link ends, observation values, associated times with
@@ -486,10 +486,9 @@ int main( )
     input_output::writeMatrixToFile( utilities::convertStlVectorToEigenVector( observationsAndTimes->getConcatenatedTimeVector( ) ),
                                      "ObservationTimes.dat", 16,
                                      outputFolder );
-    //input_output::writeMatrixToFile( utilities::convertStlVectorToEigenVector(
-    //                                getConcatenatedGroundStationIndex(podInput->getObservationCollection( ) ).first ),
-    //                                 "ObservationLinkEnds.dat", 16,
-    //                                 outputFolder );
+    input_output::writeMatrixToFile( utilities::convertStlVectorToEigenVector(observationsAndTimes->getConcatenatedLinkEndIds()),
+                                     "ObservationLinkEnds.dat", 16,
+                                     outputFolder );
 
     // Final statement.
     // The exit code EXIT_SUCCESS indicates that the program was successfully executed.

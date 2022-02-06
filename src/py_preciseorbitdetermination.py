@@ -36,7 +36,7 @@ if __name__=="__main__":
     start_date = 2459215.5 #in Julian days (J2000) = 01/01/2021 00:00:00
 
     # Duration of the simulation
-    simulation_duration_days = 700 #days #NOTE
+    simulation_duration_days = 49 #days #NOTE
     simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
@@ -75,7 +75,7 @@ if __name__=="__main__":
         time_step = 60)
 
     # Reset frame origin
-    #environment_setup.ephemeris.frame_origin = "Sun"
+    environment_setup.ephemeris.frame_origin = "Sun"
 
     #Mars rotation model
     body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.mars_high_accuracy()
@@ -306,8 +306,6 @@ if __name__=="__main__":
         dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list,
         reference_link_end_type = observation.transmitter)) #viability_settings = viability_settings_list,
     
-    #observation.add_viability_check_to_settings(observation_simulation_settings,viability_settings_list) 
-
     # Simulate required observation
     simulated_observations = estimation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
 
@@ -363,12 +361,12 @@ if __name__=="__main__":
     estimation_information_matrix = pod_output.normalized_design_matrix
     estimation_information_matrix_normalization = pod_output.normalization_terms
     concatenated_times = simulated_observations.concatenated_times 
-    concatenated_observations = simulated_observations.concatenated_observations
+    concatenated_link_ends = simulated_observations.concatenated_link_ends
 
     np.savetxt(output_folder_path+"/estimation_information_matrix.dat",estimation_information_matrix,fmt='%.15e')
     np.savetxt(output_folder_path+"/estimation_information_matrix_normalization.dat",
         estimation_information_matrix_normalization,fmt='%.15e')
     np.savetxt(output_folder_path+"/concatenated_times.dat",concatenated_times,fmt='%.15e')
-    np.savetxt(output_folder_path+"/concatenated_observations.dat",concatenated_observations,fmt='%.15e')
+    np.savetxt(output_folder_path+"/concatenated_link_ends.dat",concatenated_link_ends,fmt='%.15e')
 
 print("--- %s seconds ---" % (time.time() - run_time))
