@@ -80,8 +80,10 @@ int main( )
     double finalEphemerisTime = initialEphemerisTime + numberOfSimulationDays * physical_constants::JULIAN_DAY;
 
     // Create bodies needed in simulation
-    BodyListSettings bodySettings =
-            getDefaultBodySettings( bodyNames, "SSB", "ECLIPJ2000" );
+    BodyListSettings bodySettings = getDefaultBodySettings( bodyNames,
+                                                            initialEphemerisTime-physical_constants::JULIAN_DAY,
+                                                            finalEphemerisTime+physical_constants::JULIAN_DAY,
+                                                            "SSB", "ECLIPJ2000", 60 );
 
     bodySettings.get( "Mars" )->rotationModelSettings = simulation_setup::getHighAccuracyMarsRotationModel();
 
@@ -96,32 +98,32 @@ int main( )
 //    groundStationNames.push_back( "DSS14" );
     groundStationNames.push_back( "DSS63" );
 
-    std::ifstream readFile ("/home/cfortunylombra/tudat-bundle/tudat/examples/tudat/LaRa_GS_analysis/src/gs_location.txt");
+//    std::ifstream readFile ("/home/cfortunylombra/tudat-bundle/tudat/examples/tudat/LaRa_GS_analysis/src/gs_location.txt");
 //    std::ifstream readFile ("/Users/valeriofilice/Tudat/tudatBundle/tudatApplications/Outputs/LaRa_GS_analysis_EVN/EVN_location.txt");
 //    std::ifstream readFile ("/Users/valeriofilice/Tudat/tudatBundle/tudatApplications/Outputs/LaRa_GS_analysis_VLA/VLA_location.txt");
 //    std::ifstream readFile ("/Users/valeriofilice/Tudat/tudatBundle/tudatApplications/Outputs/LaRa_GS_analysis_Extra/Extra_location.txt");
 //    std::ifstream readFile ("/Users/valeriofilice/Tudat/tudatBundle/tudatApplications/Outputs/LaRa_GS_analysis_ATNF/ATNF_location.txt");
 //    std::ifstream readFile ("/Users/valeriofilice/Tudat/tudatBundle/tudatApplications/Outputs/LaRa_GS_analysis_DSN/DSN_station.txt.txt");
-    int num_lines = 0;
+//    int num_lines = 0;
+//
+//    if ( readFile.is_open( ) )
+//    {
+//        std::string line;
+//
+//        while ( getline(readFile, line) )
+//        {
+//            groundStationNames.push_back( line );
+//
+//            ++num_lines;
+//        }
+//
+//    }
+//    else
+//    {
+//        std::cerr << "Couldn't open locations.dat.txt for reading.\n";
+//    }
 
-    if ( readFile.is_open( ) )
-    {
-        std::string line;
-
-        while ( getline(readFile, line) )
-        {
-            groundStationNames.push_back( line );
-
-            ++num_lines;
-        }
-
-    }
-    else
-    {
-        std::cerr << "Couldn't open locations.dat.txt for reading.\n";
-    }
-
-    std::cout << num_lines << std::endl;
+//    std::cout << num_lines << std::endl;
 
     //createGroundStations( bodyMap.at( "Earth" ), groundStationNames );
 
@@ -230,8 +232,8 @@ int main( )
     std::shared_ptr< GroundStationState > LaRaNominalStateObject = LaRa->getNominalStationState( );
     std::shared_ptr< PointingAnglesCalculator > LaRaPointingAngleCalculatorObject =
             LaRa->getPointingAnglesCalculator( );
-    Eigen::Matrix3d rotationFromMarsLocalFrametoInertialFrame =
-            bodyMap.at( "Mars" )->getCurrentRotationToGlobalFrame( ).toRotationMatrix( );
+    Eigen::Matrix3d rotationFromMarsLocalFrametoInertialFrame =bodyMap.at( "Mars" )->getRotationalEphemeris( )->getRotationMatrixToBaseFrame(observationTimeStart);
+           //bodyMap.at( "Mars" )->getCurrentRotationToGlobalFrame( ).toRotationMatrix( );
 
     std::shared_ptr< GroundStation > DSS63 = bodyMap.at( "Earth" )->getGroundStation( "DSS63" );
     std::shared_ptr< GroundStationState > DSS63NominalStateObject = DSS63->getNominalStationState( );
@@ -369,5 +371,5 @@ int main( )
     // Final statement.
     // The exit code EXIT_SUCCESS indicates that the program was successfully executed.
     return EXIT_SUCCESS;
-
+*/
 }

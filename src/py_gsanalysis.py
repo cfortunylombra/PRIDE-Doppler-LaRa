@@ -76,7 +76,8 @@ if __name__=="__main__":
         simulation_start_epoch-constants.JULIAN_DAY,
         simulation_end_epoch+constants.JULIAN_DAY,
         global_frame_origin,
-        global_frame_orientation)
+        global_frame_orientation,
+        60)
 
     # Mars rotation model 
     body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.mars_high_accuracy()
