@@ -58,6 +58,7 @@ if __name__=="__main__":
     # Initial and end time of the simulation
     simulation_start_epoch = (start_date-constants.JULIAN_DAY_ON_J2000)*constants.JULIAN_DAY #seconds
     simulation_end_epoch = simulation_start_epoch+simulation_duration #seconds
+    print(simulation_start_epoch)
 
     # Define bodies in the simulation
     bodies_to_create = ["Earth","Mars"]
@@ -137,15 +138,15 @@ if __name__=="__main__":
 
     # Define time of first observation
     observation_start_epoch = simulation_start_epoch + constants.JULIAN_DAY
-    
+    print(observation_start_epoch)
     # Define time between two observations
     observation_interval = 60 #seconds
 
     # Define observation simulation times for each link
     observation_times_list = list()
     for pointer_weeks in range(0,int(np.ceil(simulation_duration_weeks))):
-        for pointer_interval in range(0,int(np.ceil(constants.JULIAN_DAY/observation_interval))):
-            for pointer_days_per_week in range(0,int(observation_days_per_week)):
+        for pointer_days_per_week in range(0,int(observation_days_per_week)):
+            for pointer_interval in range(0,int(np.ceil(constants.JULIAN_DAY/observation_interval))):
                 observation_times_list.append(observation_start_epoch+pointer_weeks*days_in_a_week*constants.JULIAN_DAY \
                     +pointer_days_per_week*np.floor(days_in_a_week/observation_days_per_week)*constants.JULIAN_DAY \
                         +pointer_interval*observation_interval)

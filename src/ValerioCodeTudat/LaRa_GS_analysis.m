@@ -54,6 +54,7 @@ groundStationNames = [ "DSS63"; "BADARY"; "CEDUNA"; "HARTRAO"; "HART15M"; "HOBAR
 
 % Load Overall Observation Time
 EphemerisTime = load(strcat(dataDirectory,'observation_time.dat'));
+start_epoch = EphemerisTime(1);
 EphemerisTime = EphemerisTime - EphemerisTime( 1 );
 
 % Load DSS63 Observation Time
@@ -91,6 +92,11 @@ step_days = 7;
 % Viability setting
 max_elevation = deg2rad(20);
 
+% J2000 epoch
+J2000_in_Julian_days = 2451545.0;
+
+% Save date when the simulation starts
+start_date = datetime(start_epoch/one_day+J2000_in_Julian_days, 'convertfrom','juliandate');
 %% Elevation and Azimuth Angles of the Earth as seen by LaRa
 
 figure(1)
@@ -103,10 +109,11 @@ set(gca,'XTick',(-180 : 45 : 180));
 xlabel('Azimuth angle [deg]')
 ylabel('Elevation angle [deg]')
 grid on
+sgtitle(join(['Mission Duration: 700 days - Start Date: ',datestr(start_date)]))
 legend('No Tracking Windows of LaRa Found','Tracking Windows of LaRa','Location','northeastoutside')
 set(gcf,'Position', 0.85*get(0, 'Screensize'));
 set(gca,'FontSize',14);
-        
+
 %% Transmitter Elevation History, Mean Elevation
 
 figure(2)
@@ -126,6 +133,7 @@ xlabel('Mission Time [days]')
 ylabel('Elevation Angle [deg]')
 box on
 grid on
+sgtitle(join(['Start Date: ',datestr(start_date)]))
 legend('Location','northeastoutside')
 set(gcf,'Position', 0.85*get(0, 'Screensize'));
 set(gca,'FontSize',14);
@@ -157,6 +165,7 @@ hold off
 ylim([0 90])
 xlabel('Mission time [days]')
 ylabel('Elevation angle [deg]')
+sgtitle(join(['Start Date: ',datestr(start_date)]))
 legend( groundStationNames_legend, 'Location', 'northeastoutside')
 box on
 grid on
@@ -197,4 +206,5 @@ box off
 ax = gca;
 xlim([ -5 ax.XLim( 2 ) + 500])
 xlabel('Number of Observations')
+sgtitle(join(['Start Date: ',datestr(start_date)]))
 set(gcf,'Position', 0.85*get(0, 'Screensize'));
