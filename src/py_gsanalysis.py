@@ -212,7 +212,6 @@ if __name__=="__main__":
                 rotation_from_Earth_body_frame_to_inertial_frame = bodies.get_body("Earth").rotation_model.body_fixed_to_inertial_rotation(pointer_transmitter_time)
                 
                 # As seen by the ground station
-
                 ground_station_observation_time.append(pointer_transmitter_time)
                 ground_station_elevation.append(current_ground_station_pointing_angle_calculator_object.calculate_elevation_angle(
                     bodies.get_body("Mars").state_in_base_frame_from_ephemeris(pointer_transmitter_time)[:3] \
