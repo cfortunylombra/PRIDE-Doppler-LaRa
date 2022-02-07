@@ -29,7 +29,7 @@ if __name__=="__main__":
     days_in_a_week = 7 #days
 
     # Days of observations per week
-    observation_days_per_week = 1 
+    observation_days_per_week = 2 
 
     # Initial date of the simulation
     start_date = 2460004.5 #in Julian days (J2000) = 01/03/2023 00:00:00 # Two years later than March 2021 (taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models")
@@ -147,7 +147,7 @@ if __name__=="__main__":
         for pointer_interval in range(0,int(np.ceil(constants.JULIAN_DAY/observation_interval))):
             for pointer_days_per_week in range(0,int(observation_days_per_week)):
                 observation_times_list.append(observation_start_epoch+pointer_weeks*days_in_a_week*constants.JULIAN_DAY \
-                    +pointer_days_per_week*3.25*constants.JULIAN_DAY \
+                    +pointer_days_per_week*np.floor(days_in_a_week/observation_days_per_week)*constants.JULIAN_DAY \
                         +pointer_interval*observation_interval)
 
     # Specifications of the reflector
@@ -159,8 +159,6 @@ if __name__=="__main__":
     transmitter_station = bodies.get_body("Earth").get_ground_station(transmitter_name)
     transmitter_nominal_state_object = transmitter_station.station_state
     transmitter_pointing_angle_calculator_object = transmitter_station.pointing_angles_calculator
-
-    observation_time = observation_times_list
 
     earth_elevation = list()
     earth_azimuth = list()
@@ -230,7 +228,7 @@ if __name__=="__main__":
     output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/GS')
     os.makedirs(output_folder_path,exist_ok=True)
 
-    np.savetxt(output_folder_path+"/observation_time.dat",observation_time,fmt='%.15e')
+    np.savetxt(output_folder_path+"/observation_time.dat",observation_times_list,fmt='%.15e')
     np.savetxt(output_folder_path+"/DSS63_observation_time.dat",DSS63_observation_time,fmt='%.15e')
     np.savetxt(output_folder_path+"/DSS63_elevation.dat",DSS63_elevation,fmt='%.15e')
     np.savetxt(output_folder_path+"/earth_elevation.dat",earth_elevation,fmt='%.15e')

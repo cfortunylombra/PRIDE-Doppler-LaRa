@@ -1,4 +1,4 @@
-%% Copyright (c) 2019, Valerio Filice - Dominic Dirkx
+%% Copyright (c) 2022, Carlos Fortuny Lombraña - Valerio Filice - Dominic Dirkx
 % All rights reserved.
 % 
 % Redistribution and use in source and binary forms, with or without
@@ -39,9 +39,8 @@
 % MAT-files required: none
 %
 
-% Author: Valerio Filice
-% email address: filicevalerio@gmail.com  
-% Last revision: 20-Oct-2019
+% Author: Carlos Fortuny Lombraña
+% email address: C.FortunyLombrana@student.tudelft.nl  
 
 %% DEFINE DATA DIRECTORY AND LOAD FILES
 
@@ -83,10 +82,18 @@ groundStationElevations = [ DSS63Elevation; groundStationElevations ];
 groundStationIDs = load(strcat(dataDirectory,'ground_station_ids.dat')) + 1;
 groundStationIDs = [zeros([length( DSS63Elevation ) 1]); groundStationIDs ] + 1;
 
+% 1 day in seconds
+one_day = 86400; %seconds
+
+% For plotting, just show the observations each week
+step_days = 7;
+
+% Viability setting
+max_elevation = deg2rad(20);
+
 %% Elevation and Azimuth Angles of the Earth as seen by LaRa
 
 figure(1)
-%xgscatter = rad2deg(wrapToPi(earthAzimuth(earthElevation >= 0) + pi/2 ));
 xgscatter = rad2deg(earthAzimuth(earthElevation >= 0));
 ygscatter = rad2deg(earthElevation(earthElevation >= 0));
 groupgscatter = ygscatter >= 35 & ygscatter <= 45;
@@ -95,7 +102,10 @@ axis([-180 180 0 90])
 set(gca,'XTick',(-180 : 45 : 180));
 xlabel('Azimuth angle [deg]')
 ylabel('Elevation angle [deg]')
-set(gcf,'Position', get(0, 'Screensize'));
+grid on
+legend('No Tracking Windows of LaRa Found','Tracking Windows of LaRa','Location','northeastoutside')
+set(gcf,'Position', 0.85*get(0, 'Screensize'));
+set(gca,'FontSize',14);
         
 %% Transmitter Elevation History, Mean Elevation
 
@@ -103,117 +113,88 @@ figure(2)
 set(gca,'FontSize',20)
 hold on
 
-% Polynomial curve fitting 
+% Polynomial curve fitting (order 4) 
 [fit, S, mu] = polyfit(DSS63ObservationTime, DSS63Elevation, 4);
 
-% 86400 sec = 1 day
-% Plotting with steps of 12.5
 % Polyval is the polynomial evaluation
-plot((0:(12.5*86400):EphemerisTime(end)) / 86400 , rad2deg( polyval( fit,(0:(12.5*86400):EphemerisTime(end)) , [], mu )))
-plot( DSS63ObservationTime / 86400, rad2deg( DSS63Elevation), 'o')
-% plot( DSS63ObservationTime( DSS63Elevation >= 0) / 86400, rad2deg( DSS63Elevation( DSS63Elevation >= 0)), 'o')
+plot((0:(step_days*one_day):EphemerisTime(end)) / one_day , rad2deg( polyval( fit,(0:(step_days*one_day):EphemerisTime(end)) , [], mu )),'DisplayName','Mean Elevation Angle')
+plot( DSS63ObservationTime / one_day, rad2deg( DSS63Elevation), 'o','DisplayName','Elevation Angle')
 
 hold off
 
 xlabel('Mission Time [days]')
 ylabel('Elevation Angle [deg]')
 box on
-set(gcf,'Position', get(0, 'Screensize'));
+grid on
+legend('Location','northeastoutside')
+set(gcf,'Position', 0.85*get(0, 'Screensize'));
+set(gca,'FontSize',14);
 
-% Mean Elevation angle
+%% Receiver Mean Elevation
 
-figure( 3 )
+figure(3)
 set(gca,'FontSize',20)
-% col = jet(length( groundStationID ));
 set(0,'defaultaxeslinestyleorder',{'-*','-+','-o','-x','-s'})
 hold on
+groundStationNames_legend = [];
 for groundStationIDindex = 1 : length( groundStationNames )
     
     % Angle viability due to Sun
     % If it is not satisfied, the next ground station is evaluated
-    if isempty(groundStationObservationTimes( groundStationIDs == groundStationIDindex & groundStationElevations >= deg2rad( 20 )))
-        
+    if isempty(groundStationObservationTimes( groundStationIDs == groundStationIDindex & groundStationElevations >= max_elevation))
         continue
-        
     end
     
-%     [fit, S, mu] = polyfit(groundStationObservationTimes( groundStationIDs == groundStationIDindex ...
-%         & groundStationElevations >= deg2rad( 20 )), ...
-%         groundStationElevations( groundStationIDs == groundStationIDindex & groundStationElevations >= deg2rad( 20 )), 4);
-%
-    [fit, S, mu] = polyfit(groundStationObservationTimes( groundStationIDs == groundStationIDindex ), ...
-        groundStationElevations( groundStationIDs == groundStationIDindex ), 4);
+    % Plot only the ground stations visible
+    groundStationNames_legend = [groundStationNames_legend; groundStationNames(groundStationIDindex)];
     
-    %plot((0:(12.5*86400):EphemerisTime(end)) / 86400, rad2deg( polyval( fit,0:(12.5*86400):EphemerisTime(end), [], mu )))    
-    if groundStationIDindex >=8
-        plot(groundStationObservationTimes( groundStationIDs == groundStationIDindex ) / 86400, rad2deg( groundStationElevations( groundStationIDs == groundStationIDindex )),'o')  
-    else
-        plot(groundStationObservationTimes( groundStationIDs == groundStationIDindex ) / 86400, rad2deg( groundStationElevations( groundStationIDs == groundStationIDindex )),'x')  
-    end
+    % Polynomial curve fitting (order 4) 
+    [fit, S, mu] = polyfit(groundStationObservationTimes( groundStationIDs == groundStationIDindex ), groundStationElevations( groundStationIDs == groundStationIDindex ), 4);
     
+    plot((0:(step_days*one_day):EphemerisTime(end))/one_day, rad2deg( polyval( fit,0:(step_days*one_day):EphemerisTime(end), [], mu )))    
 end
 hold off
 ylim([0 90])
 xlabel('Mission time [days]')
 ylabel('Elevation angle [deg]')
-legend( groundStationNames(2:end) , 'Location', 'best')
+legend( groundStationNames_legend, 'Location', 'northeastoutside')
 box on
-set(gcf, 'Position', get(0, 'Screensize'));
+grid on
+set(gcf,'Position', 0.85*get(0, 'Screensize'));
 
-%% Number of Possible Observations
+%% Number of Possible Observations for each ground station
         
-for Set = 16 : 16 : length( groundStationNames )
-        
-    if Set == 16
-        
-        groundStationID = {groundStationNames{ 1 : Set }};
-        startIndex = 1;
-        endIndex = 16;
-        
-    else
-        
-        groundStationID = {groundStationNames{ Set - 15 : Set }};
-        startIndex = endIndex + 1 ;
-        endIndex = startIndex + 15 ;
-        
-    end
+figure(4)
+subplot(1,2,1)
+hold on
+groundStationNumberObservations = [];
+
+for groundStationIDindex = 1 : length(groundStationNames)
     
-    figure
-    subplot(1,2,1)
-    hold on
-    groundStationNumberObservations = [];
-
-    countFor = 1;
-    for groundStationIDindex = startIndex : endIndex
-
-        currentGroundStationObservationTimes = ...
-            groundStationObservationTimes( groundStationIDs == groundStationIDindex & groundStationElevations >= deg2rad( 20 ));
-        groundStationNumberObservations = [ groundStationNumberObservations length( currentGroundStationObservationTimes )];
-        
-        scatter( currentGroundStationObservationTimes / 86400, ...
-            repmat( countFor, 1, length( currentGroundStationObservationTimes )), 'o')
-        countFor = countFor + 1;
-    end
-    hold off
-    ay = gca;
-    ay.YTick = 1:numel(groundStationID);
-    ay.YTickLabel = groundStationID;
-    ay.YLim = [0 numel(groundStationID)+1];
-    ay.XLim = [-10 inf];
-    ay.XLabel.String = 'Observation Time [gg]';
-    % ay.XGrid = 'on';
-    ay.XMinorGrid = 'on';
+    %Check the viability setting 
+    currentGroundStationObservationTimes = groundStationObservationTimes( groundStationIDs == groundStationIDindex & groundStationElevations >= max_elevation);
     
-    subplot(1,2,2)
-    barh( categorical( groundStationID, groundStationID ), groundStationNumberObservations )
-    text( groundStationNumberObservations + 5 , 1:length( groundStationNumberObservations ), ...
-        num2str( groundStationNumberObservations' ),'vert','middle','horiz','left');
-    box off
-    ax = gca;
-    xlim([ -5 ax.XLim( 2 ) + 500])
-    xlabel('Number of Observations')
-    set(gcf, 'Position', get(0, 'Screensize'));
-        
+    % Counting the number of observables using the length function
+    groundStationNumberObservations = [ groundStationNumberObservations length(currentGroundStationObservationTimes)];
+    
+    % Plot
+    scatter( currentGroundStationObservationTimes/one_day, repmat( groundStationIDindex, 1, length(currentGroundStationObservationTimes)), 200, '.')
 end
+hold off
+ay = gca;
+ay.YTick = 1:numel(groundStationNames);
+ay.YTickLabel = groundStationNames;
+ay.YLim = [0 numel(groundStationNames)+1];
+ay.XLim = [-10 inf];
+ay.XLabel.String = 'Mission time [days]';
+ay.XMinorGrid = 'on';
 
-    
+subplot(1,2,2)
+barh( categorical( groundStationNames, groundStationNames ), groundStationNumberObservations )
+text( groundStationNumberObservations + 5 , 1:length( groundStationNumberObservations ), ...
+    num2str( groundStationNumberObservations' ),'vert','middle','horiz','left');
+box off
+ax = gca;
+xlim([ -5 ax.XLim( 2 ) + 500])
+xlabel('Number of Observations')
+set(gcf,'Position', 0.85*get(0, 'Screensize'));
