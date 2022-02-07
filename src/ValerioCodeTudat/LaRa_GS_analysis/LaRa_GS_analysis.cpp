@@ -73,7 +73,8 @@ int main( )
 
     // Specify initial and final time
 //    double initialEphemerisTime = ( 2459252.5 - JULIAN_DAY_ON_J2000 ) *86400; // 7/02/2021 00:00:00
-    double initialEphemerisTime = ( 2459274.5 - JULIAN_DAY_ON_J2000 ) *86400; // 1/03/2021 00:00:00
+    //double initialEphemerisTime = ( 2459274.5 - JULIAN_DAY_ON_J2000 ) *86400; // 1/03/2021 00:00:00
+    double initialEphemerisTime = ( 2460004.5 - JULIAN_DAY_ON_J2000 ) *86400; // 01/03/2023 00:00:00
 //    int numberOfSimulationDays = 365; // One Earth year
 //    int numberOfSimulationDays = 687; // One Martian year
     int numberOfSimulationDays = 700; // le Maistre simulation
@@ -199,8 +200,8 @@ int main( )
 
     createGroundStation( bodyMap.at( "Mars" ), "LaRa",
                          ( Eigen::Vector3d( ) << spice_interface::getAverageRadius("Mars"),
-                           unit_conversions::convertDegreesToRadians( 18.20 ),
-                           unit_conversions::convertDegreesToRadians( 335.45 )).finished( ),
+                           unit_conversions::convertDegreesToRadians( 18.3 ),
+                           unit_conversions::convertDegreesToRadians( 335.37 )).finished( ),
                          spherical_position);
 
 
@@ -232,15 +233,11 @@ int main( )
     std::shared_ptr< GroundStationState > LaRaNominalStateObject = LaRa->getNominalStationState( );
     std::shared_ptr< PointingAnglesCalculator > LaRaPointingAngleCalculatorObject =
             LaRa->getPointingAnglesCalculator( );
-    Eigen::Matrix3d rotationFromMarsLocalFrametoInertialFrame =bodyMap.at( "Mars" )->getRotationalEphemeris( )->getRotationMatrixToBaseFrame(observationTimeStart);
-           //bodyMap.at( "Mars" )->getCurrentRotationToGlobalFrame( ).toRotationMatrix( );
 
     std::shared_ptr< GroundStation > DSS63 = bodyMap.at( "Earth" )->getGroundStation( "DSS63" );
     std::shared_ptr< GroundStationState > DSS63NominalStateObject = DSS63->getNominalStationState( );
     std::shared_ptr< PointingAnglesCalculator > DSS63PointingAngleCalculatorObject =
             DSS63->getPointingAnglesCalculator( );
-    Eigen::Matrix3d rotationFromEarthLocalFrametoInertialFrame =
-            bodyMap.at( "Earth" )->getCurrentRotationToGlobalFrame( ).toRotationMatrix( );
 
     std::vector< double > observationTimes;
     std::vector< double > earthElevation;
@@ -251,6 +248,8 @@ int main( )
     for ( double currentTime : baseTimeList )
     {
         observationTimes.push_back( currentTime );
+        Eigen::Matrix3d rotationFromMarsLocalFrametoInertialFrame =bodyMap.at( "Mars" )->getRotationalEphemeris( )->getRotationMatrixToBaseFrame(currentTime);
+        Eigen::Matrix3d rotationFromEarthLocalFrametoInertialFrame = bodyMap.at( "Earth" )->getRotationalEphemeris( )->getRotationMatrixToBaseFrame(currentTime);
 
 //        earthElevation.push_back( LaRaPointingAngleCalculatorObject->calculateElevationAngle(
 //                                  ( bodyMap[ "Earth" ]->getStateInBaseFrameFromEphemeris( currentTime ) -
@@ -312,6 +311,8 @@ int main( )
             if ( DSS63Elevation[ ind ] >= unit_conversions::convertDegreesToRadians( 20.0 ) )
             {
                 groundStationObservationTimes.push_back( currentTime );
+                Eigen::Matrix3d rotationFromEarthLocalFrametoInertialFrame = bodyMap.at( "Earth" )->getRotationalEphemeris( )->getRotationMatrixToBaseFrame(currentTime);
+
                 groundStationElevations.push_back( groudStationPointingAngleCalculatorObject->calculateElevationAngle(
 //                               rotationFromMarsLocalFrametoInertialFrame *
 //                                                       LaRaNominalStateObject->getCartesianPositionInTime( currentTime ) -
@@ -371,5 +372,4 @@ int main( )
     // Final statement.
     // The exit code EXIT_SUCCESS indicates that the program was successfully executed.
     return EXIT_SUCCESS;
-*/
 }

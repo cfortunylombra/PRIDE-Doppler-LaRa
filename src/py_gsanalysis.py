@@ -25,9 +25,6 @@ if __name__=="__main__":
     ################################################## CONSTANTS AND VARIABLES #############################################
     ########################################################################################################################
 
-    # J2000 epoch
-    J2000_in_Julian_days = 2451545.0
-
     # days in a week
     days_in_a_week = 7 #days
 
@@ -35,20 +32,17 @@ if __name__=="__main__":
     observation_days_per_week = 1 
 
     # Initial date of the simulation
-    start_date = 2459215.5 #in Julian days (J2000) = 01/01/2021 00:00:00
-    start_date = 2459274.5
+    start_date = 2460004.5 #in Julian days (J2000) = 01/03/2023 00:00:00 # Two years later than March 2021 (taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models")
 
     # Duration of the simulation
     simulation_duration_days = 700 #days
     simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
-    # LaRa landing site
+    # LaRa landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
     reflector_name = "LaRa"
-    reflector_latitude_deg = 18.4 #North degrees
+    reflector_latitude_deg = 18.3 #North degrees
     reflector_longitude_deg = 335.37 #East degrees
-    #reflector_latitude_deg = 18.2
-    #reflector_longitude_deg = 335.45
 
     # Earth-based transmitter
     transmitter_name = "DSS63"
@@ -62,7 +56,7 @@ if __name__=="__main__":
     spice_interface.load_standard_kernels()
 
     # Initial and end time of the simulation
-    simulation_start_epoch = (start_date-J2000_in_Julian_days)*constants.JULIAN_DAY #seconds
+    simulation_start_epoch = (start_date-constants.JULIAN_DAY_ON_J2000)*constants.JULIAN_DAY #seconds
     simulation_end_epoch = simulation_start_epoch+simulation_duration #seconds
 
     # Define bodies in the simulation
@@ -176,9 +170,8 @@ if __name__=="__main__":
     for pointer_time in observation_times_list:
         rotation_from_Mars_body_frame_to_inertial_frame = bodies.get_body("Mars").rotation_model.body_fixed_to_inertial_rotation(pointer_time)
         rotation_from_Earth_body_frame_to_inertial_frame = bodies.get_body("Earth").rotation_model.body_fixed_to_inertial_rotation(pointer_time)
-        #rotation_from_Mars_body_frame_to_inertial_frame = np.identity(3)
-        #rotation_from_Earth_body_frame_to_inertial_frame = np.identity(3)
 
+        # Elevation and azimuth as seen by LaRa 
         earth_elevation.append(reflector_pointing_angle_calculator_object.calculate_elevation_angle(
             bodies.get_body("Earth").state_in_base_frame_from_ephemeris(pointer_time)[:3] \
                 -np.matmul(rotation_from_Mars_body_frame_to_inertial_frame,reflector_nominal_state_object.get_cartesian_position(pointer_time)),
@@ -192,6 +185,7 @@ if __name__=="__main__":
         if earth_elevation[-1] >= np.deg2rad(35) and earth_elevation[-1] <= np.deg2rad(45): 
             DSS63_observation_time.append(pointer_time)
             
+            # As seen by DSS63
             DSS63_elevation.append(transmitter_pointing_angle_calculator_object.calculate_elevation_angle(
                 bodies.get_body("Mars").state_in_base_frame_from_ephemeris(pointer_time)[:3] \
                     -np.matmul(rotation_from_Earth_body_frame_to_inertial_frame,transmitter_nominal_state_object.get_cartesian_position(pointer_time)),
@@ -217,7 +211,8 @@ if __name__=="__main__":
         for pointer_transmitter_time in DSS63_observation_time:
             if DSS63_elevation[ind] >= np.deg2rad(20):
                 rotation_from_Earth_body_frame_to_inertial_frame = bodies.get_body("Earth").rotation_model.body_fixed_to_inertial_rotation(pointer_transmitter_time)
-                #rotation_from_Earth_body_frame_to_inertial_frame = np.identity(3)
+                
+                # As seen by the ground station
 
                 ground_station_observation_time.append(pointer_transmitter_time)
                 ground_station_elevation.append(current_ground_station_pointing_angle_calculator_object.calculate_elevation_angle(
@@ -235,13 +230,13 @@ if __name__=="__main__":
     output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/GS')
     os.makedirs(output_folder_path,exist_ok=True)
 
-    np.savetxt(output_folder_path+"/observation_time.dat",observation_time,fmt='%.16e')
-    np.savetxt(output_folder_path+"/DSS63_observation_time.dat",DSS63_observation_time,fmt='%.16e')
-    np.savetxt(output_folder_path+"/DSS63_elevation.dat",DSS63_elevation,fmt='%.16e')
-    np.savetxt(output_folder_path+"/earth_elevation.dat",earth_elevation,fmt='%.16e')
-    np.savetxt(output_folder_path+"/earth_azimuth.dat",earth_azimuth,fmt='%.16e')   
-    np.savetxt(output_folder_path+"/ground_station_observation_time.dat",ground_station_observation_time,fmt='%.16e')
-    np.savetxt(output_folder_path+"/ground_station_elevation.dat",ground_station_elevation,fmt='%.16e')
-    np.savetxt(output_folder_path+"/ground_station_ids.dat",ground_station_ids,fmt='%.16e')                 
+    np.savetxt(output_folder_path+"/observation_time.dat",observation_time,fmt='%.15e')
+    np.savetxt(output_folder_path+"/DSS63_observation_time.dat",DSS63_observation_time,fmt='%.15e')
+    np.savetxt(output_folder_path+"/DSS63_elevation.dat",DSS63_elevation,fmt='%.15e')
+    np.savetxt(output_folder_path+"/earth_elevation.dat",earth_elevation,fmt='%.15e')
+    np.savetxt(output_folder_path+"/earth_azimuth.dat",earth_azimuth,fmt='%.15e')   
+    np.savetxt(output_folder_path+"/ground_station_observation_time.dat",ground_station_observation_time,fmt='%.15e')
+    np.savetxt(output_folder_path+"/ground_station_elevation.dat",ground_station_elevation,fmt='%.15e')
+    np.savetxt(output_folder_path+"/ground_station_ids.dat",ground_station_ids,fmt='%.15e')                 
 
 print("--- %s seconds ---" % (time.time() - run_time))
