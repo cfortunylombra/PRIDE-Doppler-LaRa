@@ -195,8 +195,10 @@ if __name__=="__main__":
             data_fdets[station_name][str(time_stamp)] = dict()
 
             for column_pointer in range(0,len(column_names)):
-                data_fdets[station_name][str(time_stamp)][column_names[column_pointer]]=list(dataframe_fdets[column_names[column_pointer]])
-            
+                if column_names[column_pointer] == 'Signal-to-Noise ratio':
+                    data_fdets[station_name][str(time_stamp)][column_names[column_pointer]+' [dB]']=list(10*np.log10(dataframe_fdets[column_names[column_pointer]]))
+                else:
+                    data_fdets[station_name][str(time_stamp)][column_names[column_pointer]]=list(dataframe_fdets[column_names[column_pointer]])
             data_fdets[station_name][str(time_stamp)]['Base Frequency [MHz]']=base_frequency_mhz
             if boolean_df:
                 data_fdets[station_name][str(time_stamp)]['dF [Hz]']=df_hz
