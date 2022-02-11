@@ -30,20 +30,20 @@ if __name__=="__main__":
     days_in_a_week = 7 #days
 
     # Days of observations per week
-    observation_days_per_week = 2
+    observation_days_per_week = 2 # This value can be set to 1 or 2
 
     # Initial date of the simulation
     start_date = 2459215.5 #in Julian days (J2000) = 01/01/2021 00:00:00
 
     # Duration of the simulation
-    simulation_duration_days = 49 #days #NOTE
+    simulation_duration_days = 49 #days
     simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
-    # LaRa landing site
+    # LaRa landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
     reflector_name = "LaRa"
-    reflector_latitude_deg = 18.20 #18.4 #North degrees
-    reflector_longitude_deg = 335.45 #335.37 #East degrees
+    reflector_latitude_deg = 18.3 #North degrees
+    reflector_longitude_deg = 335.37 #East degrees
 
     # Earth-based transmitter
     transmitter_name = "DSS63"
@@ -61,7 +61,7 @@ if __name__=="__main__":
     simulation_end_epoch = simulation_start_epoch+simulation_duration #seconds
 
     # Define bodies in the simulation
-    bodies_to_create = ["Saturn","Jupiter","Mars","Moon","Earth","Venus","Mercury","Sun"]
+    bodies_to_create = ["Saturn","Jupiter","Mars","Moon","Earth","Venus","Mercury","Sun"] #Phobos Deimos
 
     global_frame_origin = "SSB" #Barycenter of Solar System
     global_frame_orientation = "ECLIPJ2000"
@@ -240,6 +240,7 @@ if __name__=="__main__":
     parameters_set = estimation_setup.create_parameter_set(parameter_settings,bodies,propagator_settings)
 
     truth_parameter = parameters_set.parameter_vector
+
     # Print identifiers and indices of parameters to terminal
     estimation_setup.print_parameter_names(parameters_set)
     print('Initial parameter estimate is: ')
@@ -267,8 +268,8 @@ if __name__=="__main__":
         integrator_settings,propagator_settings)
 
     # Variational equations and dynamics
-    #variational_equations_simulator = estimator.variational_solver
-    #dynamics_simulator = variational_equations_simulator.dynamics_simulator
+    variational_equations_simulator = estimator.variational_solver
+    dynamics_simulator = variational_equations_simulator.dynamics_simulator
 
     # Extract observation simulators
     observation_simulators = estimator.observation_simulators
@@ -281,15 +282,15 @@ if __name__=="__main__":
     observation_start_epoch = simulation_start_epoch + constants.JULIAN_DAY
     
     # Define time between two observations
-    observation_interval = 60*60 #seconds #NOTE
+    observation_interval = 60 #seconds 
 
     # Define observation simulation times for each link
     observation_times_list = list()
     for pointer_weeks in range(0,int(np.ceil(simulation_duration_weeks))):
-        for pointer_interval in range(0,int(np.ceil(constants.JULIAN_DAY/observation_interval))):
-            for pointer_days_per_week in range(0,int(observation_days_per_week)):
+        for pointer_days_per_week in range(0,int(observation_days_per_week)):
+            for pointer_interval in range(0,int(np.ceil(constants.JULIAN_DAY/observation_interval))):
                 observation_times_list.append(observation_start_epoch+pointer_weeks*days_in_a_week*constants.JULIAN_DAY \
-                    +pointer_days_per_week*3.25*constants.JULIAN_DAY \
+                    +pointer_days_per_week*np.floor(days_in_a_week/observation_days_per_week)*constants.JULIAN_DAY \
                         +pointer_interval*observation_interval)
 
     # Create observation viability settings and calculators
@@ -301,46 +302,42 @@ if __name__=="__main__":
     viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
 
     # Create measurement simulation input
-    observation_simulation_settings = list()
-    observation_simulation_settings.extend(observation.tabulated_simulation_settings_list(
+    observation_simulation_settings = observation.tabulated_simulation_settings_list(
         dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list,
-        reference_link_end_type = observation.transmitter)) #viability_settings = viability_settings_list,
+        viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter)
+
+    # Define noise levels
+    doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT # Taken from the Radioscience LaRa instrument onboard ExoMars 202 0 to investigate the rotation and interior of Mars
+    weights_per_observable = dict({observation.two_way_doppler_type:doppler_noise**(-2)})
+
+    # Create noise functions
+    observation.add_gaussian_noise_to_settings(observation_simulation_settings,doppler_noise,observation.two_way_doppler_type)
     
     # Simulate required observation
     simulated_observations = estimation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
 
     # Perturbation
-    parameter_perturbation = np.zeros(parameters_set.parameter_set_size) #parameters_set.parameter_vector*0.01
+    parameter_perturbation = np.zeros(parameters_set.parameter_set_size) 
     parameter_perturbation[0:3]=1000*np.ones(3)
     parameter_perturbation[3:6]=10*np.ones(3)
-    parameter_perturbation[6]=1*10**(-2)
-    parameter_perturbation[7]=1*10**(-7)
-    parameter_perturbation[8:11]=100*np.ones(3)
+    parameter_perturbation[6]=0 # Fixed
+    parameter_perturbation[7]=0 # Fixed 
+    parameter_perturbation[8:11]=30*np.ones(3) # meters; Taken from Position Determination of a Lander and Rover at Mars With Warth-Based Differential Tracking 
     parameter_perturbation[11:]=1*10**(-9)*np.ones(28)
 
     print("Perturbation vector is:")
     print(parameter_perturbation)
 
-    # Perturb estimate
-    initial_parameter_deviation = parameter_perturbation
-
     # Define a priori covariance
-    #inverse_a_priori_covariance = np.zeros((parameters_set.parameter_set_size,parameters_set.parameter_set_size))
+    inverse_a_priori_covariance = np.diag(1/parameter_perturbation**2)
 
     # Estimate parameters
-    pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size, apriori_parameter_correction = initial_parameter_deviation)
-    #pod_input.define_estimation_settings(reintegrate_variational_equations = False)
-
-    # Define noise levels
-    doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT 
-    weights_per_observable = dict({observation.two_way_doppler_type:doppler_noise**(-2)}) #observations.two_way_doppler_type NOTE
+    pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size, inverse_apriori_covariance = inverse_a_priori_covariance, apriori_parameter_correction = parameter_perturbation)
     pod_input.set_constant_weight_per_observable(weights_per_observable)
+    #pod_input.define_estimation_settings(reintegrate_variational_equations = False)
 
     # Perform estimation
     pod_output = estimator.perform_estimation(pod_input)
-
-    # Create noise functions
-    #observations.add_gaussian_noise_to_settings(observation_simulation_settings,doppler_noise,observations.one_way_doppler_type) #observations.two_way_doppler_type NOTE
 
     ########################################################################################################################
     ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
@@ -355,7 +352,7 @@ if __name__=="__main__":
     formal_error = pod_output.formal_errors
     print('Formal estimation error is:')
     print(formal_error.astype('d'))
-    true_to_form_estimation_error_ratio = formal_error/estimation_error 
+    true_to_form_estimation_error_ratio = estimation_error/formal_error 
     print('True to form estimation error is:')
     print(true_to_form_estimation_error_ratio)
     estimation_information_matrix = pod_output.normalized_design_matrix
