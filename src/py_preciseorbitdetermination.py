@@ -36,7 +36,7 @@ if __name__=="__main__":
     start_date = 2459215.5 #in Julian days (J2000) = 01/01/2021 00:00:00
 
     # Duration of the simulation
-    simulation_duration_days = 49 #days
+    simulation_duration_days = 700 #days
     simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
@@ -307,7 +307,7 @@ if __name__=="__main__":
         viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter)
 
     # Define noise levels
-    doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT # Taken from the Radioscience LaRa instrument onboard ExoMars 202 0 to investigate the rotation and interior of Mars
+    doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT # Taken from the Radioscience LaRa instrument onboard ExoMars to investigate the rotation and interior of Mars
     weights_per_observable = dict({observation.two_way_doppler_type:doppler_noise**(-2)})
 
     # Create noise functions
@@ -318,12 +318,36 @@ if __name__=="__main__":
 
     # Perturbation
     parameter_perturbation = np.zeros(parameters_set.parameter_set_size) 
-    parameter_perturbation[0:3]=1000*np.ones(3)
-    parameter_perturbation[3:6]=10*np.ones(3)
-    parameter_perturbation[6]=0 # Fixed
-    parameter_perturbation[7]=0 # Fixed 
-    parameter_perturbation[8:11]=30*np.ones(3) # meters; Taken from Position Determination of a Lander and Rover at Mars With Warth-Based Differential Tracking 
-    parameter_perturbation[11:]=1*10**(-9)*np.ones(28)
+    mas = 4.8481368*10**(-9)#spice_interface.get_body_gravitational_parameter("Mars")
+    # Position of Mars
+    parameter_perturbation[0:3]=1000*np.ones(3) # meters; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
+    # Velocity of Mars
+    parameter_perturbation[3:6]=0.0002*np.ones(3) #meters; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
+    # Core factor of the celestial body of Mars
+    parameter_perturbation[6]=0.014 # Unitless; Taken from A global solution for the Mars static and seasonal gravity, Mars orientation, Phobos and Deimos masses, and Mars ephemeris
+    # Free core nutation rate of the celestial body of Mars
+    parameter_perturbation[7]=np.deg2rad(0.075)/constants.JULIAN_DAY #rad/s; Taken from A global solution for the Mars static and seasonal gravity, Mars orientation, Phobos and Deimos masses, and Mars ephemeris
+    # Ground station position of Mars    
+    parameter_perturbation[8:11]=30*np.ones(3) # meters; Taken from Position Determination of a Lander and Rover at Mars With Warth-Based Differential Tracking
+    # Periodic spin variation for full planetary rotational model of Mars
+    # First order - cosine term
+    parameter_perturbation[11]=23*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    # First order - sine term
+    parameter_perturbation[12]=26*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    # Second order - cosine term
+    parameter_perturbation[13]=22*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    # Second order - sine term
+    parameter_perturbation[14]=22*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    # Third order - cosine term
+    parameter_perturbation[15]=18*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    # Third order - sine term
+    parameter_perturbation[16]=19*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    # Fourth order - cosine term
+    parameter_perturbation[17]=16*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    # Fourth order - sine term
+    parameter_perturbation[18]=16*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    # Polar motion amplitude for full planetary rotational model of Mars
+    parameter_perturbation[19:]=2*mas*np.ones(20) # seconds; Taken from UNCERTAINTIES ON MARS INTERIOR PARAMETERS DEDUCED FROM ORIENTATION PARAMETERS USING DIFFERENT RADIOLINKS: ANALYTICAL SIMULATIONS.
 
     print("Perturbation vector is:")
     print(parameter_perturbation)
