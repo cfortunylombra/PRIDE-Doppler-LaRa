@@ -15,6 +15,7 @@ if __name__=="__main__":
     import os
     import copy
     import numpy as np
+    import matplotlib.pyplot as plt
     from tudatpy.kernel import constants, numerical_simulation
     from tudatpy.kernel.astro import element_conversion
     from tudatpy.kernel.interface import spice_interface
@@ -36,7 +37,7 @@ if __name__=="__main__":
     start_date = 2459215.5 #in Julian days (J2000) = 01/01/2021 00:00:00
 
     # Duration of the simulation
-    simulation_duration_days = 700 #days
+    simulation_duration_days = 49 #days
     simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
@@ -176,7 +177,7 @@ if __name__=="__main__":
     # Define integrator settings
     initial_time_step = 1 #second
     minimum_step_size = initial_time_step #seconds
-    maximum_step_size = 60.0 #seconds
+    maximum_step_size = 60 #seconds
     relative_error_tolerance = 1.0E-14
     absolute_error_tolerance = 1.0E-14
 
@@ -318,7 +319,7 @@ if __name__=="__main__":
 
     # Perturbation
     parameter_perturbation = np.zeros(parameters_set.parameter_set_size) 
-    mas = 4.8481368*10**(-9)#spice_interface.get_body_gravitational_parameter("Mars")
+    mas = 4.8481368*10**(-9) # Conversion from milli arc seconds to seconds 
     # Position of Mars
     parameter_perturbation[0:3]=1000*np.ones(3) # meters; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
     # Velocity of Mars
@@ -359,10 +360,10 @@ if __name__=="__main__":
     pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size, inverse_apriori_covariance = inverse_a_priori_covariance, apriori_parameter_correction = parameter_perturbation)
     pod_input.set_constant_weight_per_observable(weights_per_observable)
     #pod_input.define_estimation_settings(reintegrate_variational_equations = False)
-
+    
     # Perform estimation
     pod_output = estimator.perform_estimation(pod_input)
-
+    
     ########################################################################################################################
     ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
     ########################################################################################################################
@@ -389,5 +390,16 @@ if __name__=="__main__":
         estimation_information_matrix_normalization,fmt='%.15e')
     np.savetxt(output_folder_path+"/concatenated_times.dat",concatenated_times,fmt='%.15e')
     np.savetxt(output_folder_path+"/concatenated_link_ends.dat",concatenated_link_ends,fmt='%.15e')
+    
+    ########################################################################################################################
+    ################################################## PLOTTING TRUE TO FORM RATIO #########################################
+    ########################################################################################################################
+
+    plt.hist(np.abs(true_to_form_estimation_error_ratio), bins = 8)
+    plt.ylabel('Frequency [-]')
+    plt.xlabel('True to form ratio [-]')
+    plt.grid()
+    plt.savefig(output_folder_path+"/true_to_form_ratio.pdf",bbox_inches="tight")
+    plt.show()
 
 print("--- %s seconds ---" % (time.time() - run_time))
