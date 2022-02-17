@@ -76,12 +76,14 @@ if __name__=="__main__":
         pass
 
     def gaussian_plot(dict_path,name):
+        plt.figure()
         x_sorted = sorted(dict_path)
         plt.plot(x_sorted, norm.pdf(x_sorted, np.mean(x_sorted), np.std(x_sorted)),'b--')
         plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer)
         plt.grid()
         plt.xlabel(name)
         plt.show()
+        plt.close('all')
         pass
 
 
@@ -180,6 +182,7 @@ if __name__=="__main__":
                 #gaussian_plot(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets],y2_axis_fdets)
 
                 # First plot: y_axis_fdets vs x_axis_fdets
+                plt.figure()
                 plt.plot(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets],\
                     data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets],'bo-')
                 plt.xlabel(x_axis_fdets)
@@ -188,8 +191,10 @@ if __name__=="__main__":
                 plt.grid()
                 plt.savefig(output_figures_path+'/SNR_vs_time_initial.pdf',bbox_inches="tight")
                 plt.show()
+                plt.close('all')
 
                 # Second plot: y_axis_fdets vs x2_axis_fdets
+                plt.figure()
                 plt.plot(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x2_axis_fdets],\
                     data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets],'rx')
                 plt.xlabel(x2_axis_fdets)
@@ -198,8 +203,10 @@ if __name__=="__main__":
                 plt.grid()
                 plt.savefig(output_figures_path+'/SNR_vs_Doppler_noise_initial.pdf',bbox_inches="tight")
                 plt.show()
+                plt.close('all')
 
                 # Third plot: y2_axis_fdets vs x_axis_fdets
+                plt.figure()
                 plt.plot(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets],\
                     data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets],'ko-')
                 plt.xlabel(x_axis_fdets)
@@ -208,8 +215,10 @@ if __name__=="__main__":
                 plt.grid()
                 plt.savefig(output_figures_path+'/Doppler_noise_vs_time_initial.pdf',bbox_inches="tight")
                 plt.show()
+                plt.close('all')
 
                 # Allan deviation using the y2_axis_fdets
+                plt.figure()
                 rate_fdets = 1/Counter(np.diff(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets])).most_common(1)[0][0]
                 taus2, adevs, errors, ns = allantools.mdev(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets],\
                     rate = rate_fdets, data_type = 'freq',taus='decade')
@@ -226,6 +235,7 @@ if __name__=="__main__":
                 plt.grid()
                 plt.axis('equal')
                 plt.show()
+                plt.close('all')
                 
 
     boolean_fdets = True
@@ -303,6 +313,7 @@ if __name__=="__main__":
                     os.makedirs(output_figures_path,exist_ok=True)
 
                     # First plot: y_axis_fdets vs x_axis_fdets
+                    plt.figure()
                     plt.plot(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets][start_index:end_index],\
                         data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets][start_index:end_index],'bo-')
                     plt.xlabel(x_axis_fdets)
@@ -311,8 +322,10 @@ if __name__=="__main__":
                     plt.grid()
                     plt.savefig(output_figures_path+'/SNR_vs_time.pdf',bbox_inches="tight")
                     plt.show()
+                    plt.close('all')
 
                     # Second plot: y_axis_fdets vs x2_axis_fdets
+                    plt.figure()
                     plt.plot(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x2_axis_fdets][start_index:end_index],\
                         data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets][start_index:end_index],'rx')
                     plt.xlabel(x2_axis_fdets)
@@ -321,8 +334,10 @@ if __name__=="__main__":
                     plt.grid()
                     plt.savefig(output_figures_path+'/SNR_vs_Doppler_noise.pdf',bbox_inches="tight")
                     plt.show()
+                    plt.close('all')
 
                     # Third plot: y2_axis_fdets vs x_axis_fdets
+                    plt.figure()
                     plt.plot(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets][start_index:end_index],\
                         data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index],'ko-')
                     plt.xlabel(x_axis_fdets)
@@ -331,8 +346,10 @@ if __name__=="__main__":
                     plt.grid()
                     plt.savefig(output_figures_path+'/Doppler_noise_vs_time.pdf',bbox_inches="tight")
                     plt.show()
+                    plt.close('all')
 
                     # Allan deviation using the y2_axis_fdets
+                    plt.figure()
                     rate_fdets = 1/Counter(np.diff(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets][start_index:end_index])).most_common(1)[0][0]
                     taus2, adevs, errors, ns = allantools.mdev(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index],\
                         rate = rate_fdets, data_type = 'freq',taus='decade')
@@ -350,6 +367,7 @@ if __name__=="__main__":
                     plt.axis('equal')
                     plt.savefig(output_figures_path+'/allan_deviation.pdf',bbox_inches="tight")
                     plt.show()
+                    plt.close('all')
 
                     # Appending Allan deviation results
                     taus_total.append(taus2.tolist())
