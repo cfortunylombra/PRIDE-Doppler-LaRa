@@ -4,7 +4,10 @@ Description: Allan Deviation
 Author: C. Fortuny-Lombraña
 """
 
+from copy import deepcopy
 import time
+
+from numpy import delete
 run_time = time.time()
 if __name__=="__main__":
     ########################################################################################################################
@@ -13,6 +16,7 @@ if __name__=="__main__":
 
     import os
     import json
+    import copy
     import matplotlib.pyplot as plt
     import allantools
     import numpy as np
@@ -25,12 +29,130 @@ if __name__=="__main__":
     os.makedirs(output_folder_path,exist_ok=True)
 
     ########################################################################################################################
-    ################################################## PLOTS ###############################################################
+    ################################################## FUNCTIONS ###########################################################
+    ########################################################################################################################
+
+    def IQR_y(value,max=75,min=25):
+        upper_quartile = np.percentile( np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets]), max)
+        lower_quartile = np.percentile( np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets]), min)
+        IQR = (upper_quartile - lower_quartile)
+        quartileSet = lower_quartile - value*IQR
+        
+        for keys_pointer in list(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer].keys())[:6]:
+            data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][keys_pointer] =  \
+                list(np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][keys_pointer])[
+                np.where(np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets]) >= quartileSet)])
+        pass
+    
+    def IQR_y2(value,max=75,min=25):
+        upper_quartile = np.percentile( np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]), max)
+        lower_quartile = np.percentile( np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]), min)
+        IQR = (upper_quartile - lower_quartile)
+        quartileSet = (lower_quartile - value*IQR, upper_quartile + value*IQR)
+
+        for keys_pointer in list(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer].keys())[:6]:
+            data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][keys_pointer] =  \
+                list(np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][keys_pointer])[
+                np.where((np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]) >= quartileSet[0]) &\
+                    (np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]) <= quartileSet[1]))])
+        pass
+
+    def zscore_y(value):
+        z_score = stats.zscore(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets])
+        z_score_index = np.where(np.abs(z_score)<=value)[0]
+
+        for keys_pointer in list(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer].keys())[:6]:
+            data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][keys_pointer] = [
+                data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][keys_pointer][i] for i in z_score_index]
+        pass
+    
+    def zscore_y2(value):
+        z_score = stats.zscore(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets])
+        z_score_index = np.where(np.abs(z_score)<=value)[0]
+
+        for keys_pointer in list(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer].keys())[:6]:
+            data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][keys_pointer] = [
+                data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][keys_pointer][i] for i in z_score_index]
+        pass
+
+    def gaussian_plot(dict_path,name):
+        x_sorted = sorted(dict_path)
+        plt.plot(x_sorted, norm.pdf(x_sorted, np.mean(x_sorted), np.std(x_sorted)),'b--')
+        plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer)
+        plt.grid()
+        plt.xlabel(name)
+        plt.show()
+        pass
+
+
+    ########################################################################################################################
+    ################################################## OPEN JSON FILE ######################################################
     ########################################################################################################################
 
     # Open the Fdets JSON file
     with open(output_folder_path+'/Fdets_data.json', 'r') as fp:
         data_fdets = json.load(fp)
+
+    ########################################################################################################################
+    ################################################## CONSTRAINTS #########################################################
+    ########################################################################################################################
+
+    ground_station_list = list(data_fdets.keys())
+    constraints_dict = {}
+    for station_pointer in ground_station_list:
+        constraints_dict[station_pointer]={}
+        for time_stamp_pointer in list(data_fdets[station_pointer].keys()):
+            constraints_dict[station_pointer][time_stamp_pointer]={}
+            constraints_dict[station_pointer][time_stamp_pointer]['IQR_bool'] = False
+            constraints_dict[station_pointer][time_stamp_pointer]['z_bool'] = False
+
+    constraints_dict['Hh']['2020-02-22 01:37:57']['IQR_bool'] = True
+    constraints_dict['Hh']['2020-02-22 01:37:57']['IQR_y'] = 2
+    constraints_dict['Hh']['2020-02-22 01:37:57']['IQR_y2'] = 2
+
+    constraints_dict['Ww']['2020-02-22 01:30:10']['z_bool'] = True
+    constraints_dict['Ww']['2020-02-22 01:30:10']['z_y'] = 3
+    constraints_dict['Ww']['2020-02-22 01:30:10']['z_y2'] = 3
+
+    constraints_dict['Ef']['2020-10-21 03:35:05']['IQR_bool'] = True
+    constraints_dict['Ef']['2020-10-21 03:35:05']['IQR_y'] = 1.5
+    constraints_dict['Ef']['2020-10-21 03:35:05']['IQR_y2'] = 1.5
+
+    constraints_dict['Ir']['2020-05-29 08:40:05']['IQR_bool'] = True
+    constraints_dict['Ir']['2020-05-29 08:40:05']['IQR_y'] = 1.5
+    constraints_dict['Ir']['2020-05-29 08:40:05']['IQR_y2'] = 1.5
+
+    constraints_dict['Mc']['2020-10-21 03:25:05']['IQR_bool'] = True
+    constraints_dict['Mc']['2020-10-21 03:25:05']['IQR_y'] = 1.25
+    constraints_dict['Mc']['2020-10-21 03:25:05']['IQR_y2'] = 1.25
+
+    constraints_dict['Mc']['2020-10-21 03:35:15']['IQR_bool'] = True
+    constraints_dict['Mc']['2020-10-21 03:35:15']['IQR_y'] = 1.5
+    constraints_dict['Mc']['2020-10-21 03:35:15']['IQR_y2'] = 1.5
+
+    constraints_dict['Mc']['2020-10-22 04:03:55']['z_bool'] = True
+    constraints_dict['Mc']['2020-10-22 04:03:55']['z_y'] = 3
+    constraints_dict['Mc']['2020-10-22 04:03:55']['z_y2'] = 3
+
+    constraints_dict['Wz']['2020-10-21 03:35:15']['IQR_bool'] = True
+    constraints_dict['Wz']['2020-10-21 03:35:15']['IQR_y'] = 1.5
+    constraints_dict['Wz']['2020-10-21 03:35:15']['IQR_y2'] = 1.5
+
+    constraints_dict['Wz']['2020-10-22 04:04:25']['IQR_bool'] = True
+    constraints_dict['Wz']['2020-10-22 04:04:25']['IQR_y'] = 0
+    constraints_dict['Wz']['2020-10-22 04:04:25']['IQR_y2'] = 0
+
+    constraints_dict['O6']['2020-10-21 03:35:05']['IQR_bool'] = True
+    constraints_dict['O6']['2020-10-21 03:35:05']['IQR_y'] = 1.5
+    constraints_dict['O6']['2020-10-21 03:35:05']['IQR_y2'] = 1.5
+
+    constraints_dict['Wb']['2020-10-21 03:35:16']['IQR_bool'] = True
+    constraints_dict['Wb']['2020-10-21 03:35:16']['IQR_y'] = 1.5
+    constraints_dict['Wb']['2020-10-21 03:35:16']['IQR_y2'] = 1.5
+
+    ########################################################################################################################
+    ################################################## PLOTS ###############################################################
+    ########################################################################################################################
 
     # Choose x- and y-axis (Comment out the useful x_axis and y_axis), we can use as well 'Doppler noise [Hz]', 'Spectral max', 'Freq. detection [Hz]'
     x_axis_fdets = 'Time(UTC) [s]'
@@ -38,27 +160,24 @@ if __name__=="__main__":
     y_axis_fdets = 'Signal-to-Noise ratio [dB]'
     y2_axis_fdets = 'Doppler noise [Hz]'
 
+    # Original files without any automatic cut
     boolean_fdets = True
     if boolean_fdets:
         # Iterate along the ground stations inside the Fdets JSON file
-        for fdets_station_pointer in ['Wb']:#data_fdets.keys():
+        for fdets_station_pointer in data_fdets.keys():
             # Iterate along the first time stamp for each ground station
-            for fdets_station_starttime_pointer in ['2020-10-22 04:04:46']:#data_fdets[fdets_station_pointer].keys():
+            for fdets_station_starttime_pointer in data_fdets[fdets_station_pointer].keys():
+                # Print station name & starting time
                 print(fdets_station_pointer+' station at '+fdets_station_starttime_pointer)
 
-                x_sorted = sorted(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets])
-                plt.plot(x_sorted, norm.pdf(x_sorted, np.mean(x_sorted), np.std(x_sorted)),'b--')
-                plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer)
-                plt.grid()
-                plt.xlabel(y_axis_fdets)
-                plt.show()
+                # Create path for saving the figures
+                output_figures_path = output_folder_path+'/'+fdets_station_pointer+'/'+fdets_station_starttime_pointer.replace(':','-')
+                os.makedirs(output_figures_path,exist_ok=True)
 
-                x_sorted = sorted(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets])
-                plt.plot(x_sorted, norm.pdf(x_sorted, np.mean(x_sorted), np.std(x_sorted)),'k--')
-                plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer)
-                plt.grid()
-                plt.xlabel(y2_axis_fdets)
-                plt.show()
+                # Plot Guassian plots
+                #gaussian_plot(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets],y_axis_fdets)
+
+                #gaussian_plot(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets],y2_axis_fdets)
 
                 # First plot: y_axis_fdets vs x_axis_fdets
                 plt.plot(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets],\
@@ -67,6 +186,7 @@ if __name__=="__main__":
                 plt.ylabel(y_axis_fdets)
                 plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer)
                 plt.grid()
+                plt.savefig(output_figures_path+'/SNR_vs_time_initial.pdf',bbox_inches="tight")
                 plt.show()
 
                 # Second plot: y_axis_fdets vs x2_axis_fdets
@@ -76,6 +196,7 @@ if __name__=="__main__":
                 plt.ylabel(y_axis_fdets)
                 plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer)
                 plt.grid()
+                plt.savefig(output_figures_path+'/SNR_vs_Doppler_noise_initial.pdf',bbox_inches="tight")
                 plt.show()
 
                 # Third plot: y2_axis_fdets vs x_axis_fdets
@@ -85,6 +206,7 @@ if __name__=="__main__":
                 plt.ylabel(y2_axis_fdets)
                 plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer)
                 plt.grid()
+                plt.savefig(output_figures_path+'/Doppler_noise_vs_time_initial.pdf',bbox_inches="tight")
                 plt.show()
 
                 # Allan deviation using the y2_axis_fdets
@@ -106,111 +228,56 @@ if __name__=="__main__":
                 plt.show()
                 
 
-    boolean_fdets1 = True
-    if boolean_fdets1:
+    boolean_fdets = True
+    if boolean_fdets:
+        # Make a deep copy of the data_fdets dictionary
+        data_fdets_updated = copy.deepcopy(data_fdets)
         # Iterate along the ground stations inside the Fdets JSON file
-        for fdets_station_pointer in ['Wb']:#data_fdets.keys():
+        for fdets_station_pointer in data_fdets.keys():
             # Iterate along the first time stamp for each ground station
-            for fdets_station_starttime_pointer in ['2020-10-22 04:04:46']:#data_fdets[fdets_station_pointer].keys():
+            for fdets_station_starttime_pointer in data_fdets[fdets_station_pointer].keys():
+                # Print station name & starting time
                 print(fdets_station_pointer+' station at '+fdets_station_starttime_pointer)
-                x_sorted = sorted(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets])
-                plt.plot(x_sorted, norm.pdf(x_sorted, np.mean(x_sorted), np.std(x_sorted)),'b--')
-                plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer)
-                plt.grid()
-                plt.show()
 
-                x_sorted = sorted(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets])
-                plt.plot(x_sorted, norm.pdf(x_sorted, np.mean(x_sorted), np.std(x_sorted)),'k--')
-                plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer)
-                plt.grid()
-                plt.show()
+                # Remove the list values for making list of lists
+                types_datafdets = [type(k) for k in data_fdets[fdets_station_pointer][fdets_station_starttime_pointer].values()]
+                for types_pointer in range(0,len(types_datafdets)):
+                    if types_datafdets[types_pointer] == list:
+                        key = list(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer].keys())[types_pointer]
+                        del data_fdets_updated[fdets_station_pointer][fdets_station_starttime_pointer][key] 
+                        data_fdets_updated[fdets_station_pointer][fdets_station_starttime_pointer][key] = list()
 
-                time_diff = np.round(np.diff(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets]),decimals=10)
+                # Plot Guassian plots
+                #gaussian_plot(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets],y_axis_fdets)
 
-                print(len(x_sorted))
-                '''
-                upper_quartile = np.percentile( np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets]), 75)
-                lower_quartile = np.percentile( np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets]), 25)
-                IQR = (upper_quartile - lower_quartile)
-                quartileSet = lower_quartile - 1.5*IQR
-                
-                data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets] =  \
-                    np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets])[
-                    np.where(np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets]) >= quartileSet)]
+                #gaussian_plot(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets],y2_axis_fdets)
 
-                data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets] =  \
-                    np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets])[
-                    np.where(np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets]) >= quartileSet)]
+                # Statistical constraints: IQR & z_score
+                if constraints_dict[fdets_station_pointer][fdets_station_starttime_pointer]['IQR_bool']:
+                    IQR_y(constraints_dict[fdets_station_pointer][fdets_station_starttime_pointer]['IQR_y'])
+                    IQR_y2(constraints_dict[fdets_station_pointer][fdets_station_starttime_pointer]['IQR_y2'])
 
-                data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets] =  \
-                    np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets])[
-                    np.where(np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets]) >= quartileSet)]
-                
-                
-                upper_quartile = np.percentile( np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]), 75)
-                lower_quartile = np.percentile( np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]), 25)
-                IQR = (upper_quartile - lower_quartile)
-                quartileSet = (lower_quartile - 1.5*IQR, upper_quartile + 1.5*IQR)
-                
-                data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets] =  \
-                    np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets])[
-                    np.where((np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]) >= quartileSet[0]) &\
-                        (np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]) <= quartileSet[1]))]
+                if constraints_dict[fdets_station_pointer][fdets_station_starttime_pointer]['z_bool']:
+                    zscore_y(constraints_dict[fdets_station_pointer][fdets_station_starttime_pointer]['z_y'])
+                    zscore_y2(constraints_dict[fdets_station_pointer][fdets_station_starttime_pointer]['z_y2'])
 
-                data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets] =  \
-                    np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets])[
-                    np.where((np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]) >= quartileSet[0]) &\
-                        (np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]) <= quartileSet[1]))]
-
-                data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets] =  \
-                    np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets])[
-                    np.where((np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]) >= quartileSet[0]) &\
-                        (np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]) <= quartileSet[1]))]
-                '''
-                '''
-                z_score = stats.zscore(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets])
-                z_score_index = np.where(np.abs(z_score)<=3)[0]
-
-                data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets] = [
-                    data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets][i] for i in z_score_index]
-
-                data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets] = [
-                    data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][i] for i in z_score_index]
-
-                data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets] = [
-                    data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets][i] for i in z_score_index]
-
-                z_score = stats.zscore(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets])
-                z_score_index = np.where(np.abs(z_score)<=3)[0]
-
-                data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets] = [
-                    data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets][i] for i in z_score_index]
-
-                data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets] = [
-                    data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][i] for i in z_score_index]
-
-                data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets] = [
-                    data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets][i] for i in z_score_index]
-                '''
-                x_sorted = sorted(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets])
-                plt.plot(x_sorted, norm.pdf(x_sorted, np.mean(x_sorted), np.std(x_sorted)),'b--')
-                plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer)
-                plt.grid()
-                plt.show()
-
-                x_sorted = sorted(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets])
-                plt.plot(x_sorted, norm.pdf(x_sorted, np.mean(x_sorted), np.std(x_sorted)),'k--')
-                plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer)
-                plt.grid()
-                plt.show()
-
+                # Identify time jumps
                 time_diff = np.round(np.diff(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets]),decimals=10)
                 time_jumps = np.where(time_diff!=Counter(time_diff).most_common(1)[0][0])[0]
 
-                print(time_diff)
-                print(len(x_sorted))
+                # Save the indices deleted from data_fdets
+                delete_indices = []
 
+                # Create empty lists for saving the results of the Allan deviation
+                taus_total = list()
+                adevs_total = list()
+                errors_total = list()
+                ns_total = list()
+
+                # Operation to identify the start index and end index
+                jump_label = -1
                 for jump_pointer in range(0,len(time_jumps)+1):
+                    jump_label += 1
                     if jump_pointer == 0:
                         start_index = 0
                     else:
@@ -223,15 +290,26 @@ if __name__=="__main__":
 
                     if end_index-start_index < 10:
                         print("Warning:",end_index-start_index)
+                        if jump_pointer == len(time_jumps): 
+                            delete_indices.extend(list(range(start_index,end_index)))
+                        else:
+                            delete_indices.extend(list(range(start_index,end_index+1)))
+                        print(delete_indices)
+                        jump_label -= 1
                         continue
+                    
+                    # Create path for saving the figures
+                    output_figures_path = output_folder_path+'/'+fdets_station_pointer+'/'+fdets_station_starttime_pointer.replace(':','-')+'/Part_'+str(jump_label)
+                    os.makedirs(output_figures_path,exist_ok=True)
 
                     # First plot: y_axis_fdets vs x_axis_fdets
                     plt.plot(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets][start_index:end_index],\
                         data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets][start_index:end_index],'bo-')
                     plt.xlabel(x_axis_fdets)
                     plt.ylabel(y_axis_fdets)
-                    plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_pointer))
+                    plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_label))
                     plt.grid()
+                    plt.savefig(output_figures_path+'/SNR_vs_time.pdf',bbox_inches="tight")
                     plt.show()
 
                     # Second plot: y_axis_fdets vs x2_axis_fdets
@@ -239,8 +317,9 @@ if __name__=="__main__":
                         data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets][start_index:end_index],'rx')
                     plt.xlabel(x2_axis_fdets)
                     plt.ylabel(y_axis_fdets)
-                    plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_pointer))
+                    plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_label))
                     plt.grid()
+                    plt.savefig(output_figures_path+'/SNR_vs_Doppler_noise.pdf',bbox_inches="tight")
                     plt.show()
 
                     # Third plot: y2_axis_fdets vs x_axis_fdets
@@ -248,8 +327,9 @@ if __name__=="__main__":
                         data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index],'ko-')
                     plt.xlabel(x_axis_fdets)
                     plt.ylabel(y2_axis_fdets)
-                    plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_pointer))
+                    plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_label))
                     plt.grid()
+                    plt.savefig(output_figures_path+'/Doppler_noise_vs_time.pdf',bbox_inches="tight")
                     plt.show()
 
                     # Allan deviation using the y2_axis_fdets
@@ -265,16 +345,47 @@ if __name__=="__main__":
                     plt.xlabel('Tau [s]')
                     plt.ylabel('Allan Deviation')
                     plt.legend([plot1,plot2],['Real-data','Simulated White Noise'])
-                    plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_pointer))
+                    plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_label))
                     plt.grid()
                     plt.axis('equal')
+                    plt.savefig(output_figures_path+'/allan_deviation.pdf',bbox_inches="tight")
                     plt.show()
-                
+
+                    # Appending Allan deviation results
+                    taus_total.append(taus2.tolist())
+                    adevs_total.append(adevs.tolist())
+                    errors_total.append(errors.tolist())
+                    ns_total.append(ns.tolist())
                     
+                    # Saving the lists of lists in the new dictionary
+                    for types_pointer in range(0,len(types_datafdets)):
+                        if types_datafdets[types_pointer] == list:
+                            key = list(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer].keys())[types_pointer]
+                            data_fdets_updated[fdets_station_pointer][fdets_station_starttime_pointer][key].append(
+                                data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][key][start_index:end_index]
+                            )
+
+                # Saving Allan deviation results
+                data_fdets_updated[fdets_station_pointer][fdets_station_starttime_pointer]['Taus [s]']=taus_total
+                data_fdets_updated[fdets_station_pointer][fdets_station_starttime_pointer]['Allan Variance']=adevs_total
+                data_fdets_updated[fdets_station_pointer][fdets_station_starttime_pointer]['Estimated Errors']=errors_total
+                data_fdets_updated[fdets_station_pointer][fdets_station_starttime_pointer]['Number of Pairs']=ns_total
+
+        # Save the updated data in a JSON file
+        with open(output_folder_path+'/Fdets_data_updated.json', 'w') as fp:
+            json.dump(data_fdets_updated, fp)             
+
+    ########################################################################################################################
+    ################################################## OPEN JSON FILE ######################################################
+    ########################################################################################################################               
 
     # Open the Phases JSON file
     with open(output_folder_path+'/Phases_data.json', 'r') as fp:
         data_phases = json.load(fp)
+
+    ########################################################################################################################
+    ################################################## PLOTS ###############################################################
+    ########################################################################################################################
 
     # Choose x- and y-axis (Comment out the useful x_axis and y_axis)
     x_axis_phases = 'Time stamp [s]'
