@@ -173,7 +173,7 @@ if __name__=="__main__":
                 print(fdets_station_pointer+' station at '+fdets_station_starttime_pointer)
 
                 # Create path for saving the figures
-                output_figures_path = output_folder_path+'/'+fdets_station_pointer+'/'+fdets_station_starttime_pointer.replace(':','-')
+                output_figures_path = output_folder_path+'/Fdets/'+fdets_station_pointer+'/'+fdets_station_starttime_pointer.replace(':','-')
                 os.makedirs(output_figures_path,exist_ok=True)
 
                 # Plot Guassian plots
@@ -217,7 +217,7 @@ if __name__=="__main__":
                 plt.show()
                 plt.close('all')
 
-                # Allan deviation using the y2_axis_fdets
+                # Fourth plot: Allan deviation using the y2_axis_fdets
                 plt.figure()
                 rate_fdets = 1/Counter(np.diff(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets])).most_common(1)[0][0]
                 taus2, adevs, errors, ns = allantools.mdev(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets],\
@@ -309,7 +309,7 @@ if __name__=="__main__":
                         continue
                     
                     # Create path for saving the figures
-                    output_figures_path = output_folder_path+'/'+fdets_station_pointer+'/'+fdets_station_starttime_pointer.replace(':','-')+'/Part_'+str(jump_label)
+                    output_figures_path = output_folder_path+'/Fdets/'+fdets_station_pointer+'/'+fdets_station_starttime_pointer.replace(':','-')+'/Part_'+str(jump_label)
                     os.makedirs(output_figures_path,exist_ok=True)
 
                     # First plot: y_axis_fdets vs x_axis_fdets
@@ -348,7 +348,7 @@ if __name__=="__main__":
                     plt.show()
                     plt.close('all')
 
-                    # Allan deviation using the y2_axis_fdets
+                    # Fourth plot: Allan deviation using the y2_axis_fdets
                     plt.figure()
                     rate_fdets = 1/Counter(np.diff(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets][start_index:end_index])).most_common(1)[0][0]
                     taus2, adevs, errors, ns = allantools.mdev(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index],\
@@ -408,41 +408,102 @@ if __name__=="__main__":
     # Choose x- and y-axis (Comment out the useful x_axis and y_axis)
     x_axis_phases = 'Time stamp [s]'
     y_axis_phases = 'Phase [rad]'
+    y2_axis_phases = 'Phase [s]'
+    y3_axis_phases = 'Frequency [Hz]'
 
-    boolean_phases = False
+    boolean_phases = True
     if boolean_phases:
         # Iterate along the ground stations inside the Phases JSON file
         for phases_station_pointer in data_phases.keys():
             # Iterate along the first time stamp for each ground station
             for phases_station_starttime_pointer in data_phases[phases_station_pointer].keys():
+                # Print station name & starting time
+                print(phases_station_pointer+' station at '+phases_station_starttime_pointer)
+
+                # Create path for saving the figures
+                output_figures_path = output_folder_path+'/Phases/'+phases_station_pointer+'/'+phases_station_starttime_pointer.replace(':','-')
+                os.makedirs(output_figures_path,exist_ok=True)
+
                 # First plot: y_axis_phases vs x_axis_phases 
+                plt.figure()
                 plt.plot(data_phases[phases_station_pointer][phases_station_starttime_pointer][x_axis_phases],\
                     data_phases[phases_station_pointer][phases_station_starttime_pointer][y_axis_phases],'b')
                 plt.xlabel(x_axis_phases)
                 plt.ylabel(y_axis_phases)
                 plt.title(phases_station_pointer+' station at '+phases_station_starttime_pointer)
                 plt.grid()
+                plt.savefig(output_figures_path+'/Phase_rad_vs_time.pdf',bbox_inches="tight")
                 plt.show()
+                plt.close('all')
 
-                rate_phases = 1/np.diff(data_phases[phases_station_pointer][phases_station_starttime_pointer][x_axis_phases])[0]
-                freq = allantools.phase2frequency(data_phases[phases_station_pointer][phases_station_starttime_pointer][y_axis_phases],rate_phases)
+                # Compute the rate
+                rate_phases = 1/Counter(np.diff(data_phases[phases_station_pointer][phases_station_starttime_pointer][x_axis_phases])).most_common(1)[0][0]
+                
+                # Convert the phase from radians to seconds
+                data_phases[phases_station_pointer][phases_station_starttime_pointer][y2_axis_phases] = list(data_phases[phases_station_pointer][phases_station_starttime_pointer][y_axis_phases]/(2*np.pi*rate_phases))
+                 
+                # Second plot: y2_axis_phases vs x_axis_phases
+                plt.figure()
+                plt.plot(data_phases[phases_station_pointer][phases_station_starttime_pointer][x_axis_phases],\
+                    data_phases[phases_station_pointer][phases_station_starttime_pointer][y2_axis_phases],'r')
+                plt.xlabel(x_axis_phases)
+                plt.ylabel(y2_axis_phases)
+                plt.title(phases_station_pointer+' station at '+phases_station_starttime_pointer)
+                plt.grid()
+                plt.savefig(output_figures_path+'/Phase_sec_vs_time.pdf',bbox_inches="tight")
+                plt.show()
+                plt.close('all')
 
-                #plt.plot(freq,\
-                #    data_phases[phases_station_pointer][phases_station_starttime_pointer][y_axis_phases],'k')
+                # Check whether the conversion is correct: from radians to seconds
+                #plt.figure()
+                #plt.plot(data_phases[phases_station_pointer][phases_station_starttime_pointer][x_axis_phases],\
+                #    allantools.phase2radians(data_phases[phases_station_pointer][phases_station_starttime_pointer]['Phase [s]'],rate_phases),'g')
                 #plt.xlabel(x_axis_phases)
-                #plt.ylabel('Freq [Hz')
+                #plt.ylabel(y_axis_phases)
                 #plt.title(phases_station_pointer+' station at '+phases_station_starttime_pointer)
                 #plt.grid()
                 #plt.show()
+                #plt.close('all')
 
-                # Allan deviation using x_axis_phases
-                taus2, adevs, errors, ns = allantools.adev(freq,rate = rate_phases, data_type = 'freq')
-                plt.loglog(taus2, adevs,'go-')
-                plt.xlabel('Tau')
+                # Third plot: Allan deviation using the y2_axis_phases
+                plt.figure()
+                taus2, adevs, errors, ns = allantools.mdev(data_phases[phases_station_pointer][phases_station_starttime_pointer][y2_axis_phases],\
+                    rate = rate_phases, data_type = 'phase',taus='decade')
+                y = allantools.noise.white(len(data_phases[phases_station_pointer][phases_station_starttime_pointer][y2_axis_phases]),
+                    b0=np.std(data_phases[phases_station_pointer][phases_station_starttime_pointer][y2_axis_phases]),fs=rate_phases)
+                taus2_white, adevs_white, errors_white, ns_white = allantools.mdev(y, rate=rate_phases, data_type="freq",taus='decade')
+                plot1 = plt.errorbar(taus2,adevs,yerr=errors,ecolor='green')
+                plot2 = plt.errorbar(taus2_white, adevs_white,yerr=errors_white,ecolor='red')
+                plt.xscale('log')
+                plt.yscale('log')
+                plt.xlabel('Tau [s]')
                 plt.ylabel('Allan Deviation')
+                plt.legend([plot1,plot2],['Real-data','Simulated White Noise'])
                 plt.title(phases_station_pointer+' station at '+phases_station_starttime_pointer)
                 plt.grid()
                 plt.axis('equal')
+                plt.savefig(output_figures_path+'/allan_deviation.pdf',bbox_inches="tight")
                 plt.show()
+                plt.close('all')
+
+                # Convert phase to frequency, NOTE that the frequency list has an element less than the phase list
+                data_phases[phases_station_pointer][phases_station_starttime_pointer][y3_axis_phases] = \
+                    list(allantools.phase2frequency(data_phases[phases_station_pointer][phases_station_starttime_pointer][y2_axis_phases],rate_phases))
+                
+                # Fourth plot: y3_axis_phases vs x_axis_phases
+                plt.figure()
+                plt.plot(data_phases[phases_station_pointer][phases_station_starttime_pointer][x_axis_phases][:-1],
+                    data_phases[phases_station_pointer][phases_station_starttime_pointer][y3_axis_phases],'k')
+                plt.xlabel(x_axis_phases)
+                plt.ylabel(y3_axis_phases)
+                plt.title(phases_station_pointer+' station at '+phases_station_starttime_pointer)
+                plt.grid()
+                plt.savefig(output_figures_path+'/frequency_vs_time.pdf',bbox_inches="tight")
+                plt.show()
+                plt.close('all')
+
+        # Save the updated data in a JSON file
+        with open(output_folder_path+'/Phases_data_updated.json', 'w') as fp:
+            json.dump(data_phases, fp) 
 
 print("--- %s seconds ---" % (time.time() - run_time))
