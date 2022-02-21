@@ -34,7 +34,7 @@ if __name__=="__main__":
     observation_days_per_week = 2 # This value can be set to 1 or 2
 
     # Initial date of the simulation
-    start_date = 2459215.5 #in Julian days (J2000) = 01/01/2021 00:00:00
+    start_date = 2460004.5 #in Julian days = 01/03/2023 00:00:00 # Two years later than March 2021 (taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models")
 
     # Duration of the simulation
     simulation_duration_days = 700 #days
@@ -59,6 +59,7 @@ if __name__=="__main__":
 
     # Initial and end time of the simulation
     simulation_start_epoch = (start_date-constants.JULIAN_DAY_ON_J2000)*constants.JULIAN_DAY #seconds
+    print(simulation_start_epoch)
     simulation_end_epoch = simulation_start_epoch+simulation_duration #seconds
 
     # Define bodies in the simulation
@@ -368,7 +369,7 @@ if __name__=="__main__":
     ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
     ########################################################################################################################
 
-    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD')
+    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_LaRa')
     os.makedirs(output_folder_path,exist_ok=True)
 
     estimation_error = np.subtract(pod_output.parameter_estimate,truth_parameter)

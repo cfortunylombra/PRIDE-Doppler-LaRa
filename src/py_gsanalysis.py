@@ -32,7 +32,7 @@ if __name__=="__main__":
     observation_days_per_week = 2 
 
     # Initial date of the simulation
-    start_date = 2460004.5 #in Julian days (J2000) = 01/03/2023 00:00:00 # Two years later than March 2021 (taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models")
+    start_date = 2460004.5 #in Julian days = 01/03/2023 00:00:00 # Two years later than March 2021 (taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models")
 
     # Duration of the simulation
     simulation_duration_days = 700 #days
@@ -45,7 +45,7 @@ if __name__=="__main__":
     reflector_longitude_deg = 335.37 #East degrees
 
     # Earth-based transmitter
-    transmitter_name = "DSS63"
+    transmitter_name = "DSS 63"
     transmitter_position_cartesian = np.array([4849092.6814,-360180.5350,4115109.1298]) #Taken from https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat
 
     ########################################################################################################################
@@ -58,7 +58,6 @@ if __name__=="__main__":
     # Initial and end time of the simulation
     simulation_start_epoch = (start_date-constants.JULIAN_DAY_ON_J2000)*constants.JULIAN_DAY #seconds
     simulation_end_epoch = simulation_start_epoch+simulation_duration #seconds
-    print(simulation_start_epoch)
 
     # Define bodies in the simulation
     bodies_to_create = ["Earth","Mars"]
@@ -138,7 +137,7 @@ if __name__=="__main__":
 
     # Define time of first observation
     observation_start_epoch = simulation_start_epoch + constants.JULIAN_DAY
-    print(observation_start_epoch)
+
     # Define time between two observations
     observation_interval = 60 #seconds
 
@@ -225,7 +224,7 @@ if __name__=="__main__":
     ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
     ########################################################################################################################
 
-    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/GS')
+    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/GS_LaRa')
     os.makedirs(output_folder_path,exist_ok=True)
 
     np.savetxt(output_folder_path+"/observation_time.dat",observation_times_list,fmt='%.15e')
