@@ -15,6 +15,7 @@ if __name__=="__main__":
     import os
     import copy
     import numpy as np
+    import matplotlib.pyplot as plt
     from tudatpy.kernel import constants, numerical_simulation
     from tudatpy.kernel.astro import element_conversion
     from tudatpy.kernel.interface import spice_interface
@@ -35,7 +36,7 @@ if __name__=="__main__":
     start_date = 2459215.5 #in Julian days (J2000) = 01/01/2021 00:00:00
 
     # Duration of the simulation
-    simulation_duration_days = 49 #days #NOTE
+    simulation_duration_days = 700 #days
     simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
@@ -62,9 +63,9 @@ if __name__=="__main__":
     # Define bodies in the simulation
     bodies_to_create = ["Saturn","Jupiter","Mars","Moon","Earth","Venus","Mercury","Sun"]
 
-
     global_frame_origin = "SSB" #Barycenter of Solar System
     global_frame_orientation = "ECLIPJ2000"
+
     body_settings = environment_setup.get_default_body_settings_time_limited(
         bodies_to_create,
         simulation_start_epoch-constants.JULIAN_DAY,
@@ -175,9 +176,9 @@ if __name__=="__main__":
     # Define integrator settings
     initial_time_step = 1 #second
     minimum_step_size = initial_time_step #seconds
-    maximum_step_size = 60 #seconds
-    relative_error_tolerance = 1E-14
-    absolute_error_tolerance = 1E-14
+    maximum_step_size = 60*60*24 #seconds
+    relative_error_tolerance = 1.0E-12
+    absolute_error_tolerance = 1.0E-12
 
     integrator_settings = propagation_setup.integrator.runge_kutta_variable_step_size(
         simulation_start_epoch,
@@ -290,7 +291,7 @@ if __name__=="__main__":
     observation_start_epoch = simulation_start_epoch + constants.JULIAN_DAY
     
     # Define time between two observations
-    observation_interval = 60*60 #seconds #NOTE
+    observation_interval = 60 #seconds
 
     # Define observation simulation times for each link
     observation_times_list = list()
@@ -314,41 +315,66 @@ if __name__=="__main__":
         dict({observation.one_way_doppler_type:observation_settings_downlink_list}),observation_times_list,
         viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter)
 
+    # Define noise levels
+    doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT # Taken from the Radioscience LaRa instrument onboard ExoMars to investigate the rotation and interior of Mars
+    weights_per_observable = dict({observation.two_way_doppler_type:doppler_noise**(-2)})
+
+    # Create noise functions
+    observation.add_gaussian_noise_to_settings(observation_simulation_settings,doppler_noise,observation.one_way_doppler_type)
+
     # Simulate required observation
     simulated_observations = estimation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
 
     # Perturbation
-    parameter_perturbation = np.zeros(parameters_set.parameter_set_size) #parameters_set.parameter_vector*0.01
-    parameter_perturbation[0:3]=1000*np.ones(3)
-    parameter_perturbation[3:6]=10*np.ones(3)
-    parameter_perturbation[6]=1*10**(-2)
-    parameter_perturbation[7]=1*10**(-7)
-    parameter_perturbation[8:11]=100*np.ones(3)
-    parameter_perturbation[11:]=1*10**(-9)*np.ones(28)
+    parameter_perturbation = np.zeros(parameters_set.parameter_set_size) 
+    mas = 4.8481368*10**(-9) # Conversion from milli arc seconds to seconds 
+    # Position of Mars
+    parameter_perturbation[0:3]=1000*np.ones(3) # meters; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
+    # Velocity of Mars
+    parameter_perturbation[3:6]=0.0002*np.ones(3) #meters; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
+    # Core factor of the celestial body of Mars
+    parameter_perturbation[6]=0.014 # Unitless; Taken from A global solution for the Mars static and seasonal gravity, Mars orientation, Phobos and Deimos masses, and Mars ephemeris
+    # Free core nutation rate of the celestial body of Mars
+    parameter_perturbation[7]=np.deg2rad(0.075)/constants.JULIAN_DAY #rad/s; Taken from A global solution for the Mars static and seasonal gravity, Mars orientation, Phobos and Deimos masses, and Mars ephemeris
+    # Ground station position of Mars    
+    parameter_perturbation[8:11]=30*np.ones(3) # meters; Taken from Position Determination of a Lander and Rover at Mars With Warth-Based Differential Tracking
+    # Periodic spin variation for full planetary rotational model of Mars
+    # First order - cosine term
+    parameter_perturbation[11]=23*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    # First order - sine term
+    parameter_perturbation[12]=26*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    # Second order - cosine term
+    parameter_perturbation[13]=22*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    # Second order - sine term
+    parameter_perturbation[14]=22*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    # Third order - cosine term
+    parameter_perturbation[15]=18*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    # Third order - sine term
+    parameter_perturbation[16]=19*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    # Fourth order - cosine term
+    parameter_perturbation[17]=16*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    # Fourth order - sine term
+    parameter_perturbation[18]=16*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    # Polar motion amplitude for full planetary rotational model of Mars
+    parameter_perturbation[19:]=2*mas*np.ones(20) # seconds; Taken from UNCERTAINTIES ON MARS INTERIOR PARAMETERS DEDUCED FROM ORIENTATION PARAMETERS USING DIFFERENT RADIOLINKS: ANALYTICAL SIMULATIONS.
 
     print("Perturbation vector is:")
     print(parameter_perturbation)
 
-    # Perturb estimate
-    initial_parameter_deviation =  parameters_set.parameter_vector + parameter_perturbation
-
     # Define a priori covariance
-    #inverse_a_priori_covariance = np.zeros((parameters_set.parameter_set_size,parameters_set.parameter_set_size))
+    inverse_a_priori_covariance = np.diag(1/parameter_perturbation**2)
 
     # Estimate parameters
-    pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size, apriori_parameter_correction = initial_parameter_deviation)
-    #pod_input.define_estimation_settings(reintegrate_variational_equations = False)
-
-    # Define noise levels
-    doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT 
-    weights_per_observable = dict({observation.one_way_doppler_type:doppler_noise**(-2)})
+    pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size, inverse_apriori_covariance = inverse_a_priori_covariance, apriori_parameter_correction = parameter_perturbation)
     pod_input.set_constant_weight_per_observable(weights_per_observable)
+
+    # Estimate parameters
+    pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size, inverse_apriori_covariance = inverse_a_priori_covariance, apriori_parameter_correction = parameter_perturbation)
+    pod_input.set_constant_weight_per_observable(weights_per_observable)
+    #pod_input.define_estimation_settings(reintegrate_variational_equations = False)
 
     # Perform estimation
     pod_output = estimator.perform_estimation(pod_input)
-
-    # Create noise functions
-    #observations.add_gaussian_noise_to_settings(observation_simulation_settings,doppler_noise,observations.one_way_doppler_type) #observations.two_way_doppler_type NOTE
 
     ########################################################################################################################
     ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
@@ -376,5 +402,16 @@ if __name__=="__main__":
         estimation_information_matrix_normalization,fmt='%.15e')
     np.savetxt(output_folder_path+"/concatenated_times.dat",concatenated_times,fmt='%.15e')
     np.savetxt(output_folder_path+"/concatenated_link_ends.dat",concatenated_link_ends,fmt='%.15e')
+
+    ########################################################################################################################
+    ################################################## PLOTTING TRUE TO FORM RATIO #########################################
+    ########################################################################################################################
+
+    plt.hist(np.abs(true_to_form_estimation_error_ratio), bins = 8)
+    plt.ylabel('Frequency [-]')
+    plt.xlabel('True to form ratio [-]')
+    plt.grid()
+    plt.savefig(output_folder_path+"/true_to_form_ratio.pdf",bbox_inches="tight")
+    plt.show()
 
 print("--- %s seconds ---" % (time.time() - run_time))
