@@ -4,10 +4,8 @@ Description: Allan Deviation
 Author: C. Fortuny-Lombraña
 """
 
-from copy import deepcopy
 import time
 
-from numpy import delete
 run_time = time.time()
 if __name__=="__main__":
     ########################################################################################################################
