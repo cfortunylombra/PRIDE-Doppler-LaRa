@@ -37,7 +37,7 @@ if __name__=="__main__":
     start_date = 2459215.5 #in Julian days (J2000) = 01/01/2021 00:00:00
 
     # Duration of the simulation
-    simulation_duration_days = 49 #days
+    simulation_duration_days = 700 #days
     simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
@@ -177,9 +177,9 @@ if __name__=="__main__":
     # Define integrator settings
     initial_time_step = 1 #second
     minimum_step_size = initial_time_step #seconds
-    maximum_step_size = 60 #seconds
-    relative_error_tolerance = 1.0E-14
-    absolute_error_tolerance = 1.0E-14
+    maximum_step_size = 60*60*24 #seconds
+    relative_error_tolerance = 1.0E-12
+    absolute_error_tolerance = 1.0E-12
 
     integrator_settings = propagation_setup.integrator.runge_kutta_variable_step_size(
         simulation_start_epoch,
