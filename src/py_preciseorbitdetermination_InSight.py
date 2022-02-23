@@ -14,6 +14,7 @@ if __name__=="__main__":
     sys.path.insert(0, "/home/cfortunylombra/tudat-bundle/cmake-build-release-wsl/tudatpy/")
     import os
     import copy
+    import datetime
     import numpy as np
     import matplotlib.pyplot as plt
     from tudatpy.kernel import constants, numerical_simulation
@@ -22,6 +23,7 @@ if __name__=="__main__":
     from tudatpy.kernel.numerical_simulation import environment_setup,propagation_setup,propagation,estimation_setup,estimation
     from tudatpy.kernel.numerical_simulation.estimation_setup import observation
 
+    np.set_printoptions(suppress=True,precision=15)
     ########################################################################################################################
     ################################################## CONSTANTS AND VARIABLES #############################################
     ########################################################################################################################
@@ -33,7 +35,7 @@ if __name__=="__main__":
     observation_days_per_week = 2 # This value can be set to 1 or 2
 
     # Initial date of the simulation
-    start_date = 2460096.5 #in Julian days = 01/06/2023 00:00:00 # Two years later than March 2021 (taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models")
+    start_date = 2458423.5 #in Julian days = 01/11/2018 00:00:00; Taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models")
 
     # Duration of the simulation
     simulation_duration_days = 700 #days
@@ -41,13 +43,13 @@ if __name__=="__main__":
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
     # LaRa landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
-    reflector_name = "LaRa"
-    reflector_latitude_deg = 18.3 #North degrees
-    reflector_longitude_deg = 335.37 #East degrees
+    reflector_name = "RISE"
+    reflector_latitude_deg = 4.5 #North degrees
+    reflector_longitude_deg = 135.62 #East degrees
 
     # Earth-based transmitter
     transmitter_name = "DSS 63"
-    transmitter_position_cartesian = np.array([4849092.6814,-360180.5350,4115109.1298]) #Taken from https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat
+    transmitter_position_cartesian = np.array([4849092.6814,-360180.5350,4115109.1298], dtype='d') #Taken from https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat
 
     ########################################################################################################################
     ################################################## CREATE ENVIRONMENT ##################################################
@@ -61,7 +63,7 @@ if __name__=="__main__":
     simulation_end_epoch = simulation_start_epoch+simulation_duration #seconds
 
     # Define bodies in the simulation
-    bodies_to_create = ["Saturn","Jupiter","Mars","Moon","Earth","Venus","Mercury","Sun"]
+    bodies_to_create = ["Saturn","Jupiter","Mars","Moon","Earth","Venus","Mercury","Sun"] #Phobos Deimos
 
     global_frame_origin = "SSB" #Barycenter of Solar System
     global_frame_orientation = "ECLIPJ2000"
@@ -71,12 +73,13 @@ if __name__=="__main__":
         simulation_start_epoch-constants.JULIAN_DAY,
         simulation_end_epoch+constants.JULIAN_DAY,
         global_frame_origin,
-        global_frame_orientation)
+        global_frame_orientation,
+        time_step = 60)
 
     # Reset frame origin
     environment_setup.ephemeris.frame_origin = "Sun"
 
-    # Mars rotation model
+    #Mars rotation model
     body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.mars_high_accuracy()
 
     bodies = environment_setup.create_system_of_bodies(body_settings)
@@ -114,8 +117,8 @@ if __name__=="__main__":
             y_coordinate_ground_station = float(coordinates_line_ground_station.split("Y=",1)[1].split()[0])
             z_coordinate_ground_station = float(coordinates_line_ground_station.split("Z=",1)[1].split()[0])
 
-            ground_station_dict[name_ground_station] = np.array([x_coordinate_ground_station,y_coordinate_ground_station,z_coordinate_ground_station])
-            
+            ground_station_dict[name_ground_station] = np.array([x_coordinate_ground_station,y_coordinate_ground_station,z_coordinate_ground_station],dtype='d')
+
     # Earth-based ground station creation
     for pointer_ground_station in range(0,len(ground_station_dict.keys())):
         environment_setup.add_ground_station(
@@ -129,11 +132,10 @@ if __name__=="__main__":
     environment_setup.add_ground_station(
         bodies.get_body("Mars"),
         reflector_name,
-        np.array([spice_interface.get_average_radius("Mars"),np.deg2rad(reflector_latitude_deg),np.deg2rad(reflector_longitude_deg)]),
+        np.array([spice_interface.get_average_radius("Mars"),np.deg2rad(reflector_latitude_deg,dtype='d'),np.deg2rad(reflector_longitude_deg,dtype='d')]),
          element_conversion.spherical_position_type)
 
     Mars_ground_station_list = environment_setup.get_ground_station_list(bodies.get_body("Mars"))
-
 
     ########################################################################################################################
     ################################################## CREATE ACCELERATION MODELS ##########################################
@@ -231,9 +233,9 @@ if __name__=="__main__":
 
     # Create list of parameters that are to be estimated
     parameter_settings = estimation_setup.parameter.initial_states(propagator_settings,bodies)
-    parameter_settings.append(estimation_setup.parameter.ground_station_position("Mars", reflector_name))
     parameter_settings.append(estimation_setup.parameter.core_factor("Mars"))
     parameter_settings.append(estimation_setup.parameter.free_core_nutation_rate("Mars"))
+    parameter_settings.append(estimation_setup.parameter.ground_station_position("Mars", reflector_name))
     parameter_settings.append(estimation_setup.parameter.periodic_spin_variations("Mars"))
     parameter_settings.append(estimation_setup.parameter.polar_motion_amplitudes("Mars"))
 
@@ -249,31 +251,22 @@ if __name__=="__main__":
     ########################################################################################################################
     ################################################## CREATE OBSERVATION SETTINGS #########################################
     ######################################################################################################################## 
-
-    # Define settings for light-time calculations
-    light_time_correction_settings = [observation.first_order_relativistic_light_time_correction(['Sun'])]
-
-    # Define uplink oneway Doppler observation settings
-    uplink_one_way_doppler_observation_settings = list() 
-    uplink_one_way_doppler_observation_settings.append(observation.one_way_open_loop_doppler(observation_settings_uplink_list[0],
-    light_time_correction_settings = light_time_correction_settings))
-
-    # Define downlink oneway Doppler observation settings
-    downlink_one_way_doppler_observation_settings = list()
-    for pointer_link_ends in range(0,len(observation_settings_downlink_list)):
-        downlink_one_way_doppler_observation_settings.append(observation.one_way_open_loop_doppler(
-            observation_settings_downlink_list[pointer_link_ends],
-            light_time_correction_settings = light_time_correction_settings))
+    
+    # Define twoway Doppler observation settings
+    two_way_doppler_observation_settings = list()
+    for pointer_link_ends in range(0,len(observation_settings_list)):
+        two_way_doppler_observation_settings.append(observation.two_way_open_loop_doppler(
+            observation_settings_list[pointer_link_ends]))
 
     ########################################################################################################################
     ################################################## INITIALIZE OD  ######################################################
     ######################################################################################################################## 
 
     # Create observation simulators
-    observation_simulators = estimation_setup.create_observation_simulators(downlink_one_way_doppler_observation_settings,bodies) 
+    observation_simulators = estimation_setup.create_observation_simulators(two_way_doppler_observation_settings,bodies) 
 
     # Create physical environment (as set of physical bodies)
-    estimator = numerical_simulation.Estimator(bodies,parameters_set,downlink_one_way_doppler_observation_settings,
+    estimator = numerical_simulation.Estimator(bodies,parameters_set,two_way_doppler_observation_settings,
         integrator_settings,propagator_settings)
 
     # Variational equations and dynamics
@@ -291,43 +284,59 @@ if __name__=="__main__":
     observation_start_epoch = simulation_start_epoch + constants.JULIAN_DAY
     
     # Define time between two observations
-    observation_interval = 60 #seconds
+    observation_interval = 60 #seconds 
 
     # Define observation simulation times for each link
     observation_times_list = list()
-    for pointer_weeks in range(0,int(np.ceil(simulation_duration_weeks))):
-        for pointer_days_per_week in range(0,int(observation_days_per_week)):
-            for pointer_interval in range(0,int(np.ceil(constants.JULIAN_DAY/observation_interval))):
-                observation_times_list.append(observation_start_epoch+pointer_weeks*days_in_a_week*constants.JULIAN_DAY \
-                    +pointer_days_per_week*np.floor(days_in_a_week/observation_days_per_week)*constants.JULIAN_DAY \
-                        +pointer_interval*observation_interval)
+    with open(os.path.dirname(os.path.realpath(__file__))+'/nsyt_maro_2018_331_2020_366.tdm') as file:
+        lines = file.read().splitlines()
+        meta_start_line = lines.index('PARTICIPANT_1          = '+transmitter_name)
+        data_start_line = list(filter(lambda x: x >= meta_start_line, [i for i, x in enumerate(lines) if x == 'DATA_START']))[0]+1
+        data_stop_line = list(filter(lambda x: x >= meta_start_line, [i for i, x in enumerate(lines) if x == 'DATA_STOP']))[0] 
+        lines = lines[data_start_line:data_stop_line]
+
+        datetime_list = list()
+        epoch_list = list()
+        for pointer_time in range(0,len(lines)):
+            line = lines[pointer_time]
+            date_and_time = line.split()[2]
+            year = int(date_and_time.split('-')[0])
+            day_of_year = int((date_and_time.split('-')[1]).split('T')[0])
+            hour_min_sec = ((date_and_time.split('-')[1]).split('T')[1]).split(':')
+            hour = int(hour_min_sec[0])
+            min = int(hour_min_sec[1])
+            sec = int((hour_min_sec[2].split('.'))[0])
+
+            date = datetime.datetime(year,1,1)+datetime.timedelta(days=day_of_year-1,hours=hour,minutes=min,seconds=sec)
+            epoch = (date - datetime.datetime(2000,1,1,12,0,0)).total_seconds()
+            observation_times_list.append(epoch)
 
     # Create observation viability settings and calculators
     viability_settings_list = list()
     viability_settings_list.append(observation.elevation_angle_viability(["Earth",""],np.deg2rad(20)))
-    viability_settings_list.append(observation.elevation_angle_viability(["Mars",""],np.deg2rad(35)))
+    viability_settings_list.append(observation.elevation_angle_viability(["Mars",""],np.deg2rad(10)))
     #viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(45))) #NOTE maximum elevation angle viability
     viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(20)))
     viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
 
     # Create measurement simulation input
     observation_simulation_settings = observation.tabulated_simulation_settings_list(
-        dict({observation.one_way_doppler_type:observation_settings_downlink_list}),observation_times_list,
+        dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list,
         viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter)
 
     # Define noise levels
     doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT # Taken from the Radioscience LaRa instrument onboard ExoMars to investigate the rotation and interior of Mars
-    weights_per_observable = dict({observation.one_way_doppler_type:doppler_noise**(-2)})
+    weights_per_observable = dict({observation.two_way_doppler_type:doppler_noise**(-2)})
 
     # Create noise functions
-    observation.add_gaussian_noise_to_settings(observation_simulation_settings,doppler_noise,observation.one_way_doppler_type)
-
+    observation.add_gaussian_noise_to_settings(observation_simulation_settings,doppler_noise,observation.two_way_doppler_type)
+    
     # Simulate required observation
     simulated_observations = estimation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
 
     # Perturbation
     parameter_perturbation = np.zeros(parameters_set.parameter_set_size) 
-    mas = np.pi/(180.0*1000.0*3600.0) # Conversion from milli arc seconds to seconds 
+    mas = 4.8481368*10**(-9) # Conversion from milli arc seconds to seconds 
     # Position of Mars
     parameter_perturbation[0:3]=1000*np.ones(3) # meters; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
     # Velocity of Mars
@@ -368,15 +377,15 @@ if __name__=="__main__":
     pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size, inverse_apriori_covariance = inverse_a_priori_covariance, apriori_parameter_correction = parameter_perturbation)
     pod_input.set_constant_weight_per_observable(weights_per_observable)
     #pod_input.define_estimation_settings(reintegrate_variational_equations = False)
-
+    
     # Perform estimation
     pod_output = estimator.perform_estimation(pod_input)
-
+    
     ########################################################################################################################
     ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
     ########################################################################################################################
 
-    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_LaRa_oneway')
+    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE')
     os.makedirs(output_folder_path,exist_ok=True)
 
     estimation_error = np.subtract(pod_output.parameter_estimate,truth_parameter)
@@ -398,7 +407,7 @@ if __name__=="__main__":
         estimation_information_matrix_normalization,fmt='%.15e')
     np.savetxt(output_folder_path+"/concatenated_times.dat",concatenated_times,fmt='%.15e')
     np.savetxt(output_folder_path+"/concatenated_link_ends.dat",concatenated_link_ends,fmt='%.15e')
-
+    
     ########################################################################################################################
     ################################################## PLOTTING TRUE TO FORM RATIO #########################################
     ########################################################################################################################

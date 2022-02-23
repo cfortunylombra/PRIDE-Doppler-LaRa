@@ -14,6 +14,7 @@ if __name__=="__main__":
     sys.path.insert(0, "/home/cfortunylombra/tudat-bundle/cmake-build-release-wsl/tudatpy/")
     import os
     import copy
+    import datetime
     import numpy as np
     from tudatpy.kernel import constants, numerical_simulation
     from tudatpy.kernel.astro import element_conversion, frame_conversion
@@ -28,11 +29,8 @@ if __name__=="__main__":
     # days in a week
     days_in_a_week = 7 #days
 
-    # Days of observations per week
-    observation_days_per_week = 2 
-
     # Initial date of the simulation
-    start_date = 2460096.5 #in Julian days = 01/06/2023 00:00:00 # Two years later than March 2021 (taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models")
+    start_date = 2458423.5 #in Julian days = 01/11/2018 00:00:00; Taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
 
     # Duration of the simulation
     simulation_duration_days = 700 #days
@@ -40,9 +38,9 @@ if __name__=="__main__":
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
     # LaRa landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
-    reflector_name = "LaRa"
-    reflector_latitude_deg = 18.3 #North degrees
-    reflector_longitude_deg = 335.37 #East degrees
+    reflector_name = "RISE"
+    reflector_latitude_deg = 4.5 #North degrees
+    reflector_longitude_deg = 135.62 #East degrees
 
     # Earth-based transmitter
     transmitter_name = "DSS 63"
@@ -135,26 +133,28 @@ if __name__=="__main__":
     ################################################## GROUND STATIONS ELEVATION HISTORY ###################################
     ########################################################################################################################
 
-    # Define time of first observation
-    observation_start_epoch = simulation_start_epoch + constants.JULIAN_DAY
-
-    # Define time between two observations
-    observation_interval = 60 #seconds
-
     # Define observation simulation times for each link
     observation_times_list = list()
-    for pointer_weeks in range(0,int(np.ceil(simulation_duration_weeks))):
-        for pointer_days_per_week in range(0,int(observation_days_per_week)):
-            for pointer_interval in range(0,int(np.ceil(constants.JULIAN_DAY/observation_interval))):
-                observation_times_list.append(observation_start_epoch+pointer_weeks*days_in_a_week*constants.JULIAN_DAY \
-                    +pointer_days_per_week*np.floor(days_in_a_week/observation_days_per_week)*constants.JULIAN_DAY \
-                        +pointer_interval*observation_interval)
-    
-    #bool_reflector = estimation.compute_target_angles_and_range(bodies,('Mars',reflector_name),'Earth',observation_times_list,False)
-    #bool_transmitter = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_name),'Mars',observation_times_list,True)
+    with open(os.path.dirname(os.path.realpath(__file__))+'/nsyt_maro_2018_331_2020_366.tdm') as file:
+        lines = file.read().splitlines()
+        meta_start_line = lines.index('PARTICIPANT_1          = '+transmitter_name)
+        data_start_line = list(filter(lambda x: x >= meta_start_line, [i for i, x in enumerate(lines) if x == 'DATA_START']))[0]+1
+        data_stop_line = list(filter(lambda x: x >= meta_start_line, [i for i, x in enumerate(lines) if x == 'DATA_STOP']))[0] 
+        lines = lines[data_start_line:data_stop_line]
 
-    #print(bool_reflector.values())
-    #print(len(observation_times_list),len(bool_reflector.keys()),len(bool_transmitter.keys()))
+        for pointer_time in range(0,len(lines)):
+            line = lines[pointer_time]
+            date_and_time = line.split()[2]
+            year = int(date_and_time.split('-')[0])
+            day_of_year = int((date_and_time.split('-')[1]).split('T')[0])
+            hour_min_sec = ((date_and_time.split('-')[1]).split('T')[1]).split(':')
+            hour = int(hour_min_sec[0])
+            min = int(hour_min_sec[1])
+            sec = int((hour_min_sec[2].split('.'))[0])
+
+            date = datetime.datetime(year,1,1)+datetime.timedelta(days=day_of_year-1,hours=hour,minutes=min,seconds=sec)
+            epoch = (date - datetime.datetime(2000,1,1,12,0,0)).total_seconds()
+            observation_times_list.append(epoch)
 
     # Specifications of the reflector
     reflector_station = bodies.get_body("Mars").get_ground_station(reflector_name)
@@ -186,7 +186,7 @@ if __name__=="__main__":
                 pointer_time))
 
         # Angle viability
-        if earth_elevation[-1] >= np.deg2rad(35) and earth_elevation[-1] <= np.deg2rad(45): 
+        if earth_elevation[-1] >= np.deg2rad(10) and earth_elevation[-1] <= np.deg2rad(30): 
             DSS63_observation_time.append(pointer_time)
             
             # As seen by DSS63
@@ -230,7 +230,7 @@ if __name__=="__main__":
     ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
     ########################################################################################################################
 
-    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/GS_LaRa')
+    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/GS_RISE')
     os.makedirs(output_folder_path,exist_ok=True)
 
     np.savetxt(output_folder_path+"/observation_time.dat",observation_times_list,fmt='%.15e')

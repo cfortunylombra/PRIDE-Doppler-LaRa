@@ -34,7 +34,7 @@ if __name__=="__main__":
     observation_days_per_week = 2 # This value can be set to 1 or 2
 
     # Initial date of the simulation
-    start_date = 2460004.5 #in Julian days = 01/03/2023 00:00:00 # Two years later than March 2021 (taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models")
+    start_date = 2460096.5 #in Julian days = 01/06/2023 00:00:00 # Two years later than March 2021 (taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models")
 
     # Duration of the simulation
     simulation_duration_days = 700 #days
@@ -47,7 +47,7 @@ if __name__=="__main__":
     reflector_longitude_deg = 335.37 #East degrees
 
     # Earth-based transmitter
-    transmitter_name = "DSS63"
+    transmitter_name = "DSS 63"
     transmitter_position_cartesian = np.array([4849092.6814,-360180.5350,4115109.1298], dtype='d') #Taken from https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat
 
     ########################################################################################################################
@@ -59,7 +59,6 @@ if __name__=="__main__":
 
     # Initial and end time of the simulation
     simulation_start_epoch = (start_date-constants.JULIAN_DAY_ON_J2000)*constants.JULIAN_DAY #seconds
-    print(simulation_start_epoch)
     simulation_end_epoch = simulation_start_epoch+simulation_duration #seconds
 
     # Define bodies in the simulation
@@ -320,7 +319,7 @@ if __name__=="__main__":
 
     # Perturbation
     parameter_perturbation = np.zeros(parameters_set.parameter_set_size) 
-    mas = 4.8481368*10**(-9) # Conversion from milli arc seconds to seconds 
+    mas =np.pi/(180.0*1000.0*3600.0) # Conversion from milli arc seconds to seconds 
     # Position of Mars
     parameter_perturbation[0:3]=1000*np.ones(3) # meters; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
     # Velocity of Mars

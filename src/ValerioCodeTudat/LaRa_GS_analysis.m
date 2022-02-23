@@ -47,7 +47,7 @@
 format long; clear; close all; clc;
 
 % Path of all the data
-dataDirectory = strrep(matlab.desktop.editor.getActiveFilename,'src\ValerioCodeTudat\LaRa_GS_analysis.m','output\GS\');
+dataDirectory = strrep(matlab.desktop.editor.getActiveFilename,'src\ValerioCodeTudat\LaRa_GS_analysis.m','output\GS_LaRa\');
 
 % List of Ground Station Names
 groundStationNames = [ "DSS63"; "BADARY"; "CEDUNA"; "HARTRAO"; "HART15M"; "HOBART12"; "HOBART26"; "TIANMA65"; "WARK30M"; "EFLSBERG"; "IRBENE"; "YEBES40M"; "MEDICINA"; "WETTZELL"; "ONSALA60"; "WRT0"];
