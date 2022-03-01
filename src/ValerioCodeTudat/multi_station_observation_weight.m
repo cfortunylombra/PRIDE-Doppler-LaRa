@@ -43,23 +43,28 @@ function [ H, Wgt] = ...
 % POSSIBILITY OF SUCH DAMAGE.
 
 %% ------------- BEGIN CODE --------------
-
 [~,idxu,idxc] = unique( observationTimes );
 [count, ~, idxcount] = histcounts( idxc,numel( idxu ) );
 idxkeep = count( idxcount ) == 1;
 
+% Not repeated observation times
 uncommonObservationTimes = observationTimes( idxkeep );
 
+% Create and sort repeated observation times array
 commonObservationTimes = observationTimes;
-commonObservationTimes(idxkeep) = [];
+commonObservationTimes(idxkeep) = []; % Remove the non-repeated observations
 [commonObservationTimes,sortIndex] = sort( commonObservationTimes );
 
+% Not repeated observation link ends 
 uncommonObservationLinkEnds = observationLinkEnds( idxkeep );
 
+% Repeated observation link ends
 commonObservationLinkEnds = observationLinkEnds( ~idxkeep );
 
+% Not repeated estimation information matrix
 uncommonEstimationInformationMatrix = estimationInformationMatrix( idxkeep, : );
 
+% Sort repeated estimation information matrix
 commonEstimationInformationMatrix = estimationInformationMatrix( ~idxkeep, : );
 commonEstimationInformationMatrix = commonEstimationInformationMatrix( sortIndex, : );
 
@@ -67,48 +72,55 @@ H = [ commonEstimationInformationMatrix ; uncommonEstimationInformationMatrix ];
 
 % CREATE WEIGHTS MATRIX
 
+% Take only once the repeated observation times
 commonTimes = unique( commonObservationTimes );
+
+% Create a sparse matrix for common observation
 commonObservationWgt = sparse([]);
+
+% Iterate for each repeated observation times
 for currentIndex = 1 : length( commonTimes )
-    
     currentTime = commonTimes( currentIndex );
     
+    % Compute the number of repeated observation time
     blockDimension = sum( commonObservationTimes == currentTime );
     
+    % Find the indexes for the repeated observation times
     [~, currentCommonObservationLinkEndsIndex] = ismember(currentTime, commonObservationTimes);
     
+    % Define the variance array
     currentVarianceArray = [];
     for ind = 0 : blockDimension-1
-        
+        % Take the link-end for each repeated observation time
         linkEndId = commonObservationLinkEnds(currentCommonObservationLinkEndsIndex + ind);
-        
+        % Concatenate the current variance array
         currentVarianceArray = [ currentVarianceArray; variance(linkEndId) ];
-        
     end
-    
+    % Since it is a variance, the array has to be power of 2
     varianceCovarianceBlock = currentVarianceArray * currentVarianceArray';
+    
+    % Create the covariance matrix
     idx = eye( blockDimension );
     idx = idx + correlationCoefficient * (1-idx);
     varianceCovarianceBlock = idx .* varianceCovarianceBlock;
     
+    % Append to the Weighted matrix with the inverse of the covariance matrix
     commonObservationWgt = blkdiag( commonObservationWgt, sparse(inv( varianceCovarianceBlock )));
-    
 end
 
+% If there are not repeated observation times
 if isempty( uncommonObservationTimes ) == 1
-    
+    % Weight matrix is:
     Wgt = commonObservationWgt;
-    
+% If there are repeated observation times
 else
-    
+    % Since there are not other station with the same observation times,
+    % only the diagonal is added
     uncommonObservationWgt = zeros([ length( uncommonObservationTimes ) 1 ]);
-    
     for ind = 1 : length( uncommonObservationTimes )
-        
+        % Diagonal
         uncommonObservationWgt( ind ) = 1 / variance(uncommonObservationLinkEnds(ind))^2 ;
-        
     end
-    
+    % Concatenate with the repeated Weighted matrix
     Wgt = blkdiag( commonObservationWgt, sparse( diag( uncommonObservationWgt )));
-    
 end
