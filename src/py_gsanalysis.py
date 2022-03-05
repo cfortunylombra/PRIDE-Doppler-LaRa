@@ -150,10 +150,32 @@ if __name__=="__main__":
                     +pointer_days_per_week*np.floor(days_in_a_week/observation_days_per_week)*constants.JULIAN_DAY \
                         +pointer_interval*observation_interval)
     
-    #bool_reflector = estimation.compute_target_angles_and_range(bodies,('Mars',reflector_name),'Earth',observation_times_list,False)
-    #bool_transmitter = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_name),'Mars',observation_times_list,True)
+    bool_reflector = estimation.compute_target_angles_and_range(bodies,('Mars',reflector_name),'Earth',observation_times_list,True)
+    bool_transmitter = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_name),'Mars',observation_times_list,True)
 
-    #print(bool_reflector.values())
+    bool_reflector_post = dict()
+    for reflector_item in bool_reflector.keys():
+        if bool_reflector[reflector_item][0] >= np.deg2rad(35) and bool_reflector[reflector_item][0] <= np.deg2rad(45):
+            bool_reflector_post[reflector_item] = bool_reflector[reflector_item]
+
+    bool_transmitter_post = dict()
+    for transmitter_item in bool_transmitter.keys():
+        if bool_transmitter[transmitter_item][0] >= np.deg2rad(20):
+            bool_transmitter_post[transmitter_item] = bool_transmitter[transmitter_item]
+
+    bool_reflector_final = dict()
+    for reflector_item in bool_reflector_post.keys():
+        if reflector_item in bool_transmitter_post.keys():
+            bool_reflector_final[reflector_item] = bool_reflector_post[reflector_item]
+
+    bool_transmitter_final = dict()
+    for transmitter_item in bool_transmitter_post.keys():
+        if transmitter_item in bool_reflector_post.keys():
+            bool_transmitter_final[transmitter_item] = bool_transmitter_post[transmitter_item]
+    
+    print(len(bool_reflector_post),len(bool_transmitter_post))  
+    print(len(bool_reflector_final),len(bool_transmitter_final))  
+    #print(bool_reflector)
     #print(len(observation_times_list),len(bool_reflector.keys()),len(bool_transmitter.keys()))
 
     # Specifications of the reflector
@@ -225,6 +247,19 @@ if __name__=="__main__":
                 ground_station_ids.append(id)
             ind+=1
         id+=1
+
+    #earth_elevation = list()
+    #earth_azimuth = list()
+    #DSS63_elevation = list()
+
+    #DSS63_observation_time = list(bool_transmitter_final.keys())
+
+    #for earth_pointer in bool_reflector_final.keys():
+    #    earth_elevation.append(bool_reflector_final[earth_pointer][0])
+    #    earth_azimuth.append(bool_reflector_final[earth_pointer][1])
+
+    #for DSS63_pointer in bool_transmitter_final.keys():
+    #    DSS63_elevation.append(bool_transmitter_final[DSS63_pointer][0])
 
     ########################################################################################################################
     ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################

@@ -288,28 +288,12 @@ if __name__=="__main__":
 
     # Define observation simulation times for each link
     observation_times_list = list()
-    with open(os.path.dirname(os.path.realpath(__file__))+'/nsyt_maro_2018_331_2020_366.tdm') as file:
-        lines = file.read().splitlines()
-        meta_start_line = lines.index('PARTICIPANT_1          = '+transmitter_name)
-        data_start_line = list(filter(lambda x: x >= meta_start_line, [i for i, x in enumerate(lines) if x == 'DATA_START']))[0]+1
-        data_stop_line = list(filter(lambda x: x >= meta_start_line, [i for i, x in enumerate(lines) if x == 'DATA_STOP']))[0] 
-        lines = lines[data_start_line:data_stop_line]
-
-        datetime_list = list()
-        epoch_list = list()
-        for pointer_time in range(0,len(lines)):
-            line = lines[pointer_time]
-            date_and_time = line.split()[2]
-            year = int(date_and_time.split('-')[0])
-            day_of_year = int((date_and_time.split('-')[1]).split('T')[0])
-            hour_min_sec = ((date_and_time.split('-')[1]).split('T')[1]).split(':')
-            hour = int(hour_min_sec[0])
-            min = int(hour_min_sec[1])
-            sec = int((hour_min_sec[2].split('.'))[0])
-
-            date = datetime.datetime(year,1,1)+datetime.timedelta(days=day_of_year-1,hours=hour,minutes=min,seconds=sec)
-            epoch = (date - datetime.datetime(2000,1,1,12,0,0)).total_seconds()
-            observation_times_list.append(epoch)
+    for pointer_weeks in range(0,int(np.ceil(simulation_duration_weeks))):
+        for pointer_days_per_week in range(0,int(observation_days_per_week)):
+            for pointer_interval in range(0,int(np.ceil(constants.JULIAN_DAY/observation_interval))):
+                observation_times_list.append(observation_start_epoch+pointer_weeks*days_in_a_week*constants.JULIAN_DAY \
+                    +pointer_days_per_week*np.floor(days_in_a_week/observation_days_per_week)*constants.JULIAN_DAY \
+                        +pointer_interval*observation_interval)
 
     # Create observation viability settings and calculators
     viability_settings_list = list()
@@ -336,7 +320,7 @@ if __name__=="__main__":
 
     # Perturbation
     parameter_perturbation = np.zeros(parameters_set.parameter_set_size) 
-    mas = 4.8481368*10**(-9) # Conversion from milli arc seconds to seconds 
+    mas = np.pi/(180.0*1000.0*3600.0) # Conversion from milli arc seconds to seconds 
     # Position of Mars
     parameter_perturbation[0:3]=1000*np.ones(3) # meters; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
     # Velocity of Mars
