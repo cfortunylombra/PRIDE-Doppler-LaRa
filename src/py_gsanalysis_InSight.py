@@ -159,104 +159,288 @@ if __name__=="__main__":
 
     # Define observation simulation times for each link
     #observation_times_list = list()
-    data = dict()
+    data_transmitter = dict()
     
     # Read the epoch times
     with open(os.path.dirname(os.path.realpath(__file__))+'/InSight_mes_upto_31122021.forCarlos') as file:
         lines = file.read().splitlines()
         observation_start_epoch = np.inf
         for transmitter_pointer in transmitter_names:
-            data[transmitter_pointer] = dict()
-            data[transmitter_pointer]['Epoch file received'] = list()
+            data_transmitter[transmitter_pointer] = dict()
+            data_transmitter[transmitter_pointer]['Time at receiver'] = list()
             transmitter_ground_station_number =  [int(s) for s in transmitter_pointer.split() if s.isdigit()][0]
             for pointer_time in range(0,len(lines)):
                 line = lines[pointer_time]
                 line_info = line.split()
                 if float(line_info[0]) == transmitter_ground_station_number and float(line_info[1]) == transmitter_ground_station_number:
-                    data[transmitter_pointer]['Epoch file received'].append(float(line_info[2]))
+                    data_transmitter[transmitter_pointer]['Time at receiver'].append(float(line_info[2]))
                     if float(line_info[2])<observation_start_epoch:
                         observation_start_epoch = float(line_info[2])
     
     for transmitter_pointer in transmitter_names:
-        data[transmitter_pointer]['Earth elevation'] = list()
-        data[transmitter_pointer]['Earth azimuth'] = list()
-        data[transmitter_pointer]['Time at transmitter'] = list()
-        data[transmitter_pointer]['Elevation at transmitter'] = list()
-        data[transmitter_pointer]['Elevation at receiver'] = list()
-        data[transmitter_pointer]['Azimuth at transmitter'] = list()
-        data[transmitter_pointer]['Azimuth at receiver'] = list()
-        for receiver_time_pointer in range(0,len(data[transmitter_pointer]['Epoch file received'])):
+        data_transmitter[transmitter_pointer]['Time at reflector'] = list()
+        data_transmitter[transmitter_pointer]['Earth elevation'] = list()
+        data_transmitter[transmitter_pointer]['Earth azimuth'] = list()
+        data_transmitter[transmitter_pointer]['Time at transmitter'] = list()
+        data_transmitter[transmitter_pointer]['Elevation at transmitter'] = list()
+        data_transmitter[transmitter_pointer]['Elevation at receiver'] = list()
+        data_transmitter[transmitter_pointer]['Azimuth at transmitter'] = list()
+        data_transmitter[transmitter_pointer]['Azimuth at receiver'] = list()
+        for receiver_time_pointer in range(0,len(data_transmitter[transmitter_pointer]['Time at receiver'])):
             bool_receiver = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_pointer),'Mars',
-                [data[transmitter_pointer]['Epoch file received'][receiver_time_pointer]],False)
+                [data_transmitter[transmitter_pointer]['Time at receiver'][receiver_time_pointer]],False)
 
-            reflector_time = data[transmitter_pointer]['Epoch file received'][receiver_time_pointer]-bool_receiver[list(bool_receiver.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
-            bool_reflector = estimation.compute_target_angles_and_range(bodies,('Mars',reflector_name),'Earth',[reflector_time],False)
+            data_transmitter[transmitter_pointer]['Time at reflector'].append(data_transmitter[transmitter_pointer]['Time at receiver'][receiver_time_pointer]\
+                -bool_receiver[list(bool_receiver.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG)
+            bool_reflector = estimation.compute_target_angles_and_range(bodies,('Mars',reflector_name),'Earth',[data_transmitter[transmitter_pointer]['Time at reflector'][receiver_time_pointer]],False)
 
-            transmitter_time = reflector_time-bool_reflector[list(bool_reflector.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
+            transmitter_time = data_transmitter[transmitter_pointer]['Time at reflector'][receiver_time_pointer]-bool_reflector[list(bool_reflector.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
             bool_transmitter = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_pointer),'Mars',
                 [transmitter_time],True)
 
             if True:#np.deg2rad(earth_min) <= bool_reflector[list(bool_reflector.keys())[0]][0] <= np.deg2rad(earth_max) and\
                  #bool_transmitter[list(bool_transmitter.keys())[0]][0] >= np.deg2rad(antenna_min_elevation):
-                data[transmitter_pointer]['Elevation at receiver'].append(bool_receiver[list(bool_receiver.keys())[0]][0])
-                data[transmitter_pointer]['Azimuth at receiver'].append(bool_receiver[list(bool_receiver.keys())[0]][1])
+                data_transmitter[transmitter_pointer]['Elevation at receiver'].append(bool_receiver[list(bool_receiver.keys())[0]][0])
+                data_transmitter[transmitter_pointer]['Azimuth at receiver'].append(bool_receiver[list(bool_receiver.keys())[0]][1])
 
-                data[transmitter_pointer]['Earth elevation'].append(bool_reflector[list(bool_reflector.keys())[0]][0])
-                data[transmitter_pointer]['Earth azimuth'].append(bool_reflector[list(bool_reflector.keys())[0]][1])
+                data_transmitter[transmitter_pointer]['Earth elevation'].append(bool_reflector[list(bool_reflector.keys())[0]][0])
+                data_transmitter[transmitter_pointer]['Earth azimuth'].append(bool_reflector[list(bool_reflector.keys())[0]][1])
 
-                data[transmitter_pointer]['Time at transmitter'].append(transmitter_time)
-                data[transmitter_pointer]['Elevation at transmitter'].append(bool_transmitter[list(bool_transmitter.keys())[0]][0])
-                data[transmitter_pointer]['Azimuth at transmitter'].append(bool_transmitter[list(bool_transmitter.keys())[0]][1])
+                data_transmitter[transmitter_pointer]['Time at transmitter'].append(transmitter_time)
+                data_transmitter[transmitter_pointer]['Elevation at transmitter'].append(bool_transmitter[list(bool_transmitter.keys())[0]][0])
+                data_transmitter[transmitter_pointer]['Azimuth at transmitter'].append(bool_transmitter[list(bool_transmitter.keys())[0]][1])
 
+
+    data_receiver = dict()
 
     # Iterate along receivers
     for Earth_ground_station_pointer in Earth_ground_station_list:
+        data_receiver[Earth_ground_station_pointer[1]] = dict()
+        data_receiver[Earth_ground_station_pointer[1]]['Total'] = dict()
+        data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver'] = list()
+        data_receiver[Earth_ground_station_pointer[1]]['Total']['Elevation at receiver'] = list()
+        data_receiver[Earth_ground_station_pointer[1]]['Total']['Azimuth at receiver'] = list()
 
         # Shadow tracking
-        if Earth_ground_station_pointer[1] in transmitter_names:
-            continue
-        
-        if not Earth_ground_station_pointer[1] in transmitter_names:
-            
+        #if Earth_ground_station_pointer[1] in transmitter_names:
+        #    continue
 
         # Iterate along transmitters
         for transmitter_pointer in transmitter_names:
-            
-            # Iterate along transmitting times
-            for transmitter_time_pointer in data[transmitter_pointer]['Time at transmitter']:
-                bool_transmitter = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_pointer),'Mars',
-                [transmitter_time],True)
+            data_receiver[Earth_ground_station_pointer[1]][transmitter_pointer] = dict()
+            data_receiver[Earth_ground_station_pointer[1]][transmitter_pointer]['Observation time at receiver'] = list()
+            data_receiver[Earth_ground_station_pointer[1]][transmitter_pointer]['Elevation at receiver'] = list()
+            data_receiver[Earth_ground_station_pointer[1]][transmitter_pointer]['Azimuth at receiver'] = list()
 
-                reflector_time = data[transmitter_pointer]['Time at transmitter'][transmitter_time_pointer]+bool_transmitter[list(bool_transmitter.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
+            # Iterate along transmitting times
+            for transmitter_time_pointer in range(0,len(data_transmitter[transmitter_pointer]['Time at transmitter'])):
+                bool_transmitter = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_pointer),'Mars',
+                [data_transmitter[transmitter_pointer]['Time at transmitter'][transmitter_time_pointer]],True)
+
+                reflector_time = data_transmitter[transmitter_pointer]['Time at transmitter'][transmitter_time_pointer]+bool_transmitter[list(bool_transmitter.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
                 bool_reflector = estimation.compute_target_angles_and_range(bodies,('Mars',reflector_name),'Earth',[reflector_time],False)
 
                 receiver_time = reflector_time+bool_transmitter[list(bool_transmitter.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
                 bool_receiver = estimation.compute_target_angles_and_range(bodies,('Earth',Earth_ground_station_pointer[1]),'Mars',[receiver_time],False)
 
                 if bool_receiver[list(bool_receiver.keys())[0]][0] >= np.deg2rad(antenna_min_elevation):
+                    data_receiver[Earth_ground_station_pointer[1]][transmitter_pointer]['Observation time at receiver'].append(receiver_time)
+                    data_receiver[Earth_ground_station_pointer[1]][transmitter_pointer]['Elevation at receiver'].append(bool_receiver[list(bool_receiver.keys())[0]][0])
+                    data_receiver[Earth_ground_station_pointer[1]][transmitter_pointer]['Azimuth at receiver'].append(bool_receiver[list(bool_receiver.keys())[0]][1])
 
+            data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver'].extend(data_receiver[Earth_ground_station_pointer[1]][transmitter_pointer]['Observation time at receiver'])
+            index_sort = np.argsort(data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver'])
+            data_receiver[Earth_ground_station_pointer[1]]['Total']['Elevation at receiver'].extend(data_receiver[Earth_ground_station_pointer[1]][transmitter_pointer]['Elevation at receiver'])
+            data_receiver[Earth_ground_station_pointer[1]]['Total']['Azimuth at receiver'].extend(data_receiver[Earth_ground_station_pointer[1]][transmitter_pointer]['Azimuth at receiver'])
+        
+            data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver'] = [data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver'][i] for i in index_sort]
+            data_receiver[Earth_ground_station_pointer[1]]['Total']['Elevation at receiver'] = [data_receiver[Earth_ground_station_pointer[1]]['Total']['Elevation at receiver'][i] for i in index_sort]
+            data_receiver[Earth_ground_station_pointer[1]]['Total']['Azimuth at receiver'] = [data_receiver[Earth_ground_station_pointer[1]]['Total']['Azimuth at receiver'][i] for i in index_sort]
 
-
+    ########################################################################################################################
+    ################################################## PLOTS ###############################################################
+    ########################################################################################################################
+    
+    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/GS_RISE')
+    os.makedirs(output_folder_path,exist_ok=True)
 
     plt.figure(figsize=(15, 6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(transmitter_names)-1))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(transmitter_names)))))
     for transmitter_pointer in transmitter_names:
-        plt.scatter((np.array(data[transmitter_pointer]['Time at transmitter'])-observation_start_epoch)/constants.JULIAN_DAY,
-            np.rad2deg(data[transmitter_pointer]['Earth elevation']),s=5,label=transmitter_pointer)
-    #plt.scatter((np.array(transmitter_observation_time)-min(observation_times_list)*np.ones(len(transmitter_observation_time)))/constants.JULIAN_DAY,
-    #    list(map(np.rad2deg(earth_elevation).__getitem__,np.nonzero(np.in1d(observation_times_list,transmitter_observation_time))[0])),s=5,c='b',
-    #    label='Tracking Windows of '+reflector_name)
+        plt.scatter((np.array(data_transmitter[transmitter_pointer]['Time at reflector'])-observation_start_epoch)/constants.JULIAN_DAY,
+            np.rad2deg(data_transmitter[transmitter_pointer]['Earth elevation']),s=5,label=transmitter_pointer)
     plt.ylabel('Earth elevation as seen by '+reflector_name+' [deg]')
     plt.xlabel('Time after landing [Earth days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
     plt.grid()
-    #plt.savefig(output_folder_path+'/Earth_elevation_seen_'+reflector_name+'_vs_time.pdf',bbox_inches='tight')
+    plt.savefig(output_folder_path+'/Earth_elevation_seen_'+reflector_name+'_vs_time.pdf',bbox_inches='tight')
     plt.show()
     plt.close('all')
 
-    '''
+    plt.figure(figsize=(15,6))
+    colormap = plt.cm.gist_ncar
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(transmitter_names)))))
+    for transmitter_pointer in transmitter_names:
+        plt.scatter((np.array(data_transmitter[transmitter_pointer]['Time at reflector'])-observation_start_epoch)/constants.JULIAN_DAY,
+            np.mod(-np.rad2deg(data_transmitter[transmitter_pointer]['Earth azimuth'])+90,360),s=5,label=transmitter_pointer)
+    plt.ylabel('Earth azimuth as seen by '+reflector_name+' [deg]')
+    plt.xlabel('Time after landing [Earth days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+    plt.grid()
+    plt.savefig(output_folder_path+'/Earth_azimuth_seen_'+reflector_name+'_vs_time.pdf',bbox_inches='tight')
+    plt.show()
+    plt.close('all')
+
+    plt.figure(figsize=(15,6))
+    colormap = plt.cm.gist_ncar
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(transmitter_names)))))
+    for transmitter_pointer in transmitter_names:
+        plt.scatter(np.mod(-np.rad2deg(data_transmitter[transmitter_pointer]['Earth azimuth'])+90,360),
+            np.rad2deg(data_transmitter[transmitter_pointer]['Earth elevation']),s=5,label=transmitter_pointer)
+    plt.ylabel('Earth elevation as seen by '+reflector_name+' [deg]')
+    plt.xlabel('Earth azimuth as seen by '+reflector_name+' [deg]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+    plt.grid()
+    plt.savefig(output_folder_path+'/Earth_elevation_seen_'+reflector_name+'_vs_Earth_azimuth_seen_'+reflector_name+'.pdf',bbox_inches='tight')
+    plt.show()
+    plt.close('all')
+
+    plt.figure(figsize=(15,6))
+    colormap = plt.cm.gist_ncar
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(transmitter_names)))))
+    for transmitter_pointer in transmitter_names:
+        plt.scatter((np.array(data_transmitter[transmitter_pointer]['Time at transmitter'])-observation_start_epoch)/constants.JULIAN_DAY,
+            np.rad2deg(data_transmitter[transmitter_pointer]['Elevation at transmitter']),s=5,label=transmitter_pointer)
+    plt.ylabel('Elevation at DSN transmitter [deg]')
+    plt.xlabel('Time after landing [Earth days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+    plt.grid()
+    plt.savefig(output_folder_path+'/Transmitter_elevation_vs_time_transmission.pdf',bbox_inches='tight')
+    plt.show()
+    plt.close('all')
+
+    plt.figure(figsize=(15,6))
+    colormap = plt.cm.gist_ncar
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(transmitter_names)))))
+    for transmitter_pointer in transmitter_names:
+        plt.scatter((np.array(data_transmitter[transmitter_pointer]['Time at receiver'])-observation_start_epoch)/constants.JULIAN_DAY,
+            np.rad2deg(data_transmitter[transmitter_pointer]['Elevation at receiver']),s=5,label=transmitter_pointer)
+    plt.ylabel('Elevation at DSN receiver [deg]')
+    plt.xlabel('Time after landing [Earth days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+    plt.grid()
+    plt.savefig(output_folder_path+'/Transmitter_elevation_vs_time_reception.pdf',bbox_inches='tight')
+    plt.show()
+    plt.close('all')
+
+    
+    plt.figure(figsize=(15,6))
+    colormap = plt.cm.gist_ncar
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(transmitter_names)))))
+    for transmitter_pointer in transmitter_names:
+        plt.plot(np.arange(0,(data_transmitter[transmitter_pointer]['Time at transmitter'][-1]-observation_start_epoch)/constants.JULIAN_DAY,1),
+            np.polyval(np.polyfit((np.array(data_transmitter[transmitter_pointer]['Time at transmitter'])-observation_start_epoch)/constants.JULIAN_DAY,
+                np.rad2deg(data_transmitter[transmitter_pointer]['Elevation at transmitter']),4),
+            np.arange(0,(data_transmitter[transmitter_pointer]['Time at transmitter'][-1]-observation_start_epoch)/constants.JULIAN_DAY,1)),label='Mean - '+transmitter_pointer)
+    plt.ylabel('Elevation at DSN transmitter [deg]')
+    plt.xlabel('Time after landing [Earth days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+    plt.ylim([0,90])
+    plt.grid()
+    plt.savefig(output_folder_path+'/Transmitter_elevation_vs_time_mean_transmission.pdf',bbox_inches='tight')
+    plt.show()
+    plt.close('all')
+
+    plt.figure(figsize=(15,6))
+    colormap = plt.cm.gist_ncar
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(transmitter_names)))))
+    for transmitter_pointer in transmitter_names:
+        plt.plot(np.arange(0,(data_transmitter[transmitter_pointer]['Time at receiver'][-1]-observation_start_epoch)/constants.JULIAN_DAY,1),
+            np.polyval(np.polyfit((np.array(data_transmitter[transmitter_pointer]['Time at receiver'])-observation_start_epoch)/constants.JULIAN_DAY,
+                np.rad2deg(data_transmitter[transmitter_pointer]['Elevation at receiver']),4),
+            np.arange(0,(data_transmitter[transmitter_pointer]['Time at receiver'][-1]-observation_start_epoch)/constants.JULIAN_DAY,1)),label='Mean - '+transmitter_pointer)
+    plt.ylabel('Elevation at DSN receiver [deg]')
+    plt.xlabel('Time after landing [Earth days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+    plt.ylim([0,90])
+    plt.grid()
+    plt.savefig(output_folder_path+'/Transmitter_elevation_vs_time_mean_receiver.pdf',bbox_inches='tight')
+    plt.show()
+    plt.close('all')
+
+    plt.figure(figsize=(15,6))
+    colormap = plt.cm.gist_ncar
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(Earth_ground_station_list)))))
+    for Earth_ground_station_pointer in Earth_ground_station_list:
+        plt.scatter((np.array(data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver'])-observation_start_epoch)/constants.JULIAN_DAY,
+            np.rad2deg(data_receiver[Earth_ground_station_pointer[1]]['Total']['Elevation at receiver']),s=5,label=Earth_ground_station_pointer[1])
+    plt.ylabel('Elevation at receivers [deg]')
+    plt.xlabel('Time after landing [Earth days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+    plt.grid()
+    plt.savefig(output_folder_path+'/Receivers_elevation_vs_time.pdf',bbox_inches='tight')
+    plt.show()
+    plt.close('all')  
+
+    plt.figure(figsize=(15,6))
+    colormap = plt.cm.gist_ncar
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(Earth_ground_station_list)))))
+    for Earth_ground_station_pointer in Earth_ground_station_list:
+        plt.plot(np.arange(0,(data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver'][-1]-observation_start_epoch)/constants.JULIAN_DAY,1),
+            np.polyval(np.polyfit((np.array(data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver'])-observation_start_epoch)/constants.JULIAN_DAY,
+                np.rad2deg(data_receiver[Earth_ground_station_pointer[1]]['Total']['Elevation at receiver']),4),
+            np.arange(0,(data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver'][-1]-observation_start_epoch)/constants.JULIAN_DAY,1)),
+            label='Mean - '+Earth_ground_station_pointer[1])
+    plt.ylabel('Elevation at receivers [deg]')
+    plt.xlabel('Time after landing [Earth days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+    plt.grid()
+    plt.savefig(output_folder_path+'/Receivers_elevation_vs_time_mean.pdf',bbox_inches='tight')
+    plt.show()
+    plt.close('all')
+    
+    plt.figure(figsize=(15,6))
+    colormap = plt.cm.gist_ncar
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(Earth_ground_station_list)))))
+    station_names = list()
+    receiver_observation_number = list()
+    for Earth_ground_station_pointer in Earth_ground_station_list:
+        station_names.append(Earth_ground_station_pointer[1])
+        receiver_observation_number.append(len(data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver']))
+        plt.scatter((np.array(data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver'])-observation_start_epoch)/constants.JULIAN_DAY,
+            station_names.index(Earth_ground_station_pointer[1])*np.ones(len(data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver'])),s=5)
+    plt.grid()
+    plt.yticks(range(0,len(station_names)),labels=station_names)
+    plt.xlabel('Time after landing [Earth days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.savefig(output_folder_path+'/Receivers_scatter.pdf',bbox_inches='tight')
+    plt.show()
+    plt.close('all')
+
+    plt.figure(figsize=(15,6))
+    plot1 = plt.barh(np.arange(len(Earth_ground_station_list)),receiver_observation_number)
+    plt.yticks(np.arange(len(station_names)),labels=station_names)
+    plt.xlabel('Number of Observations')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.bar_label(plot1)
+    plt.grid()
+    plt.savefig(output_folder_path+'/Receivers_hbar.pdf',bbox_inches='tight')
+    plt.show()
+    plt.close('all')
+
+print("--- %s seconds ---" % (time.time() - run_time))
+
+'''
     # Initialize useful lists            
     earth_elevation = list()
     earth_azimuth = list()
@@ -452,7 +636,7 @@ if __name__=="__main__":
     plt.savefig(output_folder_path+'/Receivers_hbar.pdf',bbox_inches='tight')
     plt.show()
     plt.close('all')
-
+    
     ########################################################################################################################
     ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
     ########################################################################################################################
@@ -465,6 +649,4 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/ground_station_observation_time.dat",receiver_observation_time,fmt='%.15e')
     np.savetxt(output_folder_path+"/ground_station_elevation.dat",receiver_elevation,fmt='%.15e')
     np.savetxt(output_folder_path+"/ground_station_ids.dat",receiver_ids,fmt='%.15e')  
-    '''               
-
-print("--- %s seconds ---" % (time.time() - run_time))
+'''
