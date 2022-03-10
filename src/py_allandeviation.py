@@ -22,6 +22,9 @@ if __name__=="__main__":
     from scipy import stats
     from scipy.stats import norm
     from collections import Counter
+    from scipy import stats
+
+    np.random.seed(42)
 
     output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/InSight')
     os.makedirs(output_folder_path,exist_ok=True)
@@ -122,21 +125,21 @@ if __name__=="__main__":
     constraints_dict['Ir']['2020-05-29 08:40:05']['IQR_y'] = 1.5
     constraints_dict['Ir']['2020-05-29 08:40:05']['IQR_y2'] = 1.5
 
-    constraints_dict['Mc']['2020-10-21 03:25:05']['IQR_bool'] = True
-    constraints_dict['Mc']['2020-10-21 03:25:05']['IQR_y'] = 1.25
-    constraints_dict['Mc']['2020-10-21 03:25:05']['IQR_y2'] = 1.25
+    constraints_dict['Mc']['2020-05-30 03:25:05']['IQR_bool'] = True
+    constraints_dict['Mc']['2020-05-30 03:25:05']['IQR_y'] = 1.25
+    constraints_dict['Mc']['2020-05-30 03:25:05']['IQR_y2'] = 1.25
 
-    constraints_dict['Mc']['2020-10-21 03:35:15']['IQR_bool'] = True
-    constraints_dict['Mc']['2020-10-21 03:35:15']['IQR_y'] = 1.5
-    constraints_dict['Mc']['2020-10-21 03:35:15']['IQR_y2'] = 1.5
+    constraints_dict['Mc']['2020-05-30 03:35:15']['IQR_bool'] = True
+    constraints_dict['Mc']['2020-05-30 03:35:15']['IQR_y'] = 1.5
+    constraints_dict['Mc']['2020-05-30 03:35:15']['IQR_y2'] = 1.5
 
     constraints_dict['Mc']['2020-10-22 04:03:55']['z_bool'] = True
     constraints_dict['Mc']['2020-10-22 04:03:55']['z_y'] = 3
     constraints_dict['Mc']['2020-10-22 04:03:55']['z_y2'] = 3
 
-    constraints_dict['Wz']['2020-10-21 03:35:15']['IQR_bool'] = True
-    constraints_dict['Wz']['2020-10-21 03:35:15']['IQR_y'] = 1.5
-    constraints_dict['Wz']['2020-10-21 03:35:15']['IQR_y2'] = 1.5
+    constraints_dict['Wz']['2020-05-30 03:35:15']['IQR_bool'] = True
+    constraints_dict['Wz']['2020-05-30 03:35:15']['IQR_y'] = 1.5
+    constraints_dict['Wz']['2020-05-30 03:35:15']['IQR_y2'] = 1.5
 
     constraints_dict['Wz']['2020-10-22 04:04:25']['IQR_bool'] = True
     constraints_dict['Wz']['2020-10-22 04:04:25']['IQR_y'] = 0
@@ -161,7 +164,7 @@ if __name__=="__main__":
     y2_axis_fdets = 'Doppler noise [Hz]'
 
     # Original files without any automatic cut
-    boolean_fdets = True
+    boolean_fdets = False
     if boolean_fdets:
         # Iterate along the ground stations inside the Fdets JSON file
         for fdets_station_pointer in data_fdets.keys():
@@ -220,10 +223,17 @@ if __name__=="__main__":
                 rate_fdets = 1/Counter(np.diff(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets])).most_common(1)[0][0]
                 taus2, adevs, errors, ns = allantools.mdev(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets],\
                     rate = rate_fdets, data_type = 'freq',taus='decade')
-                y = allantools.noise.white(len(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]),b0=np.std(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]),fs=rate_fdets)
+                y = np.random.normal(np.mean(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]),np.std(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]),
+                        size=len(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]))
                 taus2_white, adevs_white, errors_white, ns_white = allantools.mdev(y, rate=rate_fdets, data_type="freq",taus='decade')
                 plot1 = plt.errorbar(taus2,adevs,yerr=errors,ecolor='green')
                 plot2 = plt.errorbar(taus2_white, adevs_white,yerr=errors_white,ecolor='red')
+                slope, intercept, r_value, p_value, std_err = stats.linregress(np.log10(taus2), np.log10(adevs))
+                slope_white, intercept_white, r_value_white, p_value_white, std_err_white = stats.linregress(np.log10(taus2_white), np.log10(adevs_white))
+                correlation = np.corrcoef(adevs,adevs_white)[0][1]
+                print("Correlation: ",correlation)
+                print("Slope Allan Deviation: ",slope)
+                print("Slope White Allan Deviation: ",slope_white)
                 plt.xscale('log')
                 plt.yscale('log')
                 plt.xlabel('Tau [s]')
@@ -281,6 +291,10 @@ if __name__=="__main__":
                 adevs_total = list()
                 errors_total = list()
                 ns_total = list()
+                slope_total = list()
+                slope_white_total = list()
+                correlation_total = list()
+                white_boolean = list()
 
                 # Operation to identify the start index and end index
                 jump_label = -1
@@ -347,13 +361,26 @@ if __name__=="__main__":
                     plt.close('all')
 
                     # Fourth plot: Allan deviation using the y2_axis_fdets
+                    
                     plt.figure()
                     rate_fdets = 1/Counter(np.diff(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets][start_index:end_index])).most_common(1)[0][0]
                     taus2, adevs, errors, ns = allantools.mdev(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index],\
                         rate = rate_fdets, data_type = 'freq',taus='decade')
-                    y = allantools.noise.white(len(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index]),b0=np.std(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index]),fs=rate_fdets)
-                    taus2_white, adevs_white, errors_white, ns_white = allantools.mdev(y, rate=rate_fdets, data_type="freq",taus='decade')
                     plot1 = plt.errorbar(taus2,adevs,yerr=errors,ecolor='green')
+                    slope, intercept, r_value, p_value, std_err = stats.linregress(np.log10(taus2), np.log10(adevs))
+                    slopes_white = list()
+                    correlations = list()
+                    for random_pointer in range(0,3):
+                        y = np.random.normal(np.mean(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index]),np.std(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index]),
+                            size=len(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index]))
+                        taus2_white, adevs_white, errors_white, ns_white = allantools.mdev(y, rate=rate_fdets, data_type="freq",taus='decade')
+                        slope_white, intercept_white, r_value_white, p_value_white, std_err_white = stats.linregress(np.log10(taus2_white), np.log10(adevs_white))
+                        slopes_white.append(slope_white)
+                        correlation = np.corrcoef(adevs,adevs_white)[0][1]
+                        correlations.append(correlation)
+                    print("Correlation: ",np.mean(correlations))
+                    print("Slope Allan Deviation: ",slope)
+                    print("Slope White Allan Deviation: ",np.mean(slopes_white))
                     plot2 = plt.errorbar(taus2_white, adevs_white,yerr=errors_white,ecolor='red')
                     plt.xscale('log')
                     plt.yscale('log')
@@ -372,6 +399,14 @@ if __name__=="__main__":
                     adevs_total.append(adevs.tolist())
                     errors_total.append(errors.tolist())
                     ns_total.append(ns.tolist())
+                    slope_total.append([slope])
+                    slope_white_total.append([np.mean(slopes_white)])
+                    correlation_total.append([np.mean(correlations)])
+                    if np.mean(correlations)>0.6 and np.abs(np.mean(slopes_white)-slope) <0.75 and slope<0:
+                        white_boolean.append([True])
+                    else:
+                        white_boolean.append([False])
+                    print(white_boolean[-1])
                     
                     # Saving the lists of lists in the new dictionary
                     for types_pointer in range(0,len(types_datafdets)):
@@ -386,6 +421,10 @@ if __name__=="__main__":
                 data_fdets_updated[fdets_station_pointer][fdets_station_starttime_pointer]['Allan Variance']=adevs_total
                 data_fdets_updated[fdets_station_pointer][fdets_station_starttime_pointer]['Estimated Errors']=errors_total
                 data_fdets_updated[fdets_station_pointer][fdets_station_starttime_pointer]['Number of Pairs']=ns_total
+                data_fdets_updated[fdets_station_pointer][fdets_station_starttime_pointer]['Slope Allan Deviation']=slope_total
+                data_fdets_updated[fdets_station_pointer][fdets_station_starttime_pointer]['Slope White Allan Deviation']=slope_white_total
+                data_fdets_updated[fdets_station_pointer][fdets_station_starttime_pointer]['Correlation']=correlation_total
+                data_fdets_updated[fdets_station_pointer][fdets_station_starttime_pointer]['White Noise']=white_boolean
 
         # Save the updated data in a JSON file
         with open(output_folder_path+'/Fdets_data_updated.json', 'w') as fp:
@@ -409,7 +448,7 @@ if __name__=="__main__":
     y2_axis_phases = 'Phase [s]'
     y3_axis_phases = 'Frequency [Hz]'
 
-    boolean_phases = True
+    boolean_phases = False
     if boolean_phases:
         # Iterate along the ground stations inside the Phases JSON file
         for phases_station_pointer in data_phases.keys():
@@ -463,27 +502,6 @@ if __name__=="__main__":
                 #plt.show()
                 #plt.close('all')
 
-                # Third plot: Allan deviation using the y2_axis_phases
-                plt.figure()
-                taus2, adevs, errors, ns = allantools.mdev(data_phases[phases_station_pointer][phases_station_starttime_pointer][y2_axis_phases],\
-                    rate = rate_phases, data_type = 'phase',taus='decade')
-                y = allantools.noise.white(len(data_phases[phases_station_pointer][phases_station_starttime_pointer][y2_axis_phases]),
-                    b0=np.std(data_phases[phases_station_pointer][phases_station_starttime_pointer][y2_axis_phases]),fs=rate_phases)
-                taus2_white, adevs_white, errors_white, ns_white = allantools.mdev(y, rate=rate_phases, data_type="freq",taus='decade')
-                plot1 = plt.errorbar(taus2,adevs,yerr=errors,ecolor='green')
-                plot2 = plt.errorbar(taus2_white, adevs_white,yerr=errors_white,ecolor='red')
-                plt.xscale('log')
-                plt.yscale('log')
-                plt.xlabel('Tau [s]')
-                plt.ylabel('Allan Deviation')
-                plt.legend([plot1,plot2],['Real-data','Simulated White Noise'])
-                plt.title(phases_station_pointer+' station at '+phases_station_starttime_pointer)
-                plt.grid()
-                plt.axis('equal')
-                plt.savefig(output_figures_path+'/allan_deviation.pdf',bbox_inches="tight")
-                plt.show()
-                plt.close('all')
-
                 # Convert phase to frequency, NOTE that the frequency list has an element less than the phase list
                 data_phases[phases_station_pointer][phases_station_starttime_pointer][y3_axis_phases] = \
                     list(allantools.phase2frequency(data_phases[phases_station_pointer][phases_station_starttime_pointer][y2_axis_phases],rate_phases))
@@ -499,6 +517,39 @@ if __name__=="__main__":
                 plt.savefig(output_figures_path+'/frequency_vs_time.pdf',bbox_inches="tight")
                 plt.show()
                 plt.close('all')
+
+                # Third plot: Allan deviation using the y3_axis_phases
+                plt.figure()
+                taus2, adevs, errors, ns = allantools.mdev(data_phases[phases_station_pointer][phases_station_starttime_pointer][y3_axis_phases],\
+                    rate = rate_phases, data_type = 'freq',taus='decade')
+                y = np.random.normal(np.mean(data_phases[phases_station_pointer][phases_station_starttime_pointer][y3_axis_phases]),np.std(data_phases[phases_station_pointer][phases_station_starttime_pointer][y3_axis_phases]),
+                    size = len(data_phases[phases_station_pointer][phases_station_starttime_pointer][y3_axis_phases]))
+                taus2_white, adevs_white, errors_white, ns_white = allantools.mdev(y, rate=rate_phases, data_type="freq",taus='decade')
+                plot1 = plt.errorbar(taus2,adevs,yerr=errors,ecolor='green')
+                plot2 =plt.errorbar(taus2_white, adevs_white,yerr=errors_white,ecolor='red')
+                slope, intercept, r_value, p_value, std_err = stats.linregress(np.log10(taus2), np.log10(adevs))
+                slope_white, intercept_white, r_value_white, p_value_white, std_err_white = stats.linregress(np.log10(taus2_white), np.log10(adevs_white))
+                correlation = np.corrcoef(adevs,adevs_white)[0][1]
+                print("Correlation: ",correlation)
+                print("Slope Allan Deviation: ",slope)
+                print("Slope White Allan Deviation: ",slope_white)
+                plt.xscale('log')
+                plt.yscale('log')
+                plt.xlabel('Tau [s]')
+                plt.ylabel('Allan Deviation')
+                plt.legend([plot1,plot2],['Real-data','Simulated White Noise'])
+                plt.title(phases_station_pointer+' station at '+phases_station_starttime_pointer)
+                plt.grid()
+                plt.axis('equal')
+                plt.savefig(output_figures_path+'/allan_deviation.pdf',bbox_inches="tight")
+                plt.show()
+                plt.close('all')
+
+                data_phases[phases_station_pointer][phases_station_starttime_pointer]['Correlation'] = correlation
+                data_phases[phases_station_pointer][phases_station_starttime_pointer]['Slope Allan Deviation'] = slope
+                data_phases[phases_station_pointer][phases_station_starttime_pointer]['Slope White Allan Deviation'] = slope_white
+
+                
 
         # Save the updated data in a JSON file
         with open(output_folder_path+'/Phases_data_updated.json', 'w') as fp:
