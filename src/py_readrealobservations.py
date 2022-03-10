@@ -278,7 +278,7 @@ if __name__=="__main__":
 
             # Build a pandas frame for each file
             dataframe_phases = pd.read_csv(files_phases[phases_pointer], sep=' ', names=column_names,skiprows = skip_rows)
-            #print(dataframe_phases)
+            dataframe_phases[column_names[0]] +=specs[1]
              
             # Date tuple (year, month, day)
             date_tuple = jd_to_date(mjd_to_jd(specs[0]))
