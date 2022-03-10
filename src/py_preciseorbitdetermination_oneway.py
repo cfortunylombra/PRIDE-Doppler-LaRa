@@ -44,10 +44,20 @@ if __name__=="__main__":
     reflector_name = "LaRa"
     reflector_latitude_deg = 18.3 #North degrees
     reflector_longitude_deg = 335.37 #East degrees
+    reflector_altitude = -2000 #m
 
-    # Earth-based transmitter
-    transmitter_name = "DSS 63"
-    transmitter_position_cartesian = np.array([4849092.6814,-360180.5350,4115109.1298]) #Taken from https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat
+    # Earth-based transmitters
+    transmitter_names = ['DSS 43','DSS 63','DSS 14']
+
+    transmitter_positions_cartesian = list()  #Taken from https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat
+    transmitter_positions_cartesian.append(np.array([-4460894.7273,2682361.5296,-3674748.4238])) # DSS 43
+    transmitter_positions_cartesian.append(np.array([4849092.6814,-360180.5350,4115109.1298])) # DSS 63
+    transmitter_positions_cartesian.append(np.array([-2353621.2459,-4641341.5369,3677052.2305])) # DSS 14
+
+    # Viability settings
+    earth_min = 35 #deg
+    earth_max = 45 #deg
+    antenna_min_elevation = 20 # deg
 
     ########################################################################################################################
     ################################################## CREATE ENVIRONMENT ##################################################
@@ -89,7 +99,8 @@ if __name__=="__main__":
     ground_station_dict = {}
 
     # Adding transmitter 
-    ground_station_dict [transmitter_name] = transmitter_position_cartesian
+    for transmitter_index in range(0,len(transmitter_names)):
+        ground_station_dict[transmitter_names[transmitter_index]] = transmitter_positions_cartesian[transmitter_index]
 
     # Read the text file containing the name and cartesian coordinates of the ground stations
     with open(os.path.dirname(os.path.realpath(__file__))+'/gs_locations.dat') as file:
@@ -129,8 +140,8 @@ if __name__=="__main__":
     environment_setup.add_ground_station(
         bodies.get_body("Mars"),
         reflector_name,
-        np.array([spice_interface.get_average_radius("Mars"),np.deg2rad(reflector_latitude_deg),np.deg2rad(reflector_longitude_deg)]),
-         element_conversion.spherical_position_type)
+        np.array([reflector_altitude,np.deg2rad(reflector_latitude_deg),np.deg2rad(reflector_longitude_deg)]),
+         element_conversion.geodetic_position_type)
 
     Mars_ground_station_list = environment_setup.get_ground_station_list(bodies.get_body("Mars"))
 
@@ -193,13 +204,15 @@ if __name__=="__main__":
     ################################################## DEFINE LINK ENDS FOR OBSERVATIONS ###################################
     ######################################################################################################################## 
 
-    # Create list of observation settings
+    # Create the two-way link list
     observation_settings_list = list()
 
-    # Define link ends
     for pointer_ground_station_receiver in range(0,len(ground_station_dict.keys())):
         receiver_name = list(ground_station_dict.keys())[pointer_ground_station_receiver]
-        if receiver_name != transmitter_name:
+        # Only if shadow tracking
+        if receiver_name in transmitter_names:
+            continue
+        for transmitter_name in transmitter_names:
             two_way_link_ends = dict()
             two_way_link_ends[observation.transmitter] = ("Earth", transmitter_name )
             two_way_link_ends[observation.reflector1] = ( "Mars", reflector_name )
@@ -208,22 +221,25 @@ if __name__=="__main__":
             observation_settings_list.append(two_way_link_ends)
     
     # Create the uplink list
-    observation_settings_uplink_list = copy.deepcopy(observation_settings_list)
-    observation_settings_uplink_list = list([observation_settings_uplink_list[0]])
+    observation_settings_uplink_list = list()
 
-    # Copy the entire list of dictionaries for downlink
-    observation_settings_downlink_list = copy.deepcopy(observation_settings_list)
+    for transmitter_name in transmitter_names:
+        one_way_link_ends = dict()
+        one_way_link_ends[observation.transmitter] = ("Earth",transmitter_name)
+        one_way_link_ends[observation.receiver] = ("Mars",reflector_name)
 
-    # Remove receiver for uplink, and rename the reflector to receiver
-    del observation_settings_uplink_list[0][observation.receiver]
-    observation_settings_uplink_list[0][observation.receiver] =  observation_settings_uplink_list[
-        0].pop(observation.reflector1)
+        observation_settings_uplink_list.append(one_way_link_ends)
 
-    for pointer_link_ends in range(0,len(observation_settings_list)):
-        # Remove transmitter for downlink, and rename the reflector to transmitter
-        del observation_settings_downlink_list[pointer_link_ends][observation.transmitter]
-        observation_settings_downlink_list[pointer_link_ends][observation.transmitter] =  observation_settings_downlink_list[
-            pointer_link_ends].pop(observation.reflector1)
+    # Create the downlink list
+    observation_settings_downlink_list = list()
+    for pointer_ground_station_receiver in range(0,len(ground_station_dict.keys())):
+        receiver_name = list(ground_station_dict.keys())[pointer_ground_station_receiver]
+
+        one_way_link_ends = dict()
+        one_way_link_ends[observation.transmitter] = ("Mars",reflector_name)
+        one_way_link_ends[observation.receiver] = ("Earth",receiver_name)
+
+        observation_settings_downlink_list.append(one_way_link_ends)
 
     ########################################################################################################################
     ################################################## DEFINE PARAMETERS TO ESTIMATE #######################################
@@ -231,9 +247,9 @@ if __name__=="__main__":
 
     # Create list of parameters that are to be estimated
     parameter_settings = estimation_setup.parameter.initial_states(propagator_settings,bodies)
-    parameter_settings.append(estimation_setup.parameter.ground_station_position("Mars", reflector_name))
     parameter_settings.append(estimation_setup.parameter.core_factor("Mars"))
     parameter_settings.append(estimation_setup.parameter.free_core_nutation_rate("Mars"))
+    parameter_settings.append(estimation_setup.parameter.ground_station_position("Mars", reflector_name))
     parameter_settings.append(estimation_setup.parameter.periodic_spin_variations("Mars"))
     parameter_settings.append(estimation_setup.parameter.polar_motion_amplitudes("Mars"))
 
@@ -255,8 +271,10 @@ if __name__=="__main__":
 
     # Define uplink oneway Doppler observation settings
     uplink_one_way_doppler_observation_settings = list() 
-    uplink_one_way_doppler_observation_settings.append(observation.one_way_open_loop_doppler(observation_settings_uplink_list[0],
-    light_time_correction_settings = light_time_correction_settings))
+    for pointer_link_ends in range(0,len(observation_settings_uplink_list)):
+        uplink_one_way_doppler_observation_settings.append(observation.one_way_open_loop_doppler(
+            observation_settings_uplink_list[pointer_link_ends],
+            light_time_correction_settings = light_time_correction_settings))
 
     # Define downlink oneway Doppler observation settings
     downlink_one_way_doppler_observation_settings = list()
@@ -304,10 +322,10 @@ if __name__=="__main__":
 
     # Create observation viability settings and calculators
     viability_settings_list = list()
-    viability_settings_list.append(observation.elevation_angle_viability(["Earth",""],np.deg2rad(20)))
-    viability_settings_list.append(observation.elevation_angle_viability(["Mars",""],np.deg2rad(35)))
-    #viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(45))) #NOTE maximum elevation angle viability
-    viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(20)))
+    viability_settings_list.append(observation.elevation_angle_viability(["Earth",""],np.deg2rad(antenna_min_elevation)))
+    viability_settings_list.append(observation.elevation_angle_viability(["Mars",""],np.deg2rad(earth_min)))
+    #viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(earth_max))) #NOTE maximum elevation angle viability
+    viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(antenna_min_elevation)))
     viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
 
     # Create measurement simulation input
@@ -316,7 +334,7 @@ if __name__=="__main__":
         viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter)
 
     # Define noise levels
-    doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT # Taken from the Radioscience LaRa instrument onboard ExoMars to investigate the rotation and interior of Mars
+    doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT_LONG # Taken from the Radioscience LaRa instrument onboard ExoMars to investigate the rotation and interior of Mars
     weights_per_observable = dict({observation.one_way_doppler_type:doppler_noise**(-2)})
 
     # Create noise functions
@@ -392,12 +410,14 @@ if __name__=="__main__":
     estimation_information_matrix_normalization = pod_output.normalization_terms
     concatenated_times = simulated_observations.concatenated_times 
     concatenated_link_ends = simulated_observations.concatenated_link_ends
+    doppler_residuals = pod_output.residual_history
 
     np.savetxt(output_folder_path+"/estimation_information_matrix.dat",estimation_information_matrix,fmt='%.15e')
     np.savetxt(output_folder_path+"/estimation_information_matrix_normalization.dat",
         estimation_information_matrix_normalization,fmt='%.15e')
     np.savetxt(output_folder_path+"/concatenated_times.dat",concatenated_times,fmt='%.15e')
     np.savetxt(output_folder_path+"/concatenated_link_ends.dat",concatenated_link_ends,fmt='%.15e')
+    np.savetxt(output_folder_path+"/doppler_residuals.dat",doppler_residuals,fmt='%.15e')
 
     ########################################################################################################################
     ################################################## PLOTTING TRUE TO FORM RATIO #########################################

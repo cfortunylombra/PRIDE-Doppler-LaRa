@@ -31,25 +31,42 @@ if __name__=="__main__":
     # days in a week
     days_in_a_week = 7 #days
 
-    # Days of observations per week
-    observation_days_per_week = 2 # This value can be set to 1 or 2
-
     # Initial date of the simulation
     start_date = 2458423.5 #in Julian days = 01/11/2018 00:00:00; Taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models")
 
     # Duration of the simulation
-    simulation_duration_days = 700 #days
+    simulation_duration_days = 1200 #days
     simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
-    # LaRa landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
+    # RISE landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
     reflector_name = "RISE"
     reflector_latitude_deg = 4.5 #North degrees
     reflector_longitude_deg = 135.62 #East degrees
+    reflector_altitude = -2600 #m
 
-    # Earth-based transmitter
-    transmitter_name = "DSS 63"
-    transmitter_position_cartesian = np.array([4849092.6814,-360180.5350,4115109.1298], dtype='d') #Taken from https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat
+    # Earth-based transmitters
+    transmitter_names = ['DSS 43','DSS 34','DSS 35','DSS 36','DSS 65','DSS 63','DSS 55','DSS 54','DSS 56','DSS 14','DSS 26', 'DSS 24', 'DSS 25']
+
+    transmitter_positions_cartesian = list()  #Taken from https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat
+    transmitter_positions_cartesian.append(np.array([-4460894.7273,2682361.5296,-3674748.4238])) # DSS 43
+    transmitter_positions_cartesian.append(np.array([-4461147.4205,2682439.2423,-3674392.5623])) # DSS 34
+    transmitter_positions_cartesian.append(np.array([-4461273.4175,2682568.9283,-3674151.5223])) # DSS 35
+    transmitter_positions_cartesian.append(np.array([-4461168.7425,2682814.6603,-3674083.3303])) # DSS 36
+    transmitter_positions_cartesian.append(np.array([4849339.5378,-360427.4851,4114750.8520])) # DSS 65A
+    transmitter_positions_cartesian.append(np.array([4849092.6814,-360180.5350,4115109.1298])) # DSS 63
+    transmitter_positions_cartesian.append(np.array([4849525.256,-360606.09,4114495.08])) # DSS 55 #http://astrogeo.org/aplo/vlbi.inp
+    transmitter_positions_cartesian.append(np.array([4849434.4880,-360723.8999,4114618.8350])) # DSS 54
+    transmitter_positions_cartesian.append(np.array([4849421.500903,-360549.2280048,4114647.264832])) # DSS 56 #https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/stations/earth_topo_201023.tf
+    transmitter_positions_cartesian.append(np.array([-2353621.2459,-4641341.5369,3677052.2305])) # DSS 14
+    transmitter_positions_cartesian.append(np.array([-2354890.967,-4647166.93,3668872.21])) # DSS 26
+    transmitter_positions_cartesian.append(np.array([-2354906.495,-4646840.13,3669242.317])) # DSS 24
+    transmitter_positions_cartesian.append(np.array([-2355022.066,-4646953.64,3669040.90])) # DSS 25
+
+    # Viability settings
+    earth_min = 10 #deg
+    earth_max = 30 #deg
+    antenna_min_elevation = 20 #deg
 
     ########################################################################################################################
     ################################################## CREATE ENVIRONMENT ##################################################
@@ -92,7 +109,8 @@ if __name__=="__main__":
     ground_station_dict = {}
 
     # Adding transmitter 
-    ground_station_dict [transmitter_name] = transmitter_position_cartesian
+    for transmitter_index in range(0,len(transmitter_names)):
+        ground_station_dict[transmitter_names[transmitter_index]] = transmitter_positions_cartesian[transmitter_index]
 
     # Read the text file containing the name and cartesian coordinates of the ground stations
     with open(os.path.dirname(os.path.realpath(__file__))+'/gs_locations.dat') as file:
@@ -132,8 +150,8 @@ if __name__=="__main__":
     environment_setup.add_ground_station(
         bodies.get_body("Mars"),
         reflector_name,
-        np.array([spice_interface.get_average_radius("Mars"),np.deg2rad(reflector_latitude_deg,dtype='d'),np.deg2rad(reflector_longitude_deg,dtype='d')]),
-         element_conversion.spherical_position_type)
+        np.array([reflector_altitude,np.deg2rad(reflector_latitude_deg,dtype='d'),np.deg2rad(reflector_longitude_deg,dtype='d')]),
+         element_conversion.geodetic_position_type)
 
     Mars_ground_station_list = environment_setup.get_ground_station_list(bodies.get_body("Mars"))
 
@@ -201,31 +219,18 @@ if __name__=="__main__":
     # Define link ends
     for pointer_ground_station_receiver in range(0,len(ground_station_dict.keys())):
         receiver_name = list(ground_station_dict.keys())[pointer_ground_station_receiver]
-        if receiver_name != transmitter_name:
+        # Only if shadow tracking
+        if receiver_name in transmitter_names:
+            continue
+        for transmitter_name in transmitter_names:
             two_way_link_ends = dict()
             two_way_link_ends[observation.transmitter] = ("Earth", transmitter_name )
             two_way_link_ends[observation.reflector1] = ( "Mars", reflector_name )
             two_way_link_ends[observation.receiver] = ( "Earth", receiver_name )
 
             observation_settings_list.append(two_way_link_ends)
-    
-    # Create the uplink list
-    observation_settings_uplink_list = copy.deepcopy(observation_settings_list)
-    observation_settings_uplink_list = list([observation_settings_uplink_list[0]])
 
-    # Copy the entire list of dictionaries for downlink
-    observation_settings_downlink_list = copy.deepcopy(observation_settings_list)
-
-    # Remove receiver for uplink, and rename the reflector to receiver
-    del observation_settings_uplink_list[0][observation.receiver]
-    observation_settings_uplink_list[0][observation.receiver] =  observation_settings_uplink_list[
-        0].pop(observation.reflector1)
-
-    for pointer_link_ends in range(0,len(observation_settings_list)):
-        # Remove transmitter for downlink, and rename the reflector to transmitter
-        del observation_settings_downlink_list[pointer_link_ends][observation.transmitter]
-        observation_settings_downlink_list[pointer_link_ends][observation.transmitter] =  observation_settings_downlink_list[
-            pointer_link_ends].pop(observation.reflector1)
+    print(observation_settings_list)
 
     ########################################################################################################################
     ################################################## DEFINE PARAMETERS TO ESTIMATE #######################################
@@ -288,19 +293,25 @@ if __name__=="__main__":
 
     # Define observation simulation times for each link
     observation_times_list = list()
-    for pointer_weeks in range(0,int(np.ceil(simulation_duration_weeks))):
-        for pointer_days_per_week in range(0,int(observation_days_per_week)):
-            for pointer_interval in range(0,int(np.ceil(constants.JULIAN_DAY/observation_interval))):
-                observation_times_list.append(observation_start_epoch+pointer_weeks*days_in_a_week*constants.JULIAN_DAY \
-                    +pointer_days_per_week*np.floor(days_in_a_week/observation_days_per_week)*constants.JULIAN_DAY \
-                        +pointer_interval*observation_interval)
+    with open(os.path.dirname(os.path.realpath(__file__))+'/InSight_mes_upto_31122021.forCarlos') as file:
+        lines = file.read().splitlines()
+        observation_start_epoch = np.inf
+        for transmitter_pointer in transmitter_names:
+            transmitter_ground_station_number =  [int(s) for s in transmitter_pointer.split() if s.isdigit()][0]
+            for pointer_time in range(0,len(lines)):
+                line = lines[pointer_time]
+                line_info = line.split()
+                if float(line_info[0]) == transmitter_ground_station_number and float(line_info[1]) == transmitter_ground_station_number:
+                    observation_times_list.append(float(line_info[2]))
+
+    observation_times_list.sort()
 
     # Create observation viability settings and calculators
     viability_settings_list = list()
-    viability_settings_list.append(observation.elevation_angle_viability(["Earth",""],np.deg2rad(20)))
-    viability_settings_list.append(observation.elevation_angle_viability(["Mars",""],np.deg2rad(10)))
-    #viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(45))) #NOTE maximum elevation angle viability
-    viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(20)))
+    viability_settings_list.append(observation.elevation_angle_viability(["Earth",""],np.deg2rad(antenna_min_elevation)))
+    viability_settings_list.append(observation.elevation_angle_viability(["Mars",""],np.deg2rad(earth_min)))
+    #viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(earth_max))) #NOTE maximum elevation angle viability
+    viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(antenna_min_elevation)))
     viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
 
     # Create measurement simulation input
@@ -309,7 +320,7 @@ if __name__=="__main__":
         viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter)
 
     # Define noise levels
-    doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT # Taken from the Radioscience LaRa instrument onboard ExoMars to investigate the rotation and interior of Mars
+    doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT_LONG # Taken from the Radioscience LaRa instrument onboard ExoMars to investigate the rotation and interior of Mars
     weights_per_observable = dict({observation.two_way_doppler_type:doppler_noise**(-2)})
 
     # Create noise functions
@@ -385,12 +396,14 @@ if __name__=="__main__":
     estimation_information_matrix_normalization = pod_output.normalization_terms
     concatenated_times = simulated_observations.concatenated_times 
     concatenated_link_ends = simulated_observations.concatenated_link_ends
+    doppler_residuals = pod_output.residual_history
 
     np.savetxt(output_folder_path+"/estimation_information_matrix.dat",estimation_information_matrix,fmt='%.15e')
     np.savetxt(output_folder_path+"/estimation_information_matrix_normalization.dat",
         estimation_information_matrix_normalization,fmt='%.15e')
     np.savetxt(output_folder_path+"/concatenated_times.dat",concatenated_times,fmt='%.15e')
     np.savetxt(output_folder_path+"/concatenated_link_ends.dat",concatenated_link_ends,fmt='%.15e')
+    np.savetxt(output_folder_path+"/doppler_residuals.dat",doppler_residuals,fmt='%.15e')
     
     ########################################################################################################################
     ################################################## PLOTTING TRUE TO FORM RATIO #########################################

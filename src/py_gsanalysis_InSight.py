@@ -38,32 +38,32 @@ if __name__=="__main__":
     simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
-    # LaRa landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
+    # RISE landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
     reflector_name = 'RISE'
     reflector_latitude_deg = 4.5 #North degrees
     reflector_longitude_deg = 135.62 #East degrees
     reflector_altitude = -2600 #m
 
     # Earth-based transmitter
-    #transmitter_name = 'DSS 63'
-    transmitter_names = ['DSS 43','DSS 65','DSS 63','DSS 55','DSS 14','DSS 26','DSS 34','DSS 35','DSS 36','DSS 54','DSS 24', 'DSS 25', 'DSS 56']
+    transmitter_names = ['DSS 43','DSS 34','DSS 35','DSS 36','DSS 65','DSS 63','DSS 55','DSS 54','DSS 56','DSS 14','DSS 26', 'DSS 24', 'DSS 25']
 
-    #transmitter_position_cartesian = np.array([4849092.6814,-360180.5350,4115109.1298]) #Taken from https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat
     transmitter_positions_cartesian = list()  #Taken from https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat
     transmitter_positions_cartesian.append(np.array([-4460894.7273,2682361.5296,-3674748.4238])) # DSS 43
-    transmitter_positions_cartesian.append(np.array([4849339.5378,-360427.4851,4114750.8520])) # DSS 65A
-    transmitter_positions_cartesian.append(np.array([4849092.6814,-360180.5350,4115109.1298])) # DSS 63
-    transmitter_positions_cartesian.append(np.array([4849525.256,-360606.09,4114495.08])) # DSS 55 #http://astrogeo.org/aplo/vlbi.inp
-    transmitter_positions_cartesian.append(np.array([-2353621.2459,-4641341.5369,3677052.2305])) # DSS 14
-    transmitter_positions_cartesian.append(np.array([-2354890.967,-4647166.93,3668872.21])) # DSS 26
     transmitter_positions_cartesian.append(np.array([-4461147.4205,2682439.2423,-3674392.5623])) # DSS 34
     transmitter_positions_cartesian.append(np.array([-4461273.4175,2682568.9283,-3674151.5223])) # DSS 35
     transmitter_positions_cartesian.append(np.array([-4461168.7425,2682814.6603,-3674083.3303])) # DSS 36
+    transmitter_positions_cartesian.append(np.array([4849339.5378,-360427.4851,4114750.8520])) # DSS 65A
+    transmitter_positions_cartesian.append(np.array([4849092.6814,-360180.5350,4115109.1298])) # DSS 63
+    transmitter_positions_cartesian.append(np.array([4849525.256,-360606.09,4114495.08])) # DSS 55 #http://astrogeo.org/aplo/vlbi.inp
     transmitter_positions_cartesian.append(np.array([4849434.4880,-360723.8999,4114618.8350])) # DSS 54
+    transmitter_positions_cartesian.append(np.array([4849421.500903,-360549.2280048,4114647.264832])) # DSS 56 #https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/stations/earth_topo_201023.tf
+    transmitter_positions_cartesian.append(np.array([-2353621.2459,-4641341.5369,3677052.2305])) # DSS 14
+    transmitter_positions_cartesian.append(np.array([-2354890.967,-4647166.93,3668872.21])) # DSS 26
     transmitter_positions_cartesian.append(np.array([-2354906.495,-4646840.13,3669242.317])) # DSS 24
     transmitter_positions_cartesian.append(np.array([-2355022.066,-4646953.64,3669040.90])) # DSS 25
-    transmitter_positions_cartesian.append(np.array([4849421.500903,-360549.2280048,4114647.264832])) # DSS 56 #https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/stations/earth_topo_201023.tf
 
+    zones = {'Australia':['DSS 43','DSS 34','DSS 35','DSS 36'],'Spain':['DSS 65','DSS 63','DSS 55','DSS 54','DSS 56'],'USA':['DSS 14','DSS 26','DSS 24','DSS 25']}
+    
     # Viability settings
     earth_min = 10 #deg
     earth_max = 30 #deg
@@ -106,7 +106,6 @@ if __name__=="__main__":
     ground_station_dict = {}
 
     # Adding transmitter 
-    #ground_station_dict [transmitter_name] = transmitter_position_cartesian
     for transmitter_index in range(0,len(transmitter_names)):
         ground_station_dict[transmitter_names[transmitter_index]] = transmitter_positions_cartesian[transmitter_index]
     
@@ -158,7 +157,6 @@ if __name__=="__main__":
     ########################################################################################################################
 
     # Define observation simulation times for each link
-    #observation_times_list = list()
     data_transmitter = dict()
     
     # Read the epoch times
@@ -167,13 +165,13 @@ if __name__=="__main__":
         observation_start_epoch = np.inf
         for transmitter_pointer in transmitter_names:
             data_transmitter[transmitter_pointer] = dict()
-            data_transmitter[transmitter_pointer]['Time at receiver'] = list()
+            data_transmitter[transmitter_pointer]['Epoch'] = list()
             transmitter_ground_station_number =  [int(s) for s in transmitter_pointer.split() if s.isdigit()][0]
             for pointer_time in range(0,len(lines)):
                 line = lines[pointer_time]
                 line_info = line.split()
                 if float(line_info[0]) == transmitter_ground_station_number and float(line_info[1]) == transmitter_ground_station_number:
-                    data_transmitter[transmitter_pointer]['Time at receiver'].append(float(line_info[2]))
+                    data_transmitter[transmitter_pointer]['Epoch'].append(float(line_info[2]))
                     if float(line_info[2])<observation_start_epoch:
                         observation_start_epoch = float(line_info[2])
     
@@ -181,28 +179,31 @@ if __name__=="__main__":
         data_transmitter[transmitter_pointer]['Time at reflector'] = list()
         data_transmitter[transmitter_pointer]['Earth elevation'] = list()
         data_transmitter[transmitter_pointer]['Earth azimuth'] = list()
+        data_transmitter[transmitter_pointer]['Time at receiver'] = list()
         data_transmitter[transmitter_pointer]['Time at transmitter'] = list()
         data_transmitter[transmitter_pointer]['Elevation at transmitter'] = list()
         data_transmitter[transmitter_pointer]['Elevation at receiver'] = list()
         data_transmitter[transmitter_pointer]['Azimuth at transmitter'] = list()
         data_transmitter[transmitter_pointer]['Azimuth at receiver'] = list()
-        for receiver_time_pointer in range(0,len(data_transmitter[transmitter_pointer]['Time at receiver'])):
+        for receiver_time_pointer in range(0,len(data_transmitter[transmitter_pointer]['Epoch'])):
             bool_receiver = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_pointer),'Mars',
-                [data_transmitter[transmitter_pointer]['Time at receiver'][receiver_time_pointer]],False)
+                [data_transmitter[transmitter_pointer]['Epoch'][receiver_time_pointer]],False)
 
-            data_transmitter[transmitter_pointer]['Time at reflector'].append(data_transmitter[transmitter_pointer]['Time at receiver'][receiver_time_pointer]\
-                -bool_receiver[list(bool_receiver.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG)
-            bool_reflector = estimation.compute_target_angles_and_range(bodies,('Mars',reflector_name),'Earth',[data_transmitter[transmitter_pointer]['Time at reflector'][receiver_time_pointer]],False)
+            time_reflector = data_transmitter[transmitter_pointer]['Epoch'][receiver_time_pointer]-bool_receiver[list(bool_receiver.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
+            bool_reflector = estimation.compute_target_angles_and_range(bodies,('Mars',reflector_name),'Earth',[time_reflector],False)
 
-            transmitter_time = data_transmitter[transmitter_pointer]['Time at reflector'][receiver_time_pointer]-bool_reflector[list(bool_reflector.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
+            transmitter_time = time_reflector-bool_reflector[list(bool_reflector.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
             bool_transmitter = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_pointer),'Mars',
                 [transmitter_time],True)
 
             if True:#np.deg2rad(earth_min) <= bool_reflector[list(bool_reflector.keys())[0]][0] <= np.deg2rad(earth_max) and\
                  #bool_transmitter[list(bool_transmitter.keys())[0]][0] >= np.deg2rad(antenna_min_elevation):
+                
+                data_transmitter[transmitter_pointer]['Time at receiver'].append(data_transmitter[transmitter_pointer]['Epoch'][receiver_time_pointer])
                 data_transmitter[transmitter_pointer]['Elevation at receiver'].append(bool_receiver[list(bool_receiver.keys())[0]][0])
                 data_transmitter[transmitter_pointer]['Azimuth at receiver'].append(bool_receiver[list(bool_receiver.keys())[0]][1])
 
+                data_transmitter[transmitter_pointer]['Time at reflector'].append(time_reflector)
                 data_transmitter[transmitter_pointer]['Earth elevation'].append(bool_reflector[list(bool_reflector.keys())[0]][0])
                 data_transmitter[transmitter_pointer]['Earth azimuth'].append(bool_reflector[list(bool_reflector.keys())[0]][1])
 
@@ -222,8 +223,8 @@ if __name__=="__main__":
         data_receiver[Earth_ground_station_pointer[1]]['Total']['Azimuth at receiver'] = list()
 
         # Shadow tracking
-        #if Earth_ground_station_pointer[1] in transmitter_names:
-        #    continue
+        if Earth_ground_station_pointer[1] in transmitter_names:
+            continue
 
         # Iterate along transmitters
         for transmitter_pointer in transmitter_names:
@@ -265,11 +266,12 @@ if __name__=="__main__":
     os.makedirs(output_folder_path,exist_ok=True)
 
     plt.figure(figsize=(15, 6))
-    colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(transmitter_names)))))
-    for transmitter_pointer in transmitter_names:
-        plt.scatter((np.array(data_transmitter[transmitter_pointer]['Time at reflector'])-observation_start_epoch)/constants.JULIAN_DAY,
-            np.rad2deg(data_transmitter[transmitter_pointer]['Earth elevation']),s=5,label=transmitter_pointer)
+    colors = [plt.cm.Spectral(i) for i in np.linspace(0, 1, len(zones.keys()))]
+    plt.gca().set_prop_cycle(plt.cycler('color', colors))
+    for zones_pointer in list(zones.keys()):
+        for transmitter_pointer in zones[zones_pointer]:
+            plt.scatter((np.array(data_transmitter[transmitter_pointer]['Time at reflector'])-observation_start_epoch)/constants.JULIAN_DAY,
+                np.rad2deg(data_transmitter[transmitter_pointer]['Earth elevation']),s=5,label=zones_pointer,color=colors[list(zones.keys()).index(zones_pointer)])
     plt.ylabel('Earth elevation as seen by '+reflector_name+' [deg]')
     plt.xlabel('Time after landing [Earth days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
@@ -280,11 +282,12 @@ if __name__=="__main__":
     plt.close('all')
 
     plt.figure(figsize=(15,6))
-    colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(transmitter_names)))))
-    for transmitter_pointer in transmitter_names:
-        plt.scatter((np.array(data_transmitter[transmitter_pointer]['Time at reflector'])-observation_start_epoch)/constants.JULIAN_DAY,
-            np.mod(-np.rad2deg(data_transmitter[transmitter_pointer]['Earth azimuth'])+90,360),s=5,label=transmitter_pointer)
+    colors = [plt.cm.Spectral(i) for i in np.linspace(0, 1, len(zones.keys()))]
+    plt.gca().set_prop_cycle(plt.cycler('color', colors))
+    for zones_pointer in list(zones.keys()):
+        for transmitter_pointer in zones[zones_pointer]:
+            plt.scatter((np.array(data_transmitter[transmitter_pointer]['Time at reflector'])-observation_start_epoch)/constants.JULIAN_DAY,
+                np.mod(-np.rad2deg(data_transmitter[transmitter_pointer]['Earth azimuth'])+90,360),s=5,label=zones_pointer,color=colors[list(zones.keys()).index(zones_pointer)])
     plt.ylabel('Earth azimuth as seen by '+reflector_name+' [deg]')
     plt.xlabel('Time after landing [Earth days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
@@ -295,11 +298,12 @@ if __name__=="__main__":
     plt.close('all')
 
     plt.figure(figsize=(15,6))
-    colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(transmitter_names)))))
-    for transmitter_pointer in transmitter_names:
-        plt.scatter(np.mod(-np.rad2deg(data_transmitter[transmitter_pointer]['Earth azimuth'])+90,360),
-            np.rad2deg(data_transmitter[transmitter_pointer]['Earth elevation']),s=5,label=transmitter_pointer)
+    colors = [plt.cm.Spectral(i) for i in np.linspace(0, 1, len(zones.keys()))]
+    plt.gca().set_prop_cycle(plt.cycler('color', colors))
+    for zones_pointer in list(zones.keys()):
+        for transmitter_pointer in zones[zones_pointer]:
+            plt.scatter(np.mod(-np.rad2deg(data_transmitter[transmitter_pointer]['Earth azimuth'])+90,360),
+                np.rad2deg(data_transmitter[transmitter_pointer]['Earth elevation']),s=5,label=zones_pointer,color=colors[list(zones.keys()).index(zones_pointer)])
     plt.ylabel('Earth elevation as seen by '+reflector_name+' [deg]')
     plt.xlabel('Earth azimuth as seen by '+reflector_name+' [deg]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
@@ -310,11 +314,12 @@ if __name__=="__main__":
     plt.close('all')
 
     plt.figure(figsize=(15,6))
-    colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(transmitter_names)))))
-    for transmitter_pointer in transmitter_names:
-        plt.scatter((np.array(data_transmitter[transmitter_pointer]['Time at transmitter'])-observation_start_epoch)/constants.JULIAN_DAY,
-            np.rad2deg(data_transmitter[transmitter_pointer]['Elevation at transmitter']),s=5,label=transmitter_pointer)
+    colors = [plt.cm.Spectral(i) for i in np.linspace(0, 1, len(zones.keys()))]
+    plt.gca().set_prop_cycle(plt.cycler('color', colors))
+    for zones_pointer in list(zones.keys()):
+        for transmitter_pointer in zones[zones_pointer]:
+            plt.scatter((np.array(data_transmitter[transmitter_pointer]['Time at transmitter'])-observation_start_epoch)/constants.JULIAN_DAY,
+                np.rad2deg(data_transmitter[transmitter_pointer]['Elevation at transmitter']),s=5,label=zones_pointer,color=colors[list(zones.keys()).index(zones_pointer)])
     plt.ylabel('Elevation at DSN transmitter [deg]')
     plt.xlabel('Time after landing [Earth days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
@@ -325,11 +330,12 @@ if __name__=="__main__":
     plt.close('all')
 
     plt.figure(figsize=(15,6))
-    colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(transmitter_names)))))
-    for transmitter_pointer in transmitter_names:
-        plt.scatter((np.array(data_transmitter[transmitter_pointer]['Time at receiver'])-observation_start_epoch)/constants.JULIAN_DAY,
-            np.rad2deg(data_transmitter[transmitter_pointer]['Elevation at receiver']),s=5,label=transmitter_pointer)
+    colors = [plt.cm.Spectral(i) for i in np.linspace(0, 1, len(zones.keys()))]
+    plt.gca().set_prop_cycle(plt.cycler('color', colors))
+    for zones_pointer in list(zones.keys()):
+        for transmitter_pointer in zones[zones_pointer]:
+            plt.scatter((np.array(data_transmitter[transmitter_pointer]['Time at receiver'])-observation_start_epoch)/constants.JULIAN_DAY,
+                np.rad2deg(data_transmitter[transmitter_pointer]['Elevation at receiver']),s=5,label=zones_pointer,color=colors[list(zones.keys()).index(zones_pointer)])
     plt.ylabel('Elevation at DSN receiver [deg]')
     plt.xlabel('Time after landing [Earth days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
@@ -378,8 +384,10 @@ if __name__=="__main__":
 
     plt.figure(figsize=(15,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(Earth_ground_station_list)))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(Earth_ground_station_list)-len(transmitter_names)))))
     for Earth_ground_station_pointer in Earth_ground_station_list:
+        if Earth_ground_station_pointer[1] in transmitter_names:
+            continue
         plt.scatter((np.array(data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver'])-observation_start_epoch)/constants.JULIAN_DAY,
             np.rad2deg(data_receiver[Earth_ground_station_pointer[1]]['Total']['Elevation at receiver']),s=5,label=Earth_ground_station_pointer[1])
     plt.ylabel('Elevation at receivers [deg]')
@@ -393,8 +401,10 @@ if __name__=="__main__":
 
     plt.figure(figsize=(15,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(Earth_ground_station_list)))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(Earth_ground_station_list)-len(transmitter_names)))))
     for Earth_ground_station_pointer in Earth_ground_station_list:
+        if Earth_ground_station_pointer[1] in transmitter_names:
+            continue
         plt.plot(np.arange(0,(data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver'][-1]-observation_start_epoch)/constants.JULIAN_DAY,1),
             np.polyval(np.polyfit((np.array(data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver'])-observation_start_epoch)/constants.JULIAN_DAY,
                 np.rad2deg(data_receiver[Earth_ground_station_pointer[1]]['Total']['Elevation at receiver']),4),
@@ -411,10 +421,12 @@ if __name__=="__main__":
     
     plt.figure(figsize=(15,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(Earth_ground_station_list)))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(Earth_ground_station_list)-len(transmitter_names)))))
     station_names = list()
     receiver_observation_number = list()
     for Earth_ground_station_pointer in Earth_ground_station_list:
+        if Earth_ground_station_pointer[1] in transmitter_names:
+            continue
         station_names.append(Earth_ground_station_pointer[1])
         receiver_observation_number.append(len(data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver']))
         plt.scatter((np.array(data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver'])-observation_start_epoch)/constants.JULIAN_DAY,
@@ -428,7 +440,7 @@ if __name__=="__main__":
     plt.close('all')
 
     plt.figure(figsize=(15,6))
-    plot1 = plt.barh(np.arange(len(Earth_ground_station_list)),receiver_observation_number)
+    plot1 = plt.barh(np.arange(len(Earth_ground_station_list)-len(transmitter_names)),receiver_observation_number)
     plt.yticks(np.arange(len(station_names)),labels=station_names)
     plt.xlabel('Number of Observations')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
