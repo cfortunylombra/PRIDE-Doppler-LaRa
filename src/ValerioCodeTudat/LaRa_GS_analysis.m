@@ -47,7 +47,7 @@
 format long; clear; close all; clc;
 
 % Path of all the data
-dataDirectory = strrep(matlab.desktop.editor.getActiveFilename,'src\ValerioCodeTudat\LaRa_GS_analysis.m','output\GS_LaRa\');
+dataDirectory = strrep(matlab.desktop.editor.getActiveFilename,'src\ValerioCodeTudat\LaRa_GS_analysis.m','output\GS_RISE\');
 
 % List of Ground Station Names
 groundStationNames = [ "DSS63"; "BADARY"; "CEDUNA"; "HARTRAO"; "HART15M"; "HOBART12"; "HOBART26"; "TIANMA65"; "WARK30M"; "EFLSBERG"; "IRBENE"; "YEBES40M"; "MEDICINA"; "WETTZELL"; "ONSALA60"; "WRT0"];
@@ -125,8 +125,7 @@ hold on
 
 % Polyval is the polynomial evaluation
 plot((0:(step_days*one_day):EphemerisTime(end)) / one_day , rad2deg( polyval( fit,(0:(step_days*one_day):EphemerisTime(end)) , [], mu )),'DisplayName','Mean Elevation Angle')
-plot( DSS63ObservationTime / one_day, rad2deg( DSS63Elevation), 'o','DisplayName','Elevation Angle')
-
+plot(DSS63ObservationTime / one_day, rad2deg( DSS63Elevation), 'o','DisplayName','Elevation Angle')
 hold off
 
 xlabel('Mission Time [days]')

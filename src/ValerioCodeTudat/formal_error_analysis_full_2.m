@@ -610,7 +610,7 @@ ax.XTickLabel = {'F','FCN','X_l','Y_l','Z_l','\phi_{c1}', '\phi_{s1}','\phi_{c2}
     'XC_{c5}', 'XC_{s5}', 'YC_{c5}', 'YC_{s5}','Interpreter','latex',};   
 legend(legend_label)
 set(gcf,'Position', 0.85*get(0, 'Screensize'));
-saveas(gcf,'sigma_corrcoeff7.png')
+saveas(gcf,'sigma_corrcoeff10.png')
 
 
 % Plot image of matrix data for correlation = 0.0
