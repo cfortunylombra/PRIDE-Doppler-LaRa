@@ -16,6 +16,7 @@ if __name__=="__main__":
     import copy
     import datetime
     import numpy as np
+    import scipy.interpolate
     import matplotlib.pyplot as plt
     from tudatpy.kernel import constants, numerical_simulation
     from tudatpy.kernel.astro import element_conversion
@@ -35,7 +36,7 @@ if __name__=="__main__":
     start_date = 2458423.5 #in Julian days = 01/11/2018 00:00:00; Taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models")
 
     # Duration of the simulation
-    simulation_duration_days = 1200 #days
+    simulation_duration_days = 1200 #days 
     simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
@@ -230,8 +231,6 @@ if __name__=="__main__":
 
             observation_settings_list.append(two_way_link_ends)
 
-    print(observation_settings_list)
-
     ########################################################################################################################
     ################################################## DEFINE PARAMETERS TO ESTIMATE #######################################
     ######################################################################################################################## 
@@ -314,10 +313,53 @@ if __name__=="__main__":
     viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(antenna_min_elevation)))
     viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
 
+    output_folder_path = os.path.dirname(os.path.realpath(__file__))
+    os.makedirs(output_folder_path,exist_ok=True)
+
+    time_days_mHz_pass = list()
+    std_mHz = list()
+
+    with open(output_folder_path+'/ResStatPerPass_ForCarlos.txt') as f:
+        lines = f.readlines()
+        index_gap = None
+        for line in lines[1:]:
+            line_split = line.split()
+            if not (np.isnan(float(line_split[1])) and np.isnan(float(line_split[2]))):
+                time_days_mHz_pass.append(float(line_split[0]))
+                std_mHz.append(float(line_split[2]))
+            else:
+                index_gap = len(time_days_mHz_pass)
+
+    np.random.seed(42)
+
+    polyfit_std_mHz_pass = np.polyfit(time_days_mHz_pass,std_mHz,8)
+    poly1d_mHz_pass = np.poly1d(polyfit_std_mHz_pass)(time_days_mHz_pass)
+    std_mean_error = np.mean(np.abs(poly1d_mHz_pass-std_mHz))
+    poly1d_gap_mHz = np.poly1d(polyfit_std_mHz_pass)(np.arange(time_days_mHz_pass[index_gap-1]+1,time_days_mHz_pass[index_gap],2))
+    poly1d_gap_noise_mHz = np.random.normal(poly1d_gap_mHz,std_mean_error)
+    spline_before_gap = scipy.interpolate.CubicSpline(time_days_mHz_pass[:index_gap],std_mHz[:index_gap],extrapolate='periodic')
+    spline_after_gap = scipy.interpolate.CubicSpline(time_days_mHz_pass[index_gap:],std_mHz[index_gap:],extrapolate='periodic')
+    std_mHz_concatenate = np.concatenate((std_mHz[:index_gap],poly1d_gap_noise_mHz,std_mHz[index_gap:]))
+    time_days_mHz_pass_concatenate = np.concatenate((time_days_mHz_pass[:index_gap],np.arange(time_days_mHz_pass[index_gap-1]+1,time_days_mHz_pass[index_gap],2),time_days_mHz_pass[index_gap:]))
+    std_mHz_function = scipy.interpolate.CubicSpline(time_days_mHz_pass_concatenate,std_mHz_concatenate,extrapolate='periodic')
+
+    def std_mHz_callable(t):
+        return std_mHz_function((t-observation_times_list[0]*np.ones(len(t)))/constants.JULIAN_DAY)*10**(-3)/constants.SPEED_OF_LIGHT_LONG
+    
     # Create measurement simulation input
-    observation_simulation_settings = observation.tabulated_simulation_settings_list(
-        dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list,
-        viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter)
+    #observation_simulation_settings = observation.tabulated_simulation_settings_list(
+    #    dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list,
+    #    viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter)
+    observation_simulation_settings = list()
+    for pointer_link_ends in range(0,len(observation_settings_list)):
+        observation_simulation_settings.append(observation.tabulated_simulation_settings(
+            dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list,
+            viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter),
+            noise_function = std_mHz_callable(observation_times_list))
+
+    print(len(observation_simulation_settings),len(two_way_doppler_observation_settings))
+        #noise_function = std_mHz_function((np.array(observation_times_list)-observation_times_list[0])/constants.JULIAN_DAY)*10**(-3)/constants.SPEED_OF_LIGHT_LONG)
+        #noise_function = [0.05e-3/constants.SPEED_OF_LIGHT_LONG])
 
     # Define noise levels
     doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT_LONG # Taken from the Radioscience LaRa instrument onboard ExoMars to investigate the rotation and interior of Mars
@@ -370,9 +412,12 @@ if __name__=="__main__":
 
     # Estimate parameters
     pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size, inverse_apriori_covariance = inverse_a_priori_covariance, apriori_parameter_correction = parameter_perturbation)
-    pod_input.set_constant_weight_per_observable(weights_per_observable)
+    #pod_input.set_constant_weight_per_observable(weights_per_observable)
     #pod_input.define_estimation_settings(reintegrate_variational_equations = False)
-    
+
+    vector_weights = std_mHz_function((simulated_observations.concatenated_times-observation_times_list[0]*np.ones(len(simulated_observations.concatenated_times)))/constants.JULIAN_DAY)*10**(-3)/constants.SPEED_OF_LIGHT_LONG
+    pod_input.set_weight(1/vector_weights**2)
+
     # Perform estimation
     pod_output = estimator.perform_estimation(pod_input)
     
@@ -394,10 +439,11 @@ if __name__=="__main__":
     print(true_to_form_estimation_error_ratio)
     estimation_information_matrix = pod_output.normalized_design_matrix
     estimation_information_matrix_normalization = pod_output.normalization_terms
-    concatenated_times = simulated_observations.concatenated_times 
+    concatenated_times = simulated_observations.concatenated_times
     concatenated_link_ends = simulated_observations.concatenated_link_ends
     doppler_residuals = pod_output.residual_history
 
+    np.savetxt(output_folder_path+"/weights_diagonal.dat",pod_output.weights_matrix_diagonal,fmt='%.15e')
     np.savetxt(output_folder_path+"/estimation_information_matrix.dat",estimation_information_matrix,fmt='%.15e')
     np.savetxt(output_folder_path+"/estimation_information_matrix_normalization.dat",
         estimation_information_matrix_normalization,fmt='%.15e')
@@ -409,11 +455,13 @@ if __name__=="__main__":
     ################################################## PLOTTING TRUE TO FORM RATIO #########################################
     ########################################################################################################################
 
+    plt.figure()
     plt.hist(np.abs(true_to_form_estimation_error_ratio), bins = 8)
     plt.ylabel('Frequency [-]')
     plt.xlabel('True to form ratio [-]')
     plt.grid()
     plt.savefig(output_folder_path+"/true_to_form_ratio.pdf",bbox_inches="tight")
     plt.show()
+    plt.close('all')
 
 print("--- %s seconds ---" % (time.time() - run_time))
