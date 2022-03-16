@@ -345,7 +345,7 @@ if __name__=="__main__":
 
     def std_mHz_callable(t):
         return std_mHz_function((t-observation_times_list[0]*np.ones(len(t)))/constants.JULIAN_DAY)*10**(-3)/constants.SPEED_OF_LIGHT_LONG
-    
+
     # Create measurement simulation input
     #observation_simulation_settings = observation.tabulated_simulation_settings_list(
     #    dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list,
@@ -356,10 +356,6 @@ if __name__=="__main__":
             dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list,
             viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter),
             noise_function = std_mHz_callable(observation_times_list))
-
-    print(len(observation_simulation_settings),len(two_way_doppler_observation_settings))
-        #noise_function = std_mHz_function((np.array(observation_times_list)-observation_times_list[0])/constants.JULIAN_DAY)*10**(-3)/constants.SPEED_OF_LIGHT_LONG)
-        #noise_function = [0.05e-3/constants.SPEED_OF_LIGHT_LONG])
 
     # Define noise levels
     doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT_LONG # Taken from the Radioscience LaRa instrument onboard ExoMars to investigate the rotation and interior of Mars
