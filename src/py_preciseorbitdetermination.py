@@ -1,5 +1,5 @@
 """
-Description: Environment Setup for the Precise Orbit Determination
+Description: Environment Setup for the Precise Orbit Determination (LaRa)
 
 Author: C. Fortuny-Lombraña
 """
