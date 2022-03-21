@@ -1,3 +1,9 @@
+"""
+Description: Reading Observation Times for RISE
+
+Author: C. Fortuny-Lombraña
+"""
+
 import time
 
 run_time = time.time()
