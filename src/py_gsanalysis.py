@@ -1,5 +1,5 @@
 """
-Description: Ground Station Analysis
+Description: Ground Station Analysis for LaRa
 
 Author: C. Fortuny-Lombraña
 """
@@ -177,6 +177,7 @@ if __name__=="__main__":
     
     data_transmitter = dict()
 
+    # Iterate along transmitters
     for transmitter_pointer in transmitter_names:
         data_transmitter[transmitter_pointer] = dict()
         data_transmitter[transmitter_pointer]['Time at reflector'] = list()
@@ -188,17 +189,22 @@ if __name__=="__main__":
         data_transmitter[transmitter_pointer]['Elevation at receiver'] = list()
         data_transmitter[transmitter_pointer]['Azimuth at transmitter'] = list()
         data_transmitter[transmitter_pointer]['Azimuth at receiver'] = list()
+        # Iterate along each receiver time
         for receiver_time_pointer in range(0,len(observation_times_list)):
+            # Compute azimuth, elevation angles and range for receiver
             bool_receiver = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_pointer),'Mars',
                 [observation_times_list[receiver_time_pointer]],False)
 
+            # Compute observation time, azimuth, elevation angles and range for reflector
             time_reflector = observation_times_list[receiver_time_pointer]-bool_receiver[list(bool_receiver.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
             bool_reflector = estimation.compute_target_angles_and_range(bodies,('Mars',reflector_name),'Earth',[time_reflector],False)
 
+            # Compute observation time, azimuth, elevation angles and range for transmitter
             transmitter_time = time_reflector-bool_reflector[list(bool_reflector.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
             bool_transmitter = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_pointer),'Mars',
                 [transmitter_time],True)
 
+            # Viability setting
             if np.deg2rad(earth_min) <= bool_reflector[list(bool_reflector.keys())[0]][0] <= np.deg2rad(earth_max) and\
                  bool_transmitter[list(bool_transmitter.keys())[0]][0] >= np.deg2rad(antenna_min_elevation):
                 data_transmitter[transmitter_pointer]['Time at receiver'].append(observation_times_list[receiver_time_pointer])
@@ -237,15 +243,19 @@ if __name__=="__main__":
 
             # Iterate along transmitting times
             for transmitter_time_pointer in range(0,len(data_transmitter[transmitter_pointer]['Time at transmitter'])):
+                # Compute azimuth, elevation angles and range for transmitter
                 bool_transmitter = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_pointer),'Mars',
                 [data_transmitter[transmitter_pointer]['Time at transmitter'][transmitter_time_pointer]],True)
 
+                # Compute observation time, azimuth, elevation angles and range for reflector
                 reflector_time = data_transmitter[transmitter_pointer]['Time at transmitter'][transmitter_time_pointer]+bool_transmitter[list(bool_transmitter.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
                 bool_reflector = estimation.compute_target_angles_and_range(bodies,('Mars',reflector_name),'Earth',[reflector_time],False)
 
+                # Compute observation time, azimuth, elevation angles and range for receiver
                 receiver_time = reflector_time+bool_transmitter[list(bool_transmitter.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
                 bool_receiver = estimation.compute_target_angles_and_range(bodies,('Earth',Earth_ground_station_pointer[1]),'Mars',[receiver_time],False)
-
+                
+                # Viability setting
                 if bool_receiver[list(bool_receiver.keys())[0]][0] >= np.deg2rad(antenna_min_elevation):
                     data_receiver[Earth_ground_station_pointer[1]][transmitter_pointer]['Observation time at receiver'].append(receiver_time)
                     data_receiver[Earth_ground_station_pointer[1]][transmitter_pointer]['Elevation at receiver'].append(bool_receiver[list(bool_receiver.keys())[0]][0])
@@ -332,11 +342,12 @@ if __name__=="__main__":
     plt.close('all')
 
     plt.figure(figsize=(15,6))
-    colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(transmitter_names)))))
-    for transmitter_pointer in transmitter_names:
-        plt.scatter((np.array(data_transmitter[transmitter_pointer]['Time at receiver'])-observation_start_epoch)/constants.JULIAN_DAY,
-            np.rad2deg(data_transmitter[transmitter_pointer]['Elevation at receiver']),s=5,label=transmitter_pointer)
+    colors = [plt.cm.Spectral(i) for i in np.linspace(0, 1, len(zones.keys()))]
+    plt.gca().set_prop_cycle(plt.cycler('color', colors))
+    for zones_pointer in list(zones.keys()):
+        for transmitter_pointer in zones[zones_pointer]:
+            plt.scatter((np.array(data_transmitter[transmitter_pointer]['Time at receiver'])-observation_start_epoch)/constants.JULIAN_DAY,
+                np.rad2deg(data_transmitter[transmitter_pointer]['Elevation at receiver']),s=5,label=zones_pointer,color=colors[list(zones.keys()).index(zones_pointer)])
     plt.ylabel('Elevation at DSN receiver [deg]')
     plt.xlabel('Time after landing [Earth days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
