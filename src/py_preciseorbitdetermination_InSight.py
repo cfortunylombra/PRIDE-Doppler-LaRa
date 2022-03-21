@@ -1,5 +1,5 @@
 """
-Description: Environment Setup for the Precise Orbit Determination
+Description: Environment Setup for the Precise Orbit Determination (RISE)
 
 Author: C. Fortuny-Lombraña
 """
@@ -33,10 +33,10 @@ if __name__=="__main__":
     days_in_a_week = 7 #days
 
     # Initial date of the simulation
-    start_date = 2458423.5 #in Julian days = 01/11/2018 00:00:00; Taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models")
+    start_date = 2458449.5 #in Julian days = 27/11/2018 00:00:00; Taken from the txt file sent by Sebastien
 
     # Duration of the simulation
-    simulation_duration_days = 1200 #days 
+    simulation_duration_days = 1000 #days 
     simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
@@ -283,25 +283,31 @@ if __name__=="__main__":
     ########################################################################################################################
     ################################################## SIMULATE OBSERVATIONS ###############################################
     ########################################################################################################################
-
-    # Define time of first observation
-    observation_start_epoch = simulation_start_epoch + constants.JULIAN_DAY
     
     # Define time between two observations
-    observation_interval = 60 #seconds 
+    observation_interval = 60 #seconds
 
     # Define observation simulation times for each link
     observation_times_list = list()
+    
+    # Read the epoch times
     with open(os.path.dirname(os.path.realpath(__file__))+'/InSight_mes_upto_31122021.forCarlos') as file:
         lines = file.read().splitlines()
         observation_start_epoch = np.inf
+        # Iterate along each transmitter
         for transmitter_pointer in transmitter_names:
             transmitter_ground_station_number =  [int(s) for s in transmitter_pointer.split() if s.isdigit()][0]
+            # Iterate along each observation time
             for pointer_time in range(0,len(lines)):
                 line = lines[pointer_time]
                 line_info = line.split()
-                if float(line_info[0]) == transmitter_ground_station_number and float(line_info[1]) == transmitter_ground_station_number:
+                # Condition to save the observation time
+                if float(line_info[0]) == transmitter_ground_station_number and float(line_info[1]) == transmitter_ground_station_number \
+                    and float(line_info[2])<=simulation_end_epoch:
                     observation_times_list.append(float(line_info[2]))
+                    # Save the minimum epoch
+                    if float(line_info[2])<observation_start_epoch:
+                        observation_start_epoch = float(line_info[2])
 
     observation_times_list.sort()
 
@@ -313,57 +319,39 @@ if __name__=="__main__":
     viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(antenna_min_elevation)))
     viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
 
+    # Change directory in order to read ResStatPerPass_ForCarlos.txt
     output_folder_path = os.path.dirname(os.path.realpath(__file__))
     os.makedirs(output_folder_path,exist_ok=True)
 
     time_days_mHz_pass = list()
     std_mHz = list()
 
+    # Append the standard deviations and times to the empty lists
     with open(output_folder_path+'/ResStatPerPass_ForCarlos.txt') as f:
         lines = f.readlines()
-        index_gap = None
         for line in lines[1:]:
             line_split = line.split()
             if not (np.isnan(float(line_split[1])) and np.isnan(float(line_split[2]))):
                 time_days_mHz_pass.append(float(line_split[0]))
                 std_mHz.append(float(line_split[2]))
-            else:
-                index_gap = len(time_days_mHz_pass)
+    
+    # Nearest interpolation
+    std_mHz_function = scipy.interpolate.interp1d(time_days_mHz_pass, std_mHz, fill_value='extrapolate', kind='nearest')
 
+    # Insert seed
     np.random.seed(42)
 
-    polyfit_std_mHz_pass = np.polyfit(time_days_mHz_pass,std_mHz,8)
-    poly1d_mHz_pass = np.poly1d(polyfit_std_mHz_pass)(time_days_mHz_pass)
-    std_mean_error = np.mean(np.abs(poly1d_mHz_pass-std_mHz))
-    poly1d_gap_mHz = np.poly1d(polyfit_std_mHz_pass)(np.arange(time_days_mHz_pass[index_gap-1]+1,time_days_mHz_pass[index_gap],2))
-    poly1d_gap_noise_mHz = np.random.normal(poly1d_gap_mHz,std_mean_error)
-    spline_before_gap = scipy.interpolate.CubicSpline(time_days_mHz_pass[:index_gap],std_mHz[:index_gap],extrapolate='periodic')
-    spline_after_gap = scipy.interpolate.CubicSpline(time_days_mHz_pass[index_gap:],std_mHz[index_gap:],extrapolate='periodic')
-    std_mHz_concatenate = np.concatenate((std_mHz[:index_gap],poly1d_gap_noise_mHz,std_mHz[index_gap:]))
-    time_days_mHz_pass_concatenate = np.concatenate((time_days_mHz_pass[:index_gap],np.arange(time_days_mHz_pass[index_gap-1]+1,time_days_mHz_pass[index_gap],2),time_days_mHz_pass[index_gap:]))
-    std_mHz_function = scipy.interpolate.CubicSpline(time_days_mHz_pass_concatenate,std_mHz_concatenate,extrapolate='periodic')
-
+    # Function to compute the standard deviation
     def std_mHz_callable(t):
-        return std_mHz_function((t-observation_times_list[0]*np.ones(len(t)))/constants.JULIAN_DAY)*10**(-3)/constants.SPEED_OF_LIGHT_LONG
+        return np.array([np.random.normal(0,std_mHz_function((t-observation_times_list[0])/constants.JULIAN_DAY)*10**(-3)/constants.SPEED_OF_LIGHT_LONG)]) #*np.ones(len(t))
 
-    # Create measurement simulation input
-    #observation_simulation_settings = observation.tabulated_simulation_settings_list(
-    #    dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list,
-    #    viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter)
     observation_simulation_settings = list()
     for pointer_link_ends in range(0,len(observation_settings_list)):
-        observation_simulation_settings.append(observation.tabulated_simulation_settings(
-            dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list,
-            viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter),
-            noise_function = std_mHz_callable(observation_times_list))
+        observation_simulation_settings.append(observation.tabulated_simulation_settings(observation.two_way_doppler_type,
+            observation_settings_list[pointer_link_ends],observation_times_list,
+            viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter,
+            noise_function = std_mHz_callable))
 
-    # Define noise levels
-    doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT_LONG # Taken from the Radioscience LaRa instrument onboard ExoMars to investigate the rotation and interior of Mars
-    weights_per_observable = dict({observation.two_way_doppler_type:doppler_noise**(-2)})
-
-    # Create noise functions
-    observation.add_gaussian_noise_to_settings(observation_simulation_settings,doppler_noise,observation.two_way_doppler_type)
-    
     # Simulate required observation
     simulated_observations = estimation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
 
@@ -373,7 +361,7 @@ if __name__=="__main__":
     # Position of Mars
     parameter_perturbation[0:3]=1000*np.ones(3) # meters; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
     # Velocity of Mars
-    parameter_perturbation[3:6]=0.0002*np.ones(3) #meters; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
+    parameter_perturbation[3:6]=0.0002*np.ones(3) # meters; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
     # Core factor of the celestial body of Mars
     parameter_perturbation[6]=0.014 # Unitless; Taken from A global solution for the Mars static and seasonal gravity, Mars orientation, Phobos and Deimos masses, and Mars ephemeris
     # Free core nutation rate of the celestial body of Mars
@@ -408,11 +396,21 @@ if __name__=="__main__":
 
     # Estimate parameters
     pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size, inverse_apriori_covariance = inverse_a_priori_covariance, apriori_parameter_correction = parameter_perturbation)
-    #pod_input.set_constant_weight_per_observable(weights_per_observable)
     #pod_input.define_estimation_settings(reintegrate_variational_equations = False)
-
+    
+    # Define noise levels for weights
     vector_weights = std_mHz_function((simulated_observations.concatenated_times-observation_times_list[0]*np.ones(len(simulated_observations.concatenated_times)))/constants.JULIAN_DAY)*10**(-3)/constants.SPEED_OF_LIGHT_LONG
     pod_input.set_weight(1/vector_weights**2)
+
+    # Just to check the viability of the sun, remove the last per pass
+    plt.figure()
+    plt.scatter((simulated_observations.concatenated_times-observation_times_list[0]*np.ones(len(simulated_observations.concatenated_times)))/constants.JULIAN_DAY,std_mHz_function((simulated_observations.concatenated_times-observation_times_list[0]*np.ones(len(simulated_observations.concatenated_times)))/constants.JULIAN_DAY))
+    plt.ylabel('Weight [-]')
+    plt.xlabel('Time [-]')
+    plt.grid()
+    plt.ylim([-3,3])
+    plt.show()
+    plt.close('all')    
 
     # Perform estimation
     pod_output = estimator.perform_estimation(pod_input)
