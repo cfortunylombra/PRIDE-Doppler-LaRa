@@ -31,7 +31,7 @@ if __name__=="__main__":
     days_in_a_week = 7 #days
 
     # Initial date of the simulation
-    start_date = 2458449.5 #in Julian days = 27/11/2018 00:00:00; Taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
+    start_date = 2458449.5 #in Julian days = 27/11/2018 00:00:00; Taken from the txt file sent by Sebastien
 
     # Duration of the simulation
     simulation_duration_days = 1000 #days
@@ -81,7 +81,7 @@ if __name__=="__main__":
     simulation_end_epoch = simulation_start_epoch+simulation_duration #seconds
 
     # Define bodies in the simulation
-    bodies_to_create = ["Earth","Mars"]
+    bodies_to_create = ["Earth","Mars","Sun"]
 
     global_frame_origin = "SSB" #Barycenter of Solar System
     global_frame_orientation = "ECLIPJ2000"
@@ -179,6 +179,9 @@ if __name__=="__main__":
                     if float(line_info[2])<observation_start_epoch:
                         observation_start_epoch = float(line_info[2])
 
+    #list_times = list()
+    #list_angles = list()
+
     # Iterate along transmitters
     for transmitter_pointer in transmitter_names:
         data_transmitter[transmitter_pointer]['Time at reflector'] = list()
@@ -196,6 +199,21 @@ if __name__=="__main__":
             bool_receiver = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_pointer),'Mars',
                 [data_transmitter[transmitter_pointer]['Epoch'][receiver_time_pointer]],False)
             
+            bool_receiver_Sun = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_pointer),'Sun',
+                [data_transmitter[transmitter_pointer]['Epoch'][receiver_time_pointer]],False)
+
+            def polar2cart(r, theta, phi):
+                return np.array([r*np.sin(theta)*np.cos(phi),r*np.sin(theta)*np.sin(phi),r*np.cos(theta)])
+
+            values_receiver_Sun = polar2cart(1,np.pi-bool_receiver_Sun[list(bool_receiver_Sun.keys())[0]][0],bool_receiver_Sun[list(bool_receiver_Sun.keys())[0]][1])
+            values_receiver_Mars = polar2cart(1,np.pi-bool_receiver[list(bool_receiver.keys())[0]][0],bool_receiver[list(bool_receiver.keys())[0]][1])
+            angle_body_between = np.arccos(np.dot(values_receiver_Sun,values_receiver_Mars))
+            
+            #if angle_body_between < np.deg2rad(10) and bool_receiver[list(bool_receiver.keys())[0]][2]>bool_receiver_Sun[list(bool_receiver_Sun.keys())[0]][2]:
+            #    list_times.append((data_transmitter[transmitter_pointer]['Epoch'][receiver_time_pointer]-observation_start_epoch)/constants.JULIAN_DAY)
+            #    list_angles.append(np.rad2deg(angle_body_between))
+            #    #print((data_transmitter[transmitter_pointer]['Epoch'][receiver_time_pointer]-observation_start_epoch)/constants.JULIAN_DAY,np.rad2deg(angle_body_between))
+
             # Compute observation time, azimuth, elevation angles and range for reflector
             time_reflector = data_transmitter[transmitter_pointer]['Epoch'][receiver_time_pointer]-bool_receiver[list(bool_receiver.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
             bool_reflector = estimation.compute_target_angles_and_range(bodies,('Mars',reflector_name),'Earth',[time_reflector],False)
@@ -221,6 +239,11 @@ if __name__=="__main__":
                 data_transmitter[transmitter_pointer]['Elevation at transmitter'].append(bool_transmitter[list(bool_transmitter.keys())[0]][0])
                 data_transmitter[transmitter_pointer]['Azimuth at transmitter'].append(bool_transmitter[list(bool_transmitter.keys())[0]][1])
 
+
+    #list_times.sort()
+    #list_angles.sort()
+
+    #print(list_times[0],list_times[-1])
 
     data_receiver = dict()
 
