@@ -13,8 +13,6 @@ if __name__=="__main__":
     import sys
     sys.path.insert(0, "/home/cfortunylombra/tudat-bundle/cmake-build-release-wsl/tudatpy/")
     import os
-    import copy
-    import datetime
     import numpy as np
     import scipy.interpolate
     import matplotlib.pyplot as plt
@@ -36,8 +34,7 @@ if __name__=="__main__":
     start_date = 2458449.5 #in Julian days = 27/11/2018 00:00:00; Taken from the txt file sent by Sebastien
 
     # Duration of the simulation
-    simulation_duration_days = 1000 #days 
-    simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
+    simulation_duration_days = 998 #days 
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
     # RISE landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
@@ -343,13 +340,13 @@ if __name__=="__main__":
 
     # Function to compute the standard deviation
     def std_mHz_callable(t):
-        return np.array([np.random.normal(0,std_mHz_function((t-observation_times_list[0])/constants.JULIAN_DAY)*10**(-3)/constants.SPEED_OF_LIGHT_LONG)]) #*np.ones(len(t))
+        return np.array([np.random.normal(0,std_mHz_function((t-observation_times_list[0])/constants.JULIAN_DAY)*10**(-3)/constants.SPEED_OF_LIGHT_LONG)])
 
     observation_simulation_settings = list()
     for pointer_link_ends in range(0,len(observation_settings_list)):
         observation_simulation_settings.append(observation.tabulated_simulation_settings(observation.two_way_doppler_type,
             observation_settings_list[pointer_link_ends],observation_times_list,
-            viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter,
+            viability_settings = viability_settings_list,reference_link_end_type = observation.receiver,
             noise_function = std_mHz_callable))
 
     # Simulate required observation

@@ -64,7 +64,7 @@ if __name__=="__main__":
     # Viability settings
     earth_min = 10 #deg
     earth_max = 30 #deg
-    antenna_min_elevation = 20 #deg
+    antenna_min_elevation = 10 #deg
     body_avoidance_angle = 10 #deg
 
     ########################################################################################################################
@@ -119,7 +119,7 @@ if __name__=="__main__":
             ground_station_dict[list(ground_station_dict.keys())[pointer_ground_station]])
     
     Earth_ground_station_list = environment_setup.get_ground_station_list(bodies.get_body("Earth"))
-
+    #print(Earth_ground_station_list)
     # Mars-based ground station creation
     environment_setup.add_ground_station(
         bodies.get_body("Mars"),
@@ -199,7 +199,7 @@ if __name__=="__main__":
         two_way_link_ends[observation.receiver] = ( "Earth", receiver_name )
 
         observation_settings_list.append(two_way_link_ends)
-    
+    #print(observation_settings_list)
     ########################################################################################################################
     ################################################## DEFINE PARAMETERS TO ESTIMATE #######################################
     ######################################################################################################################## 
@@ -230,7 +230,7 @@ if __name__=="__main__":
     for pointer_link_ends in range(0,len(observation_settings_list)):
         two_way_doppler_observation_settings.append(observation.two_way_open_loop_doppler(
             observation_settings_list[pointer_link_ends]))
-
+    #print(two_way_doppler_observation_settings)
     ########################################################################################################################
     ################################################## INITIALIZE OD  ######################################################
     ######################################################################################################################## 
@@ -258,6 +258,7 @@ if __name__=="__main__":
 
     # Define observation simulation times for each link
     observation_times_list = list()
+    observation_times_dict = dict()
     
     # Read the epoch times
     with open(os.path.dirname(os.path.realpath(__file__))+'/InSight_mes_upto_31122021.forCarlos') as file:
@@ -265,6 +266,7 @@ if __name__=="__main__":
         observation_start_epoch = np.inf
         # Iterate along each transmitter
         for transmitter_pointer in transmitter_names:
+            observation_times_dict[transmitter_pointer] = list()
             transmitter_ground_station_number =  [int(s) for s in transmitter_pointer.split() if s.isdigit()][0]
             # Iterate along each observation time
             for pointer_time in range(0,len(lines)):
@@ -273,17 +275,18 @@ if __name__=="__main__":
                 # Condition to save the observation time
                 if float(line_info[0]) == transmitter_ground_station_number and float(line_info[1]) == transmitter_ground_station_number \
                     and float(line_info[2])<=simulation_end_epoch:
+                    observation_times_dict[transmitter_pointer].append(float(line_info[2]))
                     observation_times_list.append(float(line_info[2]))
                     # Save the minimum epoch
                     if float(line_info[2])<observation_start_epoch:
                         observation_start_epoch = float(line_info[2])
 
     observation_times_list.sort()
-
+    
     # Create observation viability settings and calculators
     viability_settings_list = list()
     viability_settings_list.append(observation.elevation_angle_viability(["Earth",""],np.deg2rad(antenna_min_elevation)))
-    viability_settings_list.append(observation.elevation_angle_viability(["Mars",""],np.deg2rad(earth_min)))
+    #viability_settings_list.append(observation.elevation_angle_viability(["Mars",""],np.deg2rad(earth_min))) 
     #viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(earth_max))) #NOTE maximum elevation angle viability
     viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(body_avoidance_angle)))
     viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
@@ -316,9 +319,10 @@ if __name__=="__main__":
 
     observation_simulation_settings = list()
     for pointer_link_ends in range(0,len(observation_settings_list)):
+        #print(transmitter_names[pointer_link_ends])
         observation_simulation_settings.append(observation.tabulated_simulation_settings(observation.two_way_doppler_type,
-            observation_settings_list[pointer_link_ends],observation_times_list,
-            viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter,
+            observation_settings_list[pointer_link_ends],observation_times_dict[transmitter_names[pointer_link_ends]],
+            viability_settings = viability_settings_list,reference_link_end_type = observation.receiver,
             noise_function = std_mHz_callable))
 
     # Simulate required observation
@@ -369,7 +373,7 @@ if __name__=="__main__":
     
     # Define noise levels for weights
     vector_weights = std_mHz_function((simulated_observations.concatenated_times-observation_times_list[0]*np.ones(len(simulated_observations.concatenated_times)))/constants.JULIAN_DAY)*10**(-3)/constants.SPEED_OF_LIGHT_LONG
-    pod_input.set_weight(1/vector_weights**2)   
+    pod_input.set_weight(1/vector_weights**2) 
 
     # Perform estimation
     pod_output = estimator.perform_estimation(pod_input)
@@ -396,6 +400,13 @@ if __name__=="__main__":
     concatenated_link_ends = simulated_observations.concatenated_link_ends
     doppler_residuals = pod_output.residual_history
 
+    ########################################################################################################################
+    ################################################## H, W MATRICES & SAVE TXT ############################################
+    ########################################################################################################################
+
+    # Normalized inverse a priori covariance
+    norm_inverse_a_priori_covariance = np.diag(inverse_a_priori_covariance.diagonal()/(estimation_information_matrix_normalization**2))
+    
     np.savetxt(output_folder_path+"/weights_diagonal.dat",pod_output.weights_matrix_diagonal,fmt='%.15e')
     np.savetxt(output_folder_path+"/estimation_information_matrix.dat",estimation_information_matrix,fmt='%.15e')
     np.savetxt(output_folder_path+"/estimation_information_matrix_normalization.dat",
@@ -403,17 +414,117 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/concatenated_times.dat",concatenated_times,fmt='%.15e')
     np.savetxt(output_folder_path+"/concatenated_link_ends.dat",concatenated_link_ends,fmt='%.15e')
     np.savetxt(output_folder_path+"/doppler_residuals.dat",doppler_residuals,fmt='%.15e')
+    np.savetxt(output_folder_path+"/vector_weights.dat",vector_weights,fmt='%.15e')
+
+    # Sort with respect to time
+    index_sort = np.argsort(concatenated_times)
+    #print(index_sort[0])
+    concatenated_times = np.array([concatenated_times[i] for i in index_sort])
+    concatenated_link_ends = np.array([concatenated_link_ends[i] for i in index_sort])
+    vector_weights = np.array([vector_weights[i] for i in index_sort])
+    estimation_information_matrix[:] = np.array([estimation_information_matrix[i] for i in index_sort])
+    doppler_residuals[:] = np.array([doppler_residuals[i] for i in index_sort])
+
+    # Create the W matrix by dividing the square of the noise levels
+    weight_matrix = np.diag(1/vector_weights**2)
     
+    # Compute the normalized covariance matrix
+    norm_covariance_matrix = np.matmul(np.matmul(np.transpose(estimation_information_matrix),weight_matrix),estimation_information_matrix)+\
+        norm_inverse_a_priori_covariance
+  
+    #print(inverse_a_priori_covariance)
+
+    #print(np.matmul(np.matmul(np.transpose(estimation_information_matrix),weight_matrix),estimation_information_matrix))
+
+    #print(norm_covariance_matrix)
+
+    # Compute the unnormalized covariance matrix
+    covariance_matrix = np.zeros(np.shape(norm_covariance_matrix))
+    for i in range(0,np.shape(norm_covariance_matrix)[0]):
+        for j in range(0,np.shape(norm_covariance_matrix)[1]):
+            covariance_matrix[i][j] = norm_covariance_matrix[i][j]/\
+                (1/(estimation_information_matrix_normalization[i]*estimation_information_matrix_normalization[j]))
+
+    #print(covariance_matrix)
+
+    # Take the standard deviation (formal) from the diagonal of the unnormalized covariance matrix
+    sigma_covariance_matrix = 1/np.sqrt(covariance_matrix.diagonal())
+
+    # Compute correlation matrix
+    correlation_matrix = np.zeros(np.shape(covariance_matrix))
+    for i in range(0,np.shape(covariance_matrix)[0]):
+        for j in range(0,np.shape(covariance_matrix)[1]):
+            correlation_matrix[i][j] = covariance_matrix[i][j]/(1/(sigma_covariance_matrix[i]*sigma_covariance_matrix[j]))
+
+    #print(sigma_covariance_matrix)
+
+    np.savetxt(output_folder_path+"/weights_diagonal_sort.dat",pod_output.weights_matrix_diagonal,fmt='%.15e')
+    np.savetxt(output_folder_path+"/estimation_information_matrix_sort.dat",estimation_information_matrix,fmt='%.15e')
+    np.savetxt(output_folder_path+"/estimation_information_matrix_normalization_sort.dat",
+        estimation_information_matrix_normalization,fmt='%.15e')
+    np.savetxt(output_folder_path+"/concatenated_times_sort.dat",concatenated_times,fmt='%.15e')
+    np.savetxt(output_folder_path+"/concatenated_link_ends_sort.dat",concatenated_link_ends,fmt='%.15e')
+    np.savetxt(output_folder_path+"/doppler_residuals_sort.dat",doppler_residuals,fmt='%.15e')
+    np.savetxt(output_folder_path+"/vector_weights_sort.dat",vector_weights,fmt='%.15e')
+
     ########################################################################################################################
     ################################################## PLOTTING TRUE TO FORM RATIO #########################################
     ########################################################################################################################
 
-    plt.figure()
+    plt.figure(figsize=(15, 6))
     plt.hist(np.abs(true_to_form_estimation_error_ratio), bins = 8)
     plt.ylabel('Frequency [-]')
     plt.xlabel('True to form ratio [-]')
     plt.grid()
     plt.savefig(output_folder_path+"/true_to_form_ratio.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    # Just to check the viability of the sun, remove the last per pass
+    plt.figure(figsize=(15, 6))
+    plt.scatter((simulated_observations.concatenated_times-observation_times_list[0]*np.ones(len(simulated_observations.concatenated_times)))/constants.JULIAN_DAY,std_mHz_function((simulated_observations.concatenated_times-observation_times_list[0]*np.ones(len(simulated_observations.concatenated_times)))/constants.JULIAN_DAY))
+    plt.ylabel('Std noise [mHz]')
+    plt.xlabel('Time [days]')
+    plt.grid()
+    plt.ylim([-3,3])
+    plt.savefig(output_folder_path+"/std_noise_time.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')  
+
+    plt.figure(figsize=(15, 6))
+    plt.plot(range(6,len(parameter_perturbation)),sigma_covariance_matrix[6:]/parameter_perturbation[6:],'o--')
+    plt.ylabel('Formal to Apriori Ratio')
+    plt.xlabel('Estimated Parameters')
+    plt.xticks(range(6,len(parameter_perturbation)),labels=['F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
+        r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+        r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
+        r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
+        r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
+    plt.grid()
+    plt.savefig(output_folder_path+"/formal_to_a_priori.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    plt.figure(figsize=(18,18))
+    plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = False
+    plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = True
+    plt.imshow(np.abs(correlation_matrix))
+    plt.colorbar()
+    plt.xticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+        r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
+        r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+        r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
+        r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
+        r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
+    plt.yticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+        r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
+        r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+        r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
+        r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
+        r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
+    plt.grid()
+    plt.title('Correlation Matrix')
+    plt.savefig(output_folder_path+"/correlation_matrix.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
 

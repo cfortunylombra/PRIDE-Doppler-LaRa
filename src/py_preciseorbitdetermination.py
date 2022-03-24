@@ -302,7 +302,7 @@ if __name__=="__main__":
     # Create measurement simulation input
     observation_simulation_settings = observation.tabulated_simulation_settings_list(
         dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list,
-        viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter)
+        viability_settings = viability_settings_list,reference_link_end_type = observation.receiver)
 
     # Define noise levels
     doppler_noise = 0.05e-3/constants.SPEED_OF_LIGHT_LONG # Taken from the Radioscience LaRa instrument onboard ExoMars to investigate the rotation and interior of Mars
