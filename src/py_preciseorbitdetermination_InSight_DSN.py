@@ -15,7 +15,9 @@ if __name__=="__main__":
     import os
     import numpy as np
     import scipy.interpolate
+    import scipy.sparse
     import matplotlib.pyplot as plt
+    from multiprocessing import Pool
     from tudatpy.kernel import constants, numerical_simulation
     from tudatpy.kernel.astro import element_conversion
     from tudatpy.kernel.interface import spice_interface
@@ -46,20 +48,20 @@ if __name__=="__main__":
     # Earth-based transmitters
     transmitter_names = ['DSS 43','DSS 34','DSS 35','DSS 36','DSS 65','DSS 63','DSS 55','DSS 54','DSS 56','DSS 14','DSS 26', 'DSS 24', 'DSS 25']
 
-    transmitter_positions_cartesian = list()  #Taken from https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat
-    transmitter_positions_cartesian.append(np.array([-4460894.7273,2682361.5296,-3674748.4238])) # DSS 43
-    transmitter_positions_cartesian.append(np.array([-4461147.4205,2682439.2423,-3674392.5623])) # DSS 34
-    transmitter_positions_cartesian.append(np.array([-4461273.4175,2682568.9283,-3674151.5223])) # DSS 35
-    transmitter_positions_cartesian.append(np.array([-4461168.7425,2682814.6603,-3674083.3303])) # DSS 36
-    transmitter_positions_cartesian.append(np.array([4849339.5378,-360427.4851,4114750.8520])) # DSS 65A
-    transmitter_positions_cartesian.append(np.array([4849092.6814,-360180.5350,4115109.1298])) # DSS 63
-    transmitter_positions_cartesian.append(np.array([4849525.256,-360606.09,4114495.08])) # DSS 55 #http://astrogeo.org/aplo/vlbi.inp
-    transmitter_positions_cartesian.append(np.array([4849434.4880,-360723.8999,4114618.8350])) # DSS 54
-    transmitter_positions_cartesian.append(np.array([4849421.500903,-360549.2280048,4114647.264832])) # DSS 56 #https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/stations/earth_topo_201023.tf
-    transmitter_positions_cartesian.append(np.array([-2353621.2459,-4641341.5369,3677052.2305])) # DSS 14
-    transmitter_positions_cartesian.append(np.array([-2354890.967,-4647166.93,3668872.21])) # DSS 26
-    transmitter_positions_cartesian.append(np.array([-2354906.495,-4646840.13,3669242.317])) # DSS 24
-    transmitter_positions_cartesian.append(np.array([-2355022.066,-4646953.64,3669040.90])) # DSS 25
+    transmitter_positions_cartesian = list()  #Taken from JPL web site
+    transmitter_positions_cartesian.append(np.array([-4460894.9170,2682361.5070,-3674748.1517])) # DSS 43
+    transmitter_positions_cartesian.append(np.array([-4461147.0925,2682439.2385,-3674393.1332])) # DSS 34
+    transmitter_positions_cartesian.append(np.array([-4461273.4175,2682568.9283,-3674151.5223])) # DSS 35 (https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat)
+    transmitter_positions_cartesian.append(np.array([-4461168.7425,2682814.6603,-3674083.3303])) # DSS 36 (https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat)
+    transmitter_positions_cartesian.append(np.array([4849339.6448,-360427.6560,4114750.7428])) # DSS 65
+    transmitter_positions_cartesian.append(np.array([4849092.5175,-360180.3480,4115109.2506])) # DSS 63
+    transmitter_positions_cartesian.append(np.array([4849525.2561,-360606.0932,4114495.0843])) # DSS 55
+    transmitter_positions_cartesian.append(np.array([4849434.4877,-360723.8999,4114618.8354])) # DSS 54
+    transmitter_positions_cartesian.append(np.array([4849421.500903,-360549.2280048,4114647.264832])) # DSS 56 (https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/stations/earth_topo_201023.tf)
+    transmitter_positions_cartesian.append(np.array([-2353621.4197,-4641341.4717,3677052.3178])) # DSS 14
+    transmitter_positions_cartesian.append(np.array([-2354890.7996,-4647166.3182,3668871.7546])) # DSS 26
+    transmitter_positions_cartesian.append(np.array([-2354906.7087,-4646840.0834,3669242.3207])) # DSS 24
+    transmitter_positions_cartesian.append(np.array([-2355022.0140,-4646953.2040,3669040.5666])) # DSS 25
 
     # Viability settings
     earth_min = 10 #deg
@@ -119,7 +121,7 @@ if __name__=="__main__":
             ground_station_dict[list(ground_station_dict.keys())[pointer_ground_station]])
     
     Earth_ground_station_list = environment_setup.get_ground_station_list(bodies.get_body("Earth"))
-    #print(Earth_ground_station_list)
+    
     # Mars-based ground station creation
     environment_setup.add_ground_station(
         bodies.get_body("Mars"),
@@ -199,7 +201,7 @@ if __name__=="__main__":
         two_way_link_ends[observation.receiver] = ( "Earth", receiver_name )
 
         observation_settings_list.append(two_way_link_ends)
-    #print(observation_settings_list)
+    
     ########################################################################################################################
     ################################################## DEFINE PARAMETERS TO ESTIMATE #######################################
     ######################################################################################################################## 
@@ -230,7 +232,7 @@ if __name__=="__main__":
     for pointer_link_ends in range(0,len(observation_settings_list)):
         two_way_doppler_observation_settings.append(observation.two_way_open_loop_doppler(
             observation_settings_list[pointer_link_ends]))
-    #print(two_way_doppler_observation_settings)
+    
     ########################################################################################################################
     ################################################## INITIALIZE OD  ######################################################
     ######################################################################################################################## 
@@ -319,7 +321,6 @@ if __name__=="__main__":
 
     observation_simulation_settings = list()
     for pointer_link_ends in range(0,len(observation_settings_list)):
-        #print(transmitter_names[pointer_link_ends])
         observation_simulation_settings.append(observation.tabulated_simulation_settings(observation.two_way_doppler_type,
             observation_settings_list[pointer_link_ends],observation_times_dict[transmitter_names[pointer_link_ends]],
             viability_settings = viability_settings_list,reference_link_end_type = observation.receiver,
@@ -379,7 +380,7 @@ if __name__=="__main__":
     pod_output = estimator.perform_estimation(pod_input)
     
     ########################################################################################################################
-    ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
+    ################################################## PROVIDE OUTPUT TO CONSOLE  ##########################################
     ########################################################################################################################
 
     output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE_DSN_only')
@@ -407,6 +408,7 @@ if __name__=="__main__":
     # Normalized inverse a priori covariance
     norm_inverse_a_priori_covariance = np.diag(inverse_a_priori_covariance.diagonal()/(estimation_information_matrix_normalization**2))
     
+    # Save unsorted data
     np.savetxt(output_folder_path+"/weights_diagonal.dat",pod_output.weights_matrix_diagonal,fmt='%.15e')
     np.savetxt(output_folder_path+"/estimation_information_matrix.dat",estimation_information_matrix,fmt='%.15e')
     np.savetxt(output_folder_path+"/estimation_information_matrix_normalization.dat",
@@ -418,7 +420,6 @@ if __name__=="__main__":
 
     # Sort with respect to time
     index_sort = np.argsort(concatenated_times)
-    #print(index_sort[0])
     concatenated_times = np.array([concatenated_times[i] for i in index_sort])
     concatenated_link_ends = np.array([concatenated_link_ends[i] for i in index_sort])
     vector_weights = np.array([vector_weights[i] for i in index_sort])
@@ -428,36 +429,62 @@ if __name__=="__main__":
     # Create the W matrix by dividing the square of the noise levels
     weight_matrix = np.diag(1/vector_weights**2)
     
-    # Compute the normalized covariance matrix
-    norm_covariance_matrix = np.matmul(np.matmul(np.transpose(estimation_information_matrix),weight_matrix),estimation_information_matrix)+\
-        norm_inverse_a_priori_covariance
-  
-    #print(inverse_a_priori_covariance)
+    # Function for the normalized covariance matrix
+    def norm_covariance_matrix_func(time_index):
+        return np.transpose(estimation_information_matrix[:time_index+1])@scipy.sparse.diags(1/vector_weights[:time_index+1]**2)@estimation_information_matrix[:time_index+1]\
+            +norm_inverse_a_priori_covariance
 
-    #print(np.matmul(np.matmul(np.transpose(estimation_information_matrix),weight_matrix),estimation_information_matrix))
+    # Compute the normalized covariance matrix using 4 CPUs
+    norm_covariance_matrix_dict = Pool(4)
+    print("Calculating the normalized covariance matrix")
+    norm_covariance_values = norm_covariance_matrix_dict.map(norm_covariance_matrix_func,range(0,len(concatenated_times)))
+    norm_covariance_matrix_dict.close()
+    norm_covariance_matrix_dict.join()
 
-    #print(norm_covariance_matrix)
+    # Function for the covariance matrix
+    def covariance_matrix_func(time_index):
+        covariance_matrix = np.zeros(np.shape(norm_covariance_values[time_index]))
+        for i in range(0,np.shape(norm_covariance_values[time_index])[0]):
+            for j in range(0,np.shape(norm_covariance_values[time_index])[1]):
+                covariance_matrix[i][j] = norm_covariance_values[time_index][i][j]/\
+                   (1/(estimation_information_matrix_normalization[i]*estimation_information_matrix_normalization[j]))
+        return covariance_matrix 
 
-    # Compute the unnormalized covariance matrix
-    covariance_matrix = np.zeros(np.shape(norm_covariance_matrix))
-    for i in range(0,np.shape(norm_covariance_matrix)[0]):
-        for j in range(0,np.shape(norm_covariance_matrix)[1]):
-            covariance_matrix[i][j] = norm_covariance_matrix[i][j]/\
-                (1/(estimation_information_matrix_normalization[i]*estimation_information_matrix_normalization[j]))
+    # Compute the unnormalized covariance matrix using 4 CPUs
+    covariance_matrix_dict = Pool(4)
+    print("Computing the unnormalized covariance matrix")
+    covariance_values = covariance_matrix_dict.map(covariance_matrix_func,range(0,len(concatenated_times)))
+    covariance_matrix_dict.close()
+    covariance_matrix_dict.join()
 
-    #print(covariance_matrix)
+    # Function for the standard deviation (formal)
+    def sigma_covariance_matrix_func(time_index):
+        return 1/np.sqrt(covariance_values[time_index].diagonal())
 
-    # Take the standard deviation (formal) from the diagonal of the unnormalized covariance matrix
-    sigma_covariance_matrix = 1/np.sqrt(covariance_matrix.diagonal())
+    # Take the standard deviation (formal) from the diagonal of the unnormalized covariance matrix using 4 CPUs
+    sigma_covariance_matrix_dict = Pool(4)
+    print("Computing the standard deviation (formal)")
+    sigma_values = sigma_covariance_matrix_dict.map(sigma_covariance_matrix_func,range(0,len(concatenated_times)))
+    sigma_covariance_matrix_dict.close()
+    sigma_covariance_matrix_dict.join()
 
-    # Compute correlation matrix
-    correlation_matrix = np.zeros(np.shape(covariance_matrix))
-    for i in range(0,np.shape(covariance_matrix)[0]):
-        for j in range(0,np.shape(covariance_matrix)[1]):
-            correlation_matrix[i][j] = covariance_matrix[i][j]/(1/(sigma_covariance_matrix[i]*sigma_covariance_matrix[j]))
+    # Function for the correlation matrix
+    def correlation_matrix_func(time_index):
+        correlation_matrix = np.zeros(np.shape(covariance_values[time_index]))
+        for i in range(0,np.shape(covariance_values[time_index])[0]):
+            for j in range(0,np.shape(covariance_values[time_index])[1]):
+                correlation_matrix[i][j] = covariance_values[time_index][i][j]/\
+                    (1/(sigma_values[time_index][i]*sigma_values[time_index][j]))
+        return correlation_matrix
 
-    #print(sigma_covariance_matrix)
+    # Compute correlation matrix using 4 CPUs
+    correlation_matrix_dict = Pool(4)
+    print("Computing the correlation matrix")
+    correlation_values = correlation_matrix_dict.map(correlation_matrix_func,range(0,len(concatenated_times)))
+    correlation_matrix_dict.close()
+    correlation_matrix_dict.join()
 
+    # Save sorted data
     np.savetxt(output_folder_path+"/weights_diagonal_sort.dat",pod_output.weights_matrix_diagonal,fmt='%.15e')
     np.savetxt(output_folder_path+"/estimation_information_matrix_sort.dat",estimation_information_matrix,fmt='%.15e')
     np.savetxt(output_folder_path+"/estimation_information_matrix_normalization_sort.dat",
@@ -468,9 +495,10 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/vector_weights_sort.dat",vector_weights,fmt='%.15e')
 
     ########################################################################################################################
-    ################################################## PLOTTING TRUE TO FORM RATIO #########################################
+    ################################################## PLOTS ###############################################################
     ########################################################################################################################
 
+    # True to form ratio histogram
     plt.figure(figsize=(15, 6))
     plt.hist(np.abs(true_to_form_estimation_error_ratio), bins = 8)
     plt.ylabel('Frequency [-]')
@@ -480,7 +508,7 @@ if __name__=="__main__":
     plt.show()
     plt.close('all')
 
-    # Just to check the viability of the sun, remove the last per pass
+    # Plot to check the viability of the Sun
     plt.figure(figsize=(15, 6))
     plt.scatter((simulated_observations.concatenated_times-observation_times_list[0]*np.ones(len(simulated_observations.concatenated_times)))/constants.JULIAN_DAY,std_mHz_function((simulated_observations.concatenated_times-observation_times_list[0]*np.ones(len(simulated_observations.concatenated_times)))/constants.JULIAN_DAY))
     plt.ylabel('Std noise [mHz]')
@@ -491,8 +519,9 @@ if __name__=="__main__":
     plt.show()
     plt.close('all')  
 
+    # Formal to apriori ratio
     plt.figure(figsize=(15, 6))
-    plt.plot(range(6,len(parameter_perturbation)),sigma_covariance_matrix[6:]/parameter_perturbation[6:],'o--')
+    plt.plot(range(6,len(parameter_perturbation)),sigma_values[-1][6:]/parameter_perturbation[6:],'o--')
     plt.ylabel('Formal to Apriori Ratio')
     plt.xlabel('Estimated Parameters')
     plt.xticks(range(6,len(parameter_perturbation)),labels=['F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
@@ -505,10 +534,11 @@ if __name__=="__main__":
     plt.show()
     plt.close('all')
 
+    # Correlation matrix 
     plt.figure(figsize=(18,18))
     plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = False
     plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = True
-    plt.imshow(np.abs(correlation_matrix))
+    plt.imshow(np.abs(correlation_values[-1]))
     plt.colorbar()
     plt.xticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
         r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
@@ -525,6 +555,249 @@ if __name__=="__main__":
     plt.grid()
     plt.title('Correlation Matrix')
     plt.savefig(output_folder_path+"/correlation_matrix.pdf",bbox_inches="tight")
+    plt.show()
+    plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = True
+    plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = False
+    plt.close('all')
+
+    # 1-sigma F as a function of time
+    plt.figure(figsize=(15, 6))
+    F_values = list()
+    for time_index in range(0,len(concatenated_times)):
+        F_values.append(sigma_values[time_index][6])
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        F_values,'-o')
+    plt.ylabel(r'1-$\sigma$ F [-]')
+    plt.xlabel('Time [days]')
+    plt.grid()
+    plt.savefig(output_folder_path+"/Fvalues_time.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    # 1-sigma sigma_FCN as a function of time
+    plt.figure(figsize=(15, 6))
+    sigma_FCN_values = list()
+    for time_index in range(0,len(concatenated_times)):
+        sigma_FCN_values.append(sigma_values[time_index][7])
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        sigma_FCN_values,'-o')
+    plt.ylabel(r'1-$\sigma$ $\sigma_{FCN}$ [rad/s]')
+    plt.xlabel('Time [days]')
+    plt.grid()
+    plt.savefig(output_folder_path+"/sigmaFCNvalues_time.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    # 1-sigma x_RISE,y_RISE,z_RISE as a function of time
+    plt.figure(figsize=(15, 6))
+    xlander_values = list()
+    ylander_values = list()
+    zlander_values = list()
+    for time_index in range(0,len(concatenated_times)):
+        xlander_values.append(sigma_values[time_index][8])
+        ylander_values.append(sigma_values[time_index][9])
+        zlander_values.append(sigma_values[time_index][10])
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        xlander_values,'r-o',label='$x_{RISE}$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        ylander_values,'g-o',label='$y_{RISE}$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        zlander_values,'b-o',label='$z_{RISE}$')
+    plt.ylabel(r'1-$\sigma$ x,y,z [m]')
+    plt.xlabel('Time [days]')
+    plt.legend()
+    plt.grid()
+    plt.savefig(output_folder_path+"/xyzlander_time.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    # 1-sigma spin variations as a function of time
+    plt.figure(figsize=(15, 6))
+    colormap = plt.cm.gist_ncar
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(parameter_perturbation[11:19])))))
+    cos1spin_values = list()
+    sin1spin_values = list()
+    cos2spin_values = list()
+    sin2spin_values = list()
+    cos3spin_values = list()
+    sin3spin_values = list()
+    cos4spin_values = list()
+    sin4spin_values = list()
+    for time_index in range(0,len(concatenated_times)):
+        cos1spin_values.append(sigma_values[time_index][11])
+        sin1spin_values.append(sigma_values[time_index][12])
+        cos2spin_values.append(sigma_values[time_index][13])
+        sin2spin_values.append(sigma_values[time_index][14])
+        cos3spin_values.append(sigma_values[time_index][15])
+        sin3spin_values.append(sigma_values[time_index][16])
+        cos4spin_values.append(sigma_values[time_index][17])
+        sin4spin_values.append(sigma_values[time_index][18])
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(cos1spin_values)/mas,'-o',label=r'$\psi^c_1$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(sin1spin_values)/mas,'-o',label=r'$\psi^s_1$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(cos2spin_values)/mas,'-o',label=r'$\psi^c_2$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(sin2spin_values)/mas,'-o',label=r'$\psi^s_2$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(cos3spin_values)/mas,'-o',label=r'$\psi^c_3$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(sin3spin_values)/mas,'-o',label=r'$\psi^s_3$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(cos4spin_values)/mas,'-o',label=r'$\psi^c_4$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(sin4spin_values)/mas,'-o',label=r'$\psi^s_4$')
+    plt.ylabel(r'1-$\sigma$ $\psi$ [mas]')
+    plt.xlabel('Time [days]')
+    plt.legend()
+    plt.grid()
+    plt.savefig(output_folder_path+"/psispin_time.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    # 1-sigma polar motion (order 1) as a function of time
+    plt.figure(figsize=(15, 6))
+    colormap = plt.cm.gist_ncar
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(parameter_perturbation[19:23])))))
+    xpcos1_values = list()
+    xpsin1_values = list()
+    ypcos1_values = list()
+    ypsin1_values = list()
+    for time_index in range(0,len(concatenated_times)):
+        xpcos1_values.append(sigma_values[time_index][19])
+        xpsin1_values.append(sigma_values[time_index][20])
+        ypcos1_values.append(sigma_values[time_index][21])
+        ypsin1_values.append(sigma_values[time_index][22])
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(xpcos1_values)/mas,'-o',label=r'$Xp^c_1$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(xpsin1_values)/mas,'-o',label=r'$Xp^s_1$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(ypcos1_values)/mas,'-o',label=r'$Yp^c_1$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(ypsin1_values)/mas,'-o',label=r'$Yp^s_1$')
+    plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
+    plt.xlabel('Time [days]')
+    plt.legend()
+    plt.grid()
+    plt.savefig(output_folder_path+"/polarmotionamp1_time.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    # 1-sigma polar motion (order 2) as a function of time
+    plt.figure(figsize=(15, 6))
+    colormap = plt.cm.gist_ncar
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(parameter_perturbation[23:27])))))
+    xpcos2_values = list()
+    xpsin2_values = list()
+    ypcos2_values = list()
+    ypsin2_values = list()
+    for time_index in range(0,len(concatenated_times)):
+        xpcos2_values.append(sigma_values[time_index][23])
+        xpsin2_values.append(sigma_values[time_index][24])
+        ypcos2_values.append(sigma_values[time_index][25])
+        ypsin2_values.append(sigma_values[time_index][26])
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(xpcos2_values)/mas,'-o',label=r'$Xp^c_2$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(xpsin2_values)/mas,'-o',label=r'$Xp^s_2$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(ypcos2_values)/mas,'-o',label=r'$Yp^c_2$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(ypsin2_values)/mas,'-o',label=r'$Yp^s_2$')
+    plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
+    plt.xlabel('Time [days]')
+    plt.legend()
+    plt.grid()
+    plt.savefig(output_folder_path+"/polarmotionamp2_time.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    # 1-sigma polar motion (order 3) as a function of time
+    plt.figure(figsize=(15, 6))
+    colormap = plt.cm.gist_ncar
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(parameter_perturbation[27:31])))))
+    xpcos3_values = list()
+    xpsin3_values = list()
+    ypcos3_values = list()
+    ypsin3_values = list()
+    for time_index in range(0,len(concatenated_times)):
+        xpcos3_values.append(sigma_values[time_index][27])
+        xpsin3_values.append(sigma_values[time_index][28])
+        ypcos3_values.append(sigma_values[time_index][29])
+        ypsin3_values.append(sigma_values[time_index][30])   
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(xpcos3_values)/mas,'-o',label=r'$Xp^c_3$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(xpsin3_values)/mas,'-o',label=r'$Xp^s_3$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(ypcos3_values)/mas,'-o',label=r'$Yp^c_3$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(ypsin3_values)/mas,'-o',label=r'$Yp^s_3$')
+    plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
+    plt.xlabel('Time [days]')
+    plt.legend()
+    plt.grid()
+    plt.savefig(output_folder_path+"/polarmotionamp3_time.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    # 1-sigma polar motion (order 4) as a function of time
+    plt.figure(figsize=(15, 6))
+    colormap = plt.cm.gist_ncar
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(parameter_perturbation[31:35])))))
+    xpcos4_values = list()
+    xpsin4_values = list()
+    ypcos4_values = list()
+    ypsin4_values = list()
+    for time_index in range(0,len(concatenated_times)):
+        xpcos4_values.append(sigma_values[time_index][31])
+        xpsin4_values.append(sigma_values[time_index][32])
+        ypcos4_values.append(sigma_values[time_index][33])
+        ypsin4_values.append(sigma_values[time_index][34])    
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(xpcos4_values)/mas,'-o',label=r'$Xp^c_4$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(xpsin4_values)/mas,'-o',label=r'$Xp^s_4$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(ypcos4_values)/mas,'-o',label=r'$Yp^c_4$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(ypsin4_values)/mas,'-o',label=r'$Yp^s_4$')
+    plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
+    plt.xlabel('Time [days]')
+    plt.legend()
+    plt.grid()
+    plt.savefig(output_folder_path+"/polarmotionamp4_time.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    # 1-sigma polar motion (order 5) as a function of time
+    plt.figure(figsize=(15, 6))
+    colormap = plt.cm.gist_ncar
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(parameter_perturbation[35:])))))
+    xpcos5_values = list()
+    xpsin5_values = list()
+    ypcos5_values = list()
+    ypsin5_values = list()
+    for time_index in range(0,len(concatenated_times)):
+        xpcos5_values.append(sigma_values[time_index][35])
+        xpsin5_values.append(sigma_values[time_index][36])
+        ypcos5_values.append(sigma_values[time_index][37])
+        ypsin5_values.append(sigma_values[time_index][38])
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(xpcos5_values)/mas,'-o',label=r'$Xp^c_5$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(xpsin5_values)/mas,'-o',label=r'$Xp^s_5$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(ypcos5_values)/mas,'-o',label=r'$Yp^c_5$')
+    plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
+        np.array(ypsin5_values)/mas,'-o',label=r'$Yp^s_5$')
+    plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
+    plt.xlabel('Time [days]')
+    plt.legend()
+    plt.grid()
+    plt.savefig(output_folder_path+"/polarmotionamp5_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
 

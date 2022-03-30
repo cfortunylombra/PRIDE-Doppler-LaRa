@@ -46,25 +46,26 @@ if __name__=="__main__":
     # Earth-based transmitters
     transmitter_names = ['DSS 43','DSS 34','DSS 35','DSS 36','DSS 65','DSS 63','DSS 55','DSS 54','DSS 56','DSS 14','DSS 26', 'DSS 24', 'DSS 25']
 
-    transmitter_positions_cartesian = list()  #Taken from https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat
-    transmitter_positions_cartesian.append(np.array([-4460894.7273,2682361.5296,-3674748.4238])) # DSS 43
-    transmitter_positions_cartesian.append(np.array([-4461147.4205,2682439.2423,-3674392.5623])) # DSS 34
-    transmitter_positions_cartesian.append(np.array([-4461273.4175,2682568.9283,-3674151.5223])) # DSS 35
-    transmitter_positions_cartesian.append(np.array([-4461168.7425,2682814.6603,-3674083.3303])) # DSS 36
-    transmitter_positions_cartesian.append(np.array([4849339.5378,-360427.4851,4114750.8520])) # DSS 65A
-    transmitter_positions_cartesian.append(np.array([4849092.6814,-360180.5350,4115109.1298])) # DSS 63
-    transmitter_positions_cartesian.append(np.array([4849525.256,-360606.09,4114495.08])) # DSS 55 #http://astrogeo.org/aplo/vlbi.inp
-    transmitter_positions_cartesian.append(np.array([4849434.4880,-360723.8999,4114618.8350])) # DSS 54
-    transmitter_positions_cartesian.append(np.array([4849421.500903,-360549.2280048,4114647.264832])) # DSS 56 #https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/stations/earth_topo_201023.tf
-    transmitter_positions_cartesian.append(np.array([-2353621.2459,-4641341.5369,3677052.2305])) # DSS 14
-    transmitter_positions_cartesian.append(np.array([-2354890.967,-4647166.93,3668872.21])) # DSS 26
-    transmitter_positions_cartesian.append(np.array([-2354906.495,-4646840.13,3669242.317])) # DSS 24
-    transmitter_positions_cartesian.append(np.array([-2355022.066,-4646953.64,3669040.90])) # DSS 25
+    transmitter_positions_cartesian = list()  #Taken from JPL web site
+    transmitter_positions_cartesian.append(np.array([-4460894.9170,2682361.5070,-3674748.1517])) # DSS 43
+    transmitter_positions_cartesian.append(np.array([-4461147.0925,2682439.2385,-3674393.1332])) # DSS 34
+    transmitter_positions_cartesian.append(np.array([-4461273.4175,2682568.9283,-3674151.5223])) # DSS 35 (https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat)
+    transmitter_positions_cartesian.append(np.array([-4461168.7425,2682814.6603,-3674083.3303])) # DSS 36 (https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat)
+    transmitter_positions_cartesian.append(np.array([4849339.6448,-360427.6560,4114750.7428])) # DSS 65
+    transmitter_positions_cartesian.append(np.array([4849092.5175,-360180.3480,4115109.2506])) # DSS 63
+    transmitter_positions_cartesian.append(np.array([4849525.2561,-360606.0932,4114495.0843])) # DSS 55
+    transmitter_positions_cartesian.append(np.array([4849434.4877,-360723.8999,4114618.8354])) # DSS 54
+    transmitter_positions_cartesian.append(np.array([4849421.500903,-360549.2280048,4114647.264832])) # DSS 56 (https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/stations/earth_topo_201023.tf)
+    transmitter_positions_cartesian.append(np.array([-2353621.4197,-4641341.4717,3677052.3178])) # DSS 14
+    transmitter_positions_cartesian.append(np.array([-2354890.7996,-4647166.3182,3668871.7546])) # DSS 26
+    transmitter_positions_cartesian.append(np.array([-2354906.7087,-4646840.0834,3669242.3207])) # DSS 24
+    transmitter_positions_cartesian.append(np.array([-2355022.0140,-4646953.2040,3669040.5666])) # DSS 25
 
     # Viability settings
     earth_min = 10 #deg
     earth_max = 30 #deg
-    antenna_min_elevation = 20 #deg
+    antenna_min_elevation = 10 #deg
+    body_avoidance_angle = 10 #deg
 
     ########################################################################################################################
     ################################################## CREATE ENVIRONMENT ##################################################
@@ -313,7 +314,7 @@ if __name__=="__main__":
     viability_settings_list.append(observation.elevation_angle_viability(["Earth",""],np.deg2rad(antenna_min_elevation)))
     viability_settings_list.append(observation.elevation_angle_viability(["Mars",""],np.deg2rad(earth_min)))
     #viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(earth_max))) #NOTE maximum elevation angle viability
-    viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(antenna_min_elevation)))
+    viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(body_avoidance_angle)))
     viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
 
     # Change directory in order to read ResStatPerPass_ForCarlos.txt
