@@ -30,14 +30,11 @@ if __name__=="__main__":
     # days in a week
     days_in_a_week = 7 #days
 
-    # Days of observations per week
-    observation_days_per_week = 2 
-
     # Initial date of the simulation
-    start_date = 2460096.5 #in Julian days = 01/06/2023 00:00:00 # Two years later than March 2021 (taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models")
+    start_date = 2459580.5 #in Julian days = 01/01/2022
 
     # Duration of the simulation
-    simulation_duration_days = 700 #days
+    simulation_duration_days = 1826 #days
     simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
@@ -151,9 +148,6 @@ if __name__=="__main__":
     ################################################## GROUND STATIONS ELEVATION HISTORY ###################################
     ########################################################################################################################
 
-    # Define time of first observation
-    observation_start_epoch = simulation_start_epoch + constants.JULIAN_DAY
-
     # Define time between two observations
     observation_interval = 60 #seconds
 
@@ -164,15 +158,36 @@ if __name__=="__main__":
 
     # Define observation simulation times for each link
     observation_times_list = list()
-    for pointer_weeks in range(0,int(np.ceil(simulation_duration_weeks))):
-        for pointer_days_per_week in range(0,int(observation_days_per_week)):
-            for pointer_interval in range(0,int(np.ceil(constants.JULIAN_DAY/observation_interval))):
-                observation_times_list.append(observation_start_epoch+pointer_weeks*days_in_a_week*constants.JULIAN_DAY \
-                    +pointer_days_per_week*np.floor(days_in_a_week/observation_days_per_week)*constants.JULIAN_DAY \
-                        +pointer_interval*observation_interval)
-                for transmitter_pointer in transmitter_names:
-                    data_transmitter[transmitter_pointer]['Epoch'].append(observation_times_list[-1])
-    
+    with open(os.path.dirname(os.path.realpath(__file__))+'/lsor_export_forTUDelft.txt') as file:
+        lines = file.read().splitlines()
+        observation_start_epoch = np.inf
+        for pointer_pass in range(1,len(lines)):
+            line = lines[pointer_pass]
+            line_info = line.split()
+
+            startpass_year = int(line_info[0].split('-')[0])
+            startpass_day_of_year = int(line_info[0].split('-')[1].split('T')[0])
+            startpass_hour = int(line_info[0].split('-')[1].split('T')[1].split(':')[0])
+            startpass_min = int(line_info[0].split('-')[1].split('T')[1].split(':')[1])
+            startpass_sec = int(line_info[0].split('-')[1].split('T')[1].split(':')[2])
+            startpass_date = datetime.datetime(startpass_year,1,1)+datetime.timedelta(days=startpass_day_of_year-1,hours=startpass_hour,minutes=startpass_min,seconds=startpass_sec)
+            startpass_epoch = (startpass_date - datetime.datetime(2000,1,1,12,0,0,0)).total_seconds()
+
+            if startpass_epoch<observation_start_epoch:
+                observation_start_epoch=startpass_epoch
+            
+            endpass_year = int(line_info[1].split('-')[0])
+            endpass_day_of_year = int(line_info[1].split('-')[1].split('T')[0])
+            endpass_hour = int(line_info[1].split('-')[1].split('T')[1].split(':')[0])
+            endpass_min = int(line_info[1].split('-')[1].split('T')[1].split(':')[1])
+            endpass_sec = int(line_info[1].split('-')[1].split('T')[1].split(':')[2])
+            endpass_date = datetime.datetime(startpass_year,1,1)+datetime.timedelta(days=endpass_day_of_year-1,hours=endpass_hour,minutes=endpass_min,seconds=endpass_sec)
+            endpass_epoch = (endpass_date - datetime.datetime(2000,1,1,12,0,0,0)).total_seconds()
+
+            observation_times_list.extend(np.arange(startpass_epoch,endpass_epoch+observation_interval,observation_interval))
+            for transmitter_pointer in transmitter_names:
+                    data_transmitter[transmitter_pointer]['Epoch'].extend(np.arange(startpass_epoch,endpass_epoch+observation_interval,observation_interval))
+
     # Iterate along transmitters
     for transmitter_pointer in transmitter_names:
         data_transmitter[transmitter_pointer]['Time at reflector'] = list()
@@ -184,34 +199,34 @@ if __name__=="__main__":
         data_transmitter[transmitter_pointer]['Elevation at receiver'] = list()
         data_transmitter[transmitter_pointer]['Azimuth at transmitter'] = list()
         data_transmitter[transmitter_pointer]['Azimuth at receiver'] = list()
-        # Iterate along each receiver time
-        for receiver_time_pointer in range(0,len(observation_times_list)):
-            # Compute azimuth, elevation angles and range for receiver
-            bool_receiver = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_pointer),'Mars',
-                [observation_times_list[receiver_time_pointer]],False)
+        # Iterate along each transmitter time
+        for transmitter_time_pointer in range(0,len(observation_times_list)):
+            # Compute azimuth, elevation angles and range for transmitter
+            bool_transmitter = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_pointer),'Mars',
+                [observation_times_list[transmitter_time_pointer]],True)
 
             # Compute observation time, azimuth, elevation angles and range for reflector
-            time_reflector = observation_times_list[receiver_time_pointer]-bool_receiver[list(bool_receiver.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
-            bool_reflector = estimation.compute_target_angles_and_range(bodies,('Mars',reflector_name),'Earth',[time_reflector],False)
+            time_reflector = observation_times_list[transmitter_time_pointer] + bool_transmitter[list(bool_transmitter.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
+            bool_reflector = estimation.compute_target_angles_and_range(bodies,('Mars',reflector_name),'Earth',[time_reflector],True)
 
-            # Compute observation time, azimuth, elevation angles and range for transmitter
-            time_transmitter = time_reflector-bool_reflector[list(bool_reflector.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
-            bool_transmitter = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_pointer),'Mars',
-                [time_transmitter],True)
+            # Compute observation time, azimuth, elevation angles and range for receiver
+            time_receiver = time_reflector + bool_reflector[list(bool_reflector.keys())[0]][2]/constants.SPEED_OF_LIGHT_LONG
+            bool_receiver = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_pointer),'Mars',
+                [time_receiver], False)
 
             # Compute azimuth, elevation angles and range for the body avoidance angle
             def polar2cart(r, theta, phi):
                 return np.array([r*np.sin(theta)*np.cos(phi),r*np.sin(theta)*np.sin(phi),r*np.cos(theta)])
-                
+
             bool_receiver_Sun = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_pointer),'Sun',
-                [data_transmitter[transmitter_pointer]['Epoch'][receiver_time_pointer]],False)
+                [time_receiver],False)
 
             values_receiver_Sun = polar2cart(1,np.pi-bool_receiver_Sun[list(bool_receiver_Sun.keys())[0]][0],bool_receiver_Sun[list(bool_receiver_Sun.keys())[0]][1])
             values_receiver_Mars = polar2cart(1,np.pi-bool_receiver[list(bool_receiver.keys())[0]][0],bool_receiver[list(bool_receiver.keys())[0]][1])
             angle_body_between_receiver = np.arccos(np.dot(values_receiver_Sun,values_receiver_Mars))
 
             bool_transmitter_Sun = estimation.compute_target_angles_and_range(bodies,('Earth',transmitter_pointer),'Sun',
-                [time_transmitter],True)
+                [observation_times_list[transmitter_time_pointer]],True)
 
             values_transmitter_Sun = polar2cart(1,np.pi-bool_transmitter_Sun[list(bool_transmitter_Sun.keys())[0]][0],bool_transmitter_Sun[list(bool_transmitter_Sun.keys())[0]][1])
             values_transmitter_Mars = polar2cart(1,np.pi-bool_transmitter[list(bool_transmitter.keys())[0]][0],bool_transmitter[list(bool_transmitter.keys())[0]][1])
@@ -223,7 +238,7 @@ if __name__=="__main__":
                 bool_receiver[list(bool_receiver.keys())[0]][0] >= np.deg2rad(antenna_min_elevation) and\
                 not (angle_body_between_transmitter < np.deg2rad(body_avoidance_angle) and bool_transmitter[list(bool_transmitter.keys())[0]][2]>bool_transmitter_Sun[list(bool_transmitter_Sun.keys())[0]][2])\
                 and not (angle_body_between_receiver < np.deg2rad(body_avoidance_angle) and bool_receiver[list(bool_receiver.keys())[0]][2]>bool_receiver_Sun[list(bool_receiver_Sun.keys())[0]][2]):
-                data_transmitter[transmitter_pointer]['Time at receiver'].append(observation_times_list[receiver_time_pointer])
+                data_transmitter[transmitter_pointer]['Time at receiver'].append(time_receiver)
                 data_transmitter[transmitter_pointer]['Elevation at receiver'].append(bool_receiver[list(bool_receiver.keys())[0]][0])
                 data_transmitter[transmitter_pointer]['Azimuth at receiver'].append(bool_receiver[list(bool_receiver.keys())[0]][1])
 
@@ -231,10 +246,9 @@ if __name__=="__main__":
                 data_transmitter[transmitter_pointer]['Earth elevation'].append(bool_reflector[list(bool_reflector.keys())[0]][0])
                 data_transmitter[transmitter_pointer]['Earth azimuth'].append(bool_reflector[list(bool_reflector.keys())[0]][1])
 
-                data_transmitter[transmitter_pointer]['Time at transmitter'].append(time_transmitter)
+                data_transmitter[transmitter_pointer]['Time at transmitter'].append(observation_times_list[transmitter_time_pointer])
                 data_transmitter[transmitter_pointer]['Elevation at transmitter'].append(bool_transmitter[list(bool_transmitter.keys())[0]][0])
                 data_transmitter[transmitter_pointer]['Azimuth at transmitter'].append(bool_transmitter[list(bool_transmitter.keys())[0]][1])
-
 
     data_receiver = dict()
 
@@ -479,91 +493,3 @@ if __name__=="__main__":
     plt.close('all')
 
 print("--- %s seconds ---" % (time.time() - run_time))
-
-'''
-    # Specifications of the reflector
-    reflector_station = bodies.get_body("Mars").get_ground_station(reflector_name)
-    reflector_nominal_state_object = reflector_station.station_state
-    reflector_pointing_angle_calculator_object = reflector_station.pointing_angles_calculator
-
-    # Specifications of the transmitter
-    transmitter_station = bodies.get_body("Earth").get_ground_station(transmitter_name)
-    transmitter_nominal_state_object = transmitter_station.station_state
-    transmitter_pointing_angle_calculator_object = transmitter_station.pointing_angles_calculator
-
-    earth_elevation = list()
-    earth_azimuth = list()
-    DSS63_observation_time = list()
-    DSS63_elevation = list()
-
-    for pointer_time in observation_times_list:
-        rotation_from_Mars_body_frame_to_inertial_frame = bodies.get_body("Mars").rotation_model.body_fixed_to_inertial_rotation(pointer_time)
-        rotation_from_Earth_body_frame_to_inertial_frame = bodies.get_body("Earth").rotation_model.body_fixed_to_inertial_rotation(pointer_time)
-
-        # Elevation and azimuth as seen by LaRa 
-        earth_elevation.append(reflector_pointing_angle_calculator_object.calculate_elevation_angle(
-            bodies.get_body("Earth").state_in_base_frame_from_ephemeris(pointer_time)[:3] \
-                -np.matmul(rotation_from_Mars_body_frame_to_inertial_frame,reflector_nominal_state_object.get_cartesian_position(pointer_time)),
-                pointer_time))
-        earth_azimuth.append(reflector_pointing_angle_calculator_object.calculate_azimuth_angle(
-            bodies.get_body("Earth").state_in_base_frame_from_ephemeris(pointer_time)[:3] \
-                -np.matmul(rotation_from_Mars_body_frame_to_inertial_frame,reflector_nominal_state_object.get_cartesian_position(pointer_time)),
-                pointer_time))
-
-        # Angle viability
-        if earth_elevation[-1] >= np.deg2rad(35) and earth_elevation[-1] <= np.deg2rad(45): 
-            DSS63_observation_time.append(pointer_time)
-            
-            # As seen by DSS63
-            DSS63_elevation.append(transmitter_pointing_angle_calculator_object.calculate_elevation_angle(
-                bodies.get_body("Mars").state_in_base_frame_from_ephemeris(pointer_time)[:3] \
-                    -np.matmul(rotation_from_Earth_body_frame_to_inertial_frame,transmitter_nominal_state_object.get_cartesian_position(pointer_time)),
-                    pointer_time))
-
-    ground_station_ids = list()
-    ground_station_observation_time = list()
-    ground_station_elevation = list()
-
-    id = 0
-
-    for Earth_ground_station_pointer in Earth_ground_station_list:
-        if Earth_ground_station_pointer[1] == transmitter_name:
-            continue
-
-        current_station = bodies.get("Earth").get_ground_station(Earth_ground_station_pointer[1])
-        current_nominal_state_object = current_station.station_state
-        current_ground_station_pointing_angle_calculator_object = current_station.pointing_angles_calculator
-        
-        ind = 0
-
-        # Angle viability
-        for pointer_transmitter_time in DSS63_observation_time:
-            if DSS63_elevation[ind] >= np.deg2rad(20):
-                rotation_from_Earth_body_frame_to_inertial_frame = bodies.get_body("Earth").rotation_model.body_fixed_to_inertial_rotation(pointer_transmitter_time)
-                
-                # As seen by the ground station
-                ground_station_observation_time.append(pointer_transmitter_time)
-                ground_station_elevation.append(current_ground_station_pointing_angle_calculator_object.calculate_elevation_angle(
-                    bodies.get_body("Mars").state_in_base_frame_from_ephemeris(pointer_transmitter_time)[:3] \
-                        -np.matmul(rotation_from_Earth_body_frame_to_inertial_frame,current_nominal_state_object.get_cartesian_position(pointer_transmitter_time)),
-                        pointer_transmitter_time))
-                ground_station_ids.append(id)
-            ind+=1
-        id+=1
-
-    ########################################################################################################################
-    ################################################## PROVIDE OUTPUT TO CONSOLE AND FILES #################################
-    ########################################################################################################################
-
-    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/GS_LaRa')
-    os.makedirs(output_folder_path,exist_ok=True)
-
-    np.savetxt(output_folder_path+"/observation_time.dat",observation_times_list,fmt='%.15e')
-    np.savetxt(output_folder_path+"/DSS63_observation_time.dat",DSS63_observation_time,fmt='%.15e')
-    np.savetxt(output_folder_path+"/DSS63_elevation.dat",DSS63_elevation,fmt='%.15e')
-    np.savetxt(output_folder_path+"/earth_elevation.dat",earth_elevation,fmt='%.15e')
-    np.savetxt(output_folder_path+"/earth_azimuth.dat",earth_azimuth,fmt='%.15e')   
-    np.savetxt(output_folder_path+"/ground_station_observation_time.dat",ground_station_observation_time,fmt='%.15e')
-    np.savetxt(output_folder_path+"/ground_station_elevation.dat",ground_station_elevation,fmt='%.15e')
-    np.savetxt(output_folder_path+"/ground_station_ids.dat",ground_station_ids,fmt='%.15e')
-'''
