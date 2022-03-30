@@ -235,7 +235,6 @@ if __name__=="__main__":
                 data_transmitter[transmitter_pointer]['Elevation at transmitter'].append(bool_transmitter[list(bool_transmitter.keys())[0]][0])
                 data_transmitter[transmitter_pointer]['Azimuth at transmitter'].append(bool_transmitter[list(bool_transmitter.keys())[0]][1])
 
-
     data_receiver = dict()
 
     # Iterate along receivers
