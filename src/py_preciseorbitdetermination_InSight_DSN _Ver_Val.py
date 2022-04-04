@@ -1,5 +1,5 @@
 """
-Description: Environment Setup for the Precise Orbit Determination (LaRa)
+Description: Environment Setup for the Precise Orbit Determination (RISE with DSN)
 
 Author: C. Fortuny-Lombraña
 """
@@ -13,13 +13,13 @@ if __name__=="__main__":
     import sys
     sys.path.insert(0, "/home/cfortunylombra/tudat-bundle/cmake-build-release-wsl/tudatpy/")
     import os
-    import datetime
     import numpy as np
+    import scipy.interpolate
     import scipy.sparse
     import matplotlib.pyplot as plt
     from multiprocessing import Pool
     from tudatpy.kernel import constants, numerical_simulation
-    from tudatpy.kernel.astro import element_conversion,time_conversion
+    from tudatpy.kernel.astro import element_conversion
     from tudatpy.kernel.interface import spice_interface
     from tudatpy.kernel.numerical_simulation import environment_setup,propagation_setup,propagation,estimation_setup,estimation
     from tudatpy.kernel.numerical_simulation.estimation_setup import observation
@@ -33,31 +33,39 @@ if __name__=="__main__":
     days_in_a_week = 7 #days
 
     # Initial date of the simulation
-    start_date = 2459580.5 #in Julian days = 01/01/2022
-    
+    start_date = 2458449.5 #in Julian days = 27/11/2018 00:00:00; Taken from the txt file sent by Sebastien
+
     # Duration of the simulation
-    simulation_duration_days = 1826 #days
-    simulation_duration_weeks = simulation_duration_days/days_in_a_week #weeks
+    simulation_duration_days = 998 #days 
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
-    # LaRa landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
-    reflector_name = "LaRa"
-    reflector_latitude_deg = 18.3 #North degrees
-    reflector_longitude_deg = 335.37 #East degrees
-    reflector_altitude = -2000 #m
-    base_frequency = 8400.5e6 #Hz; taken from Giuseppe's files
+    # RISE landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
+    reflector_name = "RISE"
+    reflector_latitude_deg = 4.5 #North degrees
+    reflector_longitude_deg = 135.62 #East degrees
+    reflector_altitude = -2600 #m
 
-    # Earth-based transmitter
-    transmitter_names = ['DSS 43','DSS 63','DSS 14']
+    # Earth-based transmitters
+    transmitter_names = ['DSS 43','DSS 34','DSS 35','DSS 36','DSS 65','DSS 63','DSS 55','DSS 54','DSS 56','DSS 14','DSS 26', 'DSS 24', 'DSS 25']
 
     transmitter_positions_cartesian = list()  #Taken from JPL web site
     transmitter_positions_cartesian.append(np.array([-4460894.9170,2682361.5070,-3674748.1517])) # DSS 43
+    transmitter_positions_cartesian.append(np.array([-4461147.0925,2682439.2385,-3674393.1332])) # DSS 34
+    transmitter_positions_cartesian.append(np.array([-4461273.4175,2682568.9283,-3674151.5223])) # DSS 35 (https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat)
+    transmitter_positions_cartesian.append(np.array([-4461168.7425,2682814.6603,-3674083.3303])) # DSS 36 (https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat)
+    transmitter_positions_cartesian.append(np.array([4849339.6448,-360427.6560,4114750.7428])) # DSS 65
     transmitter_positions_cartesian.append(np.array([4849092.5175,-360180.3480,4115109.2506])) # DSS 63
+    transmitter_positions_cartesian.append(np.array([4849525.2561,-360606.0932,4114495.0843])) # DSS 55
+    transmitter_positions_cartesian.append(np.array([4849434.4877,-360723.8999,4114618.8354])) # DSS 54
+    transmitter_positions_cartesian.append(np.array([4849421.500903,-360549.2280048,4114647.264832])) # DSS 56 (https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/stations/earth_topo_201023.tf)
     transmitter_positions_cartesian.append(np.array([-2353621.4197,-4641341.4717,3677052.3178])) # DSS 14
+    transmitter_positions_cartesian.append(np.array([-2354890.7996,-4647166.3182,3668871.7546])) # DSS 26
+    transmitter_positions_cartesian.append(np.array([-2354906.7087,-4646840.0834,3669242.3207])) # DSS 24
+    transmitter_positions_cartesian.append(np.array([-2355022.0140,-4646953.2040,3669040.5666])) # DSS 25
 
     # Viability settings
-    earth_min = 35 #deg
-    earth_max = 45 #deg
+    earth_min = 10 #deg
+    earth_max = 30 #deg
     antenna_min_elevation = 10 #deg
     body_avoidance_angle = 10 #deg
 
@@ -113,7 +121,7 @@ if __name__=="__main__":
             ground_station_dict[list(ground_station_dict.keys())[pointer_ground_station]])
     
     Earth_ground_station_list = environment_setup.get_ground_station_list(bodies.get_body("Earth"))
-
+    
     # Mars-based ground station creation
     environment_setup.add_ground_station(
         bodies.get_body("Mars"),
@@ -224,7 +232,7 @@ if __name__=="__main__":
     for pointer_link_ends in range(0,len(observation_settings_list)):
         two_way_doppler_observation_settings.append(observation.two_way_open_loop_doppler(
             observation_settings_list[pointer_link_ends]))
-
+    
     ########################################################################################################################
     ################################################## INITIALIZE OD  ######################################################
     ######################################################################################################################## 
@@ -248,59 +256,91 @@ if __name__=="__main__":
     ########################################################################################################################
     
     # Define time between two observations
-    observation_interval = 60 #seconds 
+    observation_interval = 60 #seconds
 
     # Define observation simulation times for each link
     observation_times_list = list()
+    observation_times_dict = dict()
     
     # Read the epoch times
-    with open(os.path.dirname(os.path.realpath(__file__))+'/lsor_export_forTUDelft.txt') as file:
+    with open(os.path.dirname(os.path.realpath(__file__))+'/InSight_mes_upto_31122021.forCarlos') as file:
         lines = file.read().splitlines()
-        for pointer_pass in range(1,len(lines)):
-            line = lines[pointer_pass]
-            line_info = line.split()
+        observation_start_epoch = np.inf
+        # Iterate along each transmitter
+        for transmitter_pointer in transmitter_names:
+            observation_times_dict[transmitter_pointer] = list()
+            transmitter_ground_station_number =  [int(s) for s in transmitter_pointer.split() if s.isdigit()][0]
+            # Iterate along each observation time
+            for pointer_time in range(0,len(lines)):
+                line = lines[pointer_time]
+                line_info = line.split()
+                # Condition to save the observation time
+                if float(line_info[0]) == transmitter_ground_station_number and float(line_info[1]) == transmitter_ground_station_number \
+                    and float(line_info[2])<=simulation_end_epoch:
+                    observation_times_dict[transmitter_pointer].append(float(line_info[2]))
+                    observation_times_list.append(float(line_info[2]))
+                    # Save the minimum epoch
+                    if float(line_info[2])<observation_start_epoch:
+                        observation_start_epoch = float(line_info[2])
 
-            startpass_year = int(line_info[0].split('-')[0])
-            startpass_day_of_year = int(line_info[0].split('-')[1].split('T')[0])
-            startpass_hour = int(line_info[0].split('-')[1].split('T')[1].split(':')[0])
-            startpass_min = int(line_info[0].split('-')[1].split('T')[1].split(':')[1])
-            startpass_sec = int(line_info[0].split('-')[1].split('T')[1].split(':')[2])
-            startpass_date = datetime.datetime(startpass_year,1,1)+datetime.timedelta(days=startpass_day_of_year-1,hours=startpass_hour,minutes=startpass_min,seconds=startpass_sec)
-            startpass_epoch = (startpass_date - datetime.datetime(2000,1,1,12,0,0,0)).total_seconds()
-            
-            endpass_year = int(line_info[1].split('-')[0])
-            endpass_day_of_year = int(line_info[1].split('-')[1].split('T')[0])
-            endpass_hour = int(line_info[1].split('-')[1].split('T')[1].split(':')[0])
-            endpass_min = int(line_info[1].split('-')[1].split('T')[1].split(':')[1])
-            endpass_sec = int(line_info[1].split('-')[1].split('T')[1].split(':')[2])
-            endpass_date = datetime.datetime(startpass_year,1,1)+datetime.timedelta(days=endpass_day_of_year-1,hours=endpass_hour,minutes=endpass_min,seconds=endpass_sec)
-            endpass_epoch = (endpass_date - datetime.datetime(2000,1,1,12,0,0,0)).total_seconds()
-
-            observation_times_list.extend(np.arange(startpass_epoch,endpass_epoch+observation_interval,observation_interval))
-
-    observation_start_epoch = min(observation_times_list)
-
+    observation_times_list.sort()
+    
     # Create observation viability settings and calculators
     viability_settings_list = list()
-    viability_settings_list.append(observation.minimum_elevation_angle_viability(["Earth",""],np.deg2rad(antenna_min_elevation)))
-    viability_settings_list.append(observation.minimum_elevation_angle_viability(["Mars",""],np.deg2rad(earth_min)))
-    viability_settings_list.append(observation.maximum_elevation_angle_viability(["Mars",""],np.deg2rad(earth_max)))
+    viability_settings_list.append(observation.elevation_angle_viability(["Earth",""],np.deg2rad(antenna_min_elevation)))
+    #viability_settings_list.append(observation.elevation_angle_viability(["Mars",""],np.deg2rad(earth_min))) 
+    #viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(earth_max))) #NOTE maximum elevation angle viability
     viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(body_avoidance_angle)))
     viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
 
-    # Create measurement simulation input
-    observation_simulation_settings = observation.tabulated_simulation_settings_list(
-        dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list,
-        viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter)
+    # Change directory in order to read ResStatPerPass_ForCarlos.txt
+    output_folder_path = os.path.dirname(os.path.realpath(__file__))
+    os.makedirs(output_folder_path,exist_ok=True)
 
-    # Define noise levels
-    doppler_noise = 0.9690046298313253e-3/base_frequency
+    time_days_mHz_pass = list()
+    std_mHz = list()
 
-    # Create noise functions
-    observation.add_gaussian_noise_to_settings(observation_simulation_settings,doppler_noise,observation.two_way_doppler_type)
+    # Append the standard deviations and times to the empty lists
+    with open(output_folder_path+'/ResStatPerPass_ForCarlos.txt') as f:
+        lines = f.readlines()
+        for line in lines[1:]:
+            line_split = line.split()
+            if not (np.isnan(float(line_split[1])) and np.isnan(float(line_split[2]))):
+                time_days_mHz_pass.append(float(line_split[0]))
+                std_mHz.append(float(line_split[2]))
     
+    # Nearest interpolation
+    std_mHz_function = scipy.interpolate.interp1d(time_days_mHz_pass, std_mHz, fill_value='extrapolate', kind='nearest')
+
+    # Insert seed
+    np.random.seed(42)
+
+    # Function to compute the standard deviation
+    def std_mHz_callable(t):
+        return np.array([np.random.normal(0,std_mHz_function((t-observation_times_list[0])/constants.JULIAN_DAY)*10**(-3)/constants.SPEED_OF_LIGHT_LONG)])
+
+    observation_simulation_settings = list()
+    for pointer_link_ends in range(0,len(observation_settings_list)):
+        observation_simulation_settings.append(observation.tabulated_simulation_settings(observation.two_way_doppler_type,
+            observation_settings_list[pointer_link_ends],observation_times_dict[transmitter_names[pointer_link_ends]],
+            viability_settings = viability_settings_list,reference_link_end_type = observation.receiver))
+
     # Simulate required observation
     simulated_observations = estimation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
+
+    concatenated_observations_no_noise = simulated_observations.concatenated_observations
+
+    observation_simulation_settings = list()
+    for pointer_link_ends in range(0,len(observation_settings_list)):
+        observation_simulation_settings.append(observation.tabulated_simulation_settings(observation.two_way_doppler_type,
+            observation_settings_list[pointer_link_ends],observation_times_dict[transmitter_names[pointer_link_ends]],
+            viability_settings = viability_settings_list,reference_link_end_type = observation.receiver,
+            noise_function = std_mHz_callable))
+
+    # Simulate required observation
+    simulated_observations = estimation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
+
+    concatenated_observations_noise = simulated_observations.concatenated_observations
 
     # Perturbation
     parameter_perturbation = np.zeros(parameters_set.parameter_set_size) 
@@ -343,17 +383,20 @@ if __name__=="__main__":
 
     # Estimate parameters
     pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size, inverse_apriori_covariance = inverse_a_priori_covariance, apriori_parameter_correction = parameter_perturbation)
-    vector_weights = doppler_noise*np.ones(len(simulated_observations.concatenated_times))
-    pod_input.set_weight(1/vector_weights**2) 
+    #pod_input.define_estimation_settings(reintegrate_variational_equations = False)
     
+    # Define noise levels for weights
+    vector_weights = std_mHz_function((simulated_observations.concatenated_times-observation_times_list[0]*np.ones(len(simulated_observations.concatenated_times)))/constants.JULIAN_DAY)*10**(-3)/constants.SPEED_OF_LIGHT_LONG
+    pod_input.set_weight(1/vector_weights**2) 
+
     # Perform estimation
     pod_output = estimator.perform_estimation(pod_input)
     
     ########################################################################################################################
-    ################################################## PROVIDE OUTPUT TO CONSOLE ###########################################
+    ################################################## PROVIDE OUTPUT TO CONSOLE  ##########################################
     ########################################################################################################################
 
-    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_LaRa_DSN_only')
+    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE_DSN_only')
     os.makedirs(output_folder_path,exist_ok=True)
 
     estimation_error = np.subtract(pod_output.parameter_estimate,truth_parameter)
@@ -373,10 +416,6 @@ if __name__=="__main__":
 
     print('Is there any duplicated time value? :',any(concatenated_times.count(x) > 1 for x in concatenated_times))
 
-    import collections
-    print("Duplicated terms (count=2):",len([item for item, count in collections.Counter(concatenated_times).items() if count == 2]))
-    print("Duplicated terms (count=3):",len([item for item, count in collections.Counter(concatenated_times).items() if count == 3]))
-
     ########################################################################################################################
     ################################################## H, W MATRICES & SAVE TXT ############################################
     ########################################################################################################################
@@ -393,6 +432,8 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/concatenated_link_ends.dat",concatenated_link_ends,fmt='%.15e')
     np.savetxt(output_folder_path+"/doppler_residuals.dat",doppler_residuals,fmt='%.15e')
     np.savetxt(output_folder_path+"/vector_weights.dat",vector_weights,fmt='%.15e')
+    np.savetxt(output_folder_path+"/concatenated_observations_no_noise.dat",concatenated_observations_no_noise,fmt='%.15e')
+    np.savetxt(output_folder_path+"/concatenated_observations_noise.dat",concatenated_observations_noise,fmt='%.15e')
 
     # Sort with respect to time
     index_sort = np.argsort(concatenated_times)
@@ -428,7 +469,7 @@ if __name__=="__main__":
 
     # Compute the unnormalized covariance matrix using 4 CPUs
     covariance_matrix_dict = Pool(4)
-    print("Calculating the unnormalized covariance matrix")
+    print("Computing the unnormalized covariance matrix")
     covariance_values = covariance_matrix_dict.map(covariance_matrix_func,range(0,len(concatenated_times)))
     covariance_matrix_dict.close()
     covariance_matrix_dict.join()
@@ -439,7 +480,7 @@ if __name__=="__main__":
 
     # Take the standard deviation (formal) from the diagonal of the unnormalized covariance matrix using 4 CPUs
     sigma_covariance_matrix_dict = Pool(4)
-    print("Calculating the standard deviation (formal)")
+    print("Computing the standard deviation (formal)")
     sigma_values = sigma_covariance_matrix_dict.map(sigma_covariance_matrix_func,range(0,len(concatenated_times)))
     sigma_covariance_matrix_dict.close()
     sigma_covariance_matrix_dict.join()
@@ -455,7 +496,7 @@ if __name__=="__main__":
 
     # Compute correlation matrix using 4 CPUs
     correlation_matrix_dict = Pool(4)
-    print("Calculating the correlation matrix")
+    print("Computing the correlation matrix")
     correlation_values = correlation_matrix_dict.map(correlation_matrix_func,range(0,len(concatenated_times)))
     correlation_matrix_dict.close()
     correlation_matrix_dict.join()
@@ -479,18 +520,27 @@ if __name__=="__main__":
     plt.hist(np.abs(true_to_form_estimation_error_ratio), bins = 8)
     plt.ylabel('Frequency [-]')
     plt.xlabel('True to form ratio [-]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.grid()
     plt.savefig(output_folder_path+"/true_to_form_ratio.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
 
+    # Plot to check the viability of the Sun
+    plt.figure(figsize=(15, 6))
+    plt.scatter((simulated_observations.concatenated_times-observation_times_list[0]*np.ones(len(simulated_observations.concatenated_times)))/constants.JULIAN_DAY,std_mHz_function((simulated_observations.concatenated_times-observation_times_list[0]*np.ones(len(simulated_observations.concatenated_times)))/constants.JULIAN_DAY))
+    plt.ylabel('Std noise [mHz]')
+    plt.xlabel('Time [days]')
+    plt.grid()
+    plt.ylim([-3,3])
+    plt.savefig(output_folder_path+"/std_noise_time.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')  
+
     # Formal to apriori ratio
     plt.figure(figsize=(15, 6))
-    plt.plot(range(6,len(parameter_perturbation)),np.abs(sigma_values[-1][6:]/parameter_perturbation[6:]),'o--')
+    plt.plot(range(6,len(parameter_perturbation)),sigma_values[-1][6:]/parameter_perturbation[6:],'o--')
     plt.ylabel('Formal to Apriori Ratio')
     plt.xlabel('Estimated Parameters')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.xticks(range(6,len(parameter_perturbation)),labels=['F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
         r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
         r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
@@ -520,7 +570,7 @@ if __name__=="__main__":
         r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
         r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     plt.grid()
-    plt.title('Correlation Matrix - Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.title('Correlation Matrix')
     plt.savefig(output_folder_path+"/correlation_matrix.pdf",bbox_inches="tight")
     plt.show()
     plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = True
@@ -536,7 +586,6 @@ if __name__=="__main__":
         F_values,'-o')
     plt.ylabel(r'1-$\sigma$ F [-]')
     plt.xlabel('Time [days]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.grid()
     plt.savefig(output_folder_path+"/Fvalues_time.pdf",bbox_inches="tight")
     plt.show()
@@ -551,7 +600,6 @@ if __name__=="__main__":
         sigma_FCN_values,'-o')
     plt.ylabel(r'1-$\sigma$ $\sigma_{FCN}$ [rad/s]')
     plt.xlabel('Time [days]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.grid()
     plt.savefig(output_folder_path+"/sigmaFCNvalues_time.pdf",bbox_inches="tight")
     plt.show()
@@ -567,14 +615,13 @@ if __name__=="__main__":
         ylander_values.append(sigma_values[time_index][9])
         zlander_values.append(sigma_values[time_index][10])
     plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
-        xlander_values,'r-o',label='$x_{LaRa}$')
+        xlander_values,'r-o',label='$x_{RISE}$')
     plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
-        ylander_values,'g-o',label='$y_{LaRa}$')
+        ylander_values,'g-o',label='$y_{RISE}$')
     plt.plot((concatenated_times-observation_times_list[0]*np.ones(len(concatenated_times)))/constants.JULIAN_DAY,
-        zlander_values,'b-o',label='$z_{LaRa}$')
+        zlander_values,'b-o',label='$z_{RISE}$')
     plt.ylabel(r'1-$\sigma$ x,y,z [m]')
     plt.xlabel('Time [days]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend()
     plt.grid()
     plt.savefig(output_folder_path+"/xyzlander_time.pdf",bbox_inches="tight")
@@ -620,7 +667,6 @@ if __name__=="__main__":
         np.array(sin4spin_values)/mas,'-o',label=r'$\psi^s_4$')
     plt.ylabel(r'1-$\sigma$ $\psi$ [mas]')
     plt.xlabel('Time [days]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend()
     plt.grid()
     plt.savefig(output_folder_path+"/psispin_time.pdf",bbox_inches="tight")
@@ -650,7 +696,6 @@ if __name__=="__main__":
         np.array(ypsin1_values)/mas,'-o',label=r'$Yp^s_1$')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend()
     plt.grid()
     plt.savefig(output_folder_path+"/polarmotionamp1_time.pdf",bbox_inches="tight")
@@ -680,7 +725,6 @@ if __name__=="__main__":
         np.array(ypsin2_values)/mas,'-o',label=r'$Yp^s_2$')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend()
     plt.grid()
     plt.savefig(output_folder_path+"/polarmotionamp2_time.pdf",bbox_inches="tight")
@@ -710,7 +754,6 @@ if __name__=="__main__":
         np.array(ypsin3_values)/mas,'-o',label=r'$Yp^s_3$')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend()
     plt.grid()
     plt.savefig(output_folder_path+"/polarmotionamp3_time.pdf",bbox_inches="tight")
@@ -740,7 +783,6 @@ if __name__=="__main__":
         np.array(ypsin4_values)/mas,'-o',label=r'$Yp^s_4$')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend()
     plt.grid()
     plt.savefig(output_folder_path+"/polarmotionamp4_time.pdf",bbox_inches="tight")
@@ -770,7 +812,6 @@ if __name__=="__main__":
         np.array(ypsin5_values)/mas,'-o',label=r'$Yp^s_5$')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend()
     plt.grid()
     plt.savefig(output_folder_path+"/polarmotionamp5_time.pdf",bbox_inches="tight")

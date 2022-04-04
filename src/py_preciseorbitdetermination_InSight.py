@@ -355,18 +355,18 @@ if __name__=="__main__":
 
     # Perturbation
     parameter_perturbation = np.zeros(parameters_set.parameter_set_size) 
-    mas = np.pi/(180.0*1000.0*3600.0) # Conversion from milli arc seconds to seconds 
+    mas =np.pi/(180.0*1000.0*3600.0) # Conversion from milli arc seconds to seconds 
     # Position of Mars
     parameter_perturbation[0:3]=1000*np.ones(3) # meters; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
     # Velocity of Mars
-    parameter_perturbation[3:6]=0.0002*np.ones(3) # meters; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
+    parameter_perturbation[3:6]=0.0002*np.ones(3) #meters per sec; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
     # Core factor of the celestial body of Mars
-    parameter_perturbation[6]=0.014 # Unitless; Taken from A global solution for the Mars static and seasonal gravity, Mars orientation, Phobos and Deimos masses, and Mars ephemeris
+    parameter_perturbation[6]=0.07 # Unitless; Taken from A global solution for the Mars static and seasonal gravity, Mars orientation, Phobos and Deimos masses, and Mars ephemeris
     # Free core nutation rate of the celestial body of Mars
-    parameter_perturbation[7]=np.deg2rad(0.075)/constants.JULIAN_DAY #rad/s; Taken from A global solution for the Mars static and seasonal gravity, Mars orientation, Phobos and Deimos masses, and Mars ephemeris
+    parameter_perturbation[7]=-np.deg2rad(1.5)/constants.JULIAN_DAY #rad/s; Taken from A global solution for the Mars static and seasonal gravity, Mars orientation, Phobos and Deimos masses, and Mars ephemeris
     # Ground station position of Mars    
     parameter_perturbation[8:11]=30*np.ones(3) # meters; Taken from Position Determination of a Lander and Rover at Mars With Warth-Based Differential Tracking
-    # Periodic spin variation for full planetary rotational model of Mars
+    # Periodic spin variation for full planetary rotational model of Mars # Mars Pathfinder model
     # First order - cosine term
     parameter_perturbation[11]=23*mas # seconds; Taken from the PhD from Sebastien LeMaistre
     # First order - sine term
@@ -384,7 +384,7 @@ if __name__=="__main__":
     # Fourth order - sine term
     parameter_perturbation[18]=16*mas # seconds; Taken from the PhD from Sebastien LeMaistre
     # Polar motion amplitude for full planetary rotational model of Mars
-    parameter_perturbation[19:]=2*mas*np.ones(20) # seconds; Taken from UNCERTAINTIES ON MARS INTERIOR PARAMETERS DEDUCED FROM ORIENTATION PARAMETERS USING DIFFERENT RADIOLINKS: ANALYTICAL SIMULATIONS.
+    parameter_perturbation[19:]=50*mas*np.ones(20) # seconds; Taken from UNCERTAINTIES ON MARS INTERIOR PARAMETERS DEDUCED FROM ORIENTATION PARAMETERS USING DIFFERENT RADIOLINKS: ANALYTICAL SIMULATIONS.
 
     print("Perturbation vector is:")
     print(parameter_perturbation)

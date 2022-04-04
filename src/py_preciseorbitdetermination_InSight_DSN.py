@@ -14,6 +14,7 @@ if __name__=="__main__":
     sys.path.insert(0, "/home/cfortunylombra/tudat-bundle/cmake-build-release-wsl/tudatpy/")
     import os
     import numpy as np
+    import datetime
     import scipy.interpolate
     import scipy.sparse
     import matplotlib.pyplot as plt
@@ -44,6 +45,7 @@ if __name__=="__main__":
     reflector_latitude_deg = 4.5 #North degrees
     reflector_longitude_deg = 135.62 #East degrees
     reflector_altitude = -2600 #m
+    base_frequency = 8400.5e6 #Hz; taken from Giuseppe's files
 
     # Earth-based transmitters
     transmitter_names = ['DSS 43','DSS 34','DSS 35','DSS 36','DSS 65','DSS 63','DSS 55','DSS 54','DSS 56','DSS 14','DSS 26', 'DSS 24', 'DSS 25']
@@ -287,9 +289,9 @@ if __name__=="__main__":
     
     # Create observation viability settings and calculators
     viability_settings_list = list()
-    viability_settings_list.append(observation.elevation_angle_viability(["Earth",""],np.deg2rad(antenna_min_elevation)))
-    #viability_settings_list.append(observation.elevation_angle_viability(["Mars",""],np.deg2rad(earth_min))) 
-    #viability_settings_list.append(observations.elevation_angle_viability(["Mars",""],np.deg2rad(earth_max))) #NOTE maximum elevation angle viability
+    viability_settings_list.append(observation.minimum_elevation_angle_viability(["Earth",""],np.deg2rad(antenna_min_elevation)))
+    #viability_settings_list.append(observation.minimum_elevation_angle_viability(["Mars",""],np.deg2rad(earth_min)))
+    #viability_settings_list.append(observation.maximum_elevation_angle_viability(["Mars",""],np.deg2rad(earth_max)))
     viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(body_avoidance_angle)))
     viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
 
@@ -317,7 +319,7 @@ if __name__=="__main__":
 
     # Function to compute the standard deviation
     def std_mHz_callable(t):
-        return np.array([np.random.normal(0,std_mHz_function((t-observation_times_list[0])/constants.JULIAN_DAY)*10**(-3)/constants.SPEED_OF_LIGHT_LONG)])
+        return np.array([np.random.normal(0,std_mHz_function((t-observation_times_list[0])/constants.JULIAN_DAY)*10**(-3)/base_frequency)])
 
     observation_simulation_settings = list()
     for pointer_link_ends in range(0,len(observation_settings_list)):
@@ -331,18 +333,18 @@ if __name__=="__main__":
 
     # Perturbation
     parameter_perturbation = np.zeros(parameters_set.parameter_set_size) 
-    mas = np.pi/(180.0*1000.0*3600.0) # Conversion from milli arc seconds to seconds 
+    mas =np.pi/(180.0*1000.0*3600.0) # Conversion from milli arc seconds to seconds 
     # Position of Mars
     parameter_perturbation[0:3]=1000*np.ones(3) # meters; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
     # Velocity of Mars
-    parameter_perturbation[3:6]=0.0002*np.ones(3) # meters; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
+    parameter_perturbation[3:6]=0.0002*np.ones(3) #meters per sec; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
     # Core factor of the celestial body of Mars
-    parameter_perturbation[6]=0.014 # Unitless; Taken from A global solution for the Mars static and seasonal gravity, Mars orientation, Phobos and Deimos masses, and Mars ephemeris
+    parameter_perturbation[6]=0.07 # Unitless; Taken from A global solution for the Mars static and seasonal gravity, Mars orientation, Phobos and Deimos masses, and Mars ephemeris
     # Free core nutation rate of the celestial body of Mars
-    parameter_perturbation[7]=np.deg2rad(0.075)/constants.JULIAN_DAY #rad/s; Taken from A global solution for the Mars static and seasonal gravity, Mars orientation, Phobos and Deimos masses, and Mars ephemeris
+    parameter_perturbation[7]=-np.deg2rad(1.5)/constants.JULIAN_DAY #rad/s; Taken from A global solution for the Mars static and seasonal gravity, Mars orientation, Phobos and Deimos masses, and Mars ephemeris
     # Ground station position of Mars    
     parameter_perturbation[8:11]=30*np.ones(3) # meters; Taken from Position Determination of a Lander and Rover at Mars With Warth-Based Differential Tracking
-    # Periodic spin variation for full planetary rotational model of Mars
+    # Periodic spin variation for full planetary rotational model of Mars # Mars Pathfinder model
     # First order - cosine term
     parameter_perturbation[11]=23*mas # seconds; Taken from the PhD from Sebastien LeMaistre
     # First order - sine term
@@ -360,7 +362,7 @@ if __name__=="__main__":
     # Fourth order - sine term
     parameter_perturbation[18]=16*mas # seconds; Taken from the PhD from Sebastien LeMaistre
     # Polar motion amplitude for full planetary rotational model of Mars
-    parameter_perturbation[19:]=2*mas*np.ones(20) # seconds; Taken from UNCERTAINTIES ON MARS INTERIOR PARAMETERS DEDUCED FROM ORIENTATION PARAMETERS USING DIFFERENT RADIOLINKS: ANALYTICAL SIMULATIONS.
+    parameter_perturbation[19:]=50*mas*np.ones(20) # seconds; Taken from UNCERTAINTIES ON MARS INTERIOR PARAMETERS DEDUCED FROM ORIENTATION PARAMETERS USING DIFFERENT RADIOLINKS: ANALYTICAL SIMULATIONS.
 
     print("Perturbation vector is:")
     print(parameter_perturbation)
@@ -373,7 +375,7 @@ if __name__=="__main__":
     #pod_input.define_estimation_settings(reintegrate_variational_equations = False)
     
     # Define noise levels for weights
-    vector_weights = std_mHz_function((simulated_observations.concatenated_times-observation_times_list[0]*np.ones(len(simulated_observations.concatenated_times)))/constants.JULIAN_DAY)*10**(-3)/constants.SPEED_OF_LIGHT_LONG
+    vector_weights = std_mHz_function((simulated_observations.concatenated_times-observation_times_list[0]*np.ones(len(simulated_observations.concatenated_times)))/constants.JULIAN_DAY)*10**(-3)/base_frequency
     pod_input.set_weight(1/vector_weights**2) 
 
     # Perform estimation
@@ -400,6 +402,8 @@ if __name__=="__main__":
     concatenated_times = simulated_observations.concatenated_times
     concatenated_link_ends = simulated_observations.concatenated_link_ends
     doppler_residuals = pod_output.residual_history
+
+    print('Is there any duplicated time value? :',any(concatenated_times.count(x) > 1 for x in concatenated_times))
 
     ########################################################################################################################
     ################################################## H, W MATRICES & SAVE TXT ############################################
@@ -452,7 +456,7 @@ if __name__=="__main__":
 
     # Compute the unnormalized covariance matrix using 4 CPUs
     covariance_matrix_dict = Pool(4)
-    print("Computing the unnormalized covariance matrix")
+    print("Calculating the unnormalized covariance matrix")
     covariance_values = covariance_matrix_dict.map(covariance_matrix_func,range(0,len(concatenated_times)))
     covariance_matrix_dict.close()
     covariance_matrix_dict.join()
@@ -463,7 +467,7 @@ if __name__=="__main__":
 
     # Take the standard deviation (formal) from the diagonal of the unnormalized covariance matrix using 4 CPUs
     sigma_covariance_matrix_dict = Pool(4)
-    print("Computing the standard deviation (formal)")
+    print("Calculating the standard deviation (formal)")
     sigma_values = sigma_covariance_matrix_dict.map(sigma_covariance_matrix_func,range(0,len(concatenated_times)))
     sigma_covariance_matrix_dict.close()
     sigma_covariance_matrix_dict.join()
@@ -479,7 +483,7 @@ if __name__=="__main__":
 
     # Compute correlation matrix using 4 CPUs
     correlation_matrix_dict = Pool(4)
-    print("Computing the correlation matrix")
+    print("Calculating the correlation matrix")
     correlation_values = correlation_matrix_dict.map(correlation_matrix_func,range(0,len(concatenated_times)))
     correlation_matrix_dict.close()
     correlation_matrix_dict.join()
@@ -503,6 +507,7 @@ if __name__=="__main__":
     plt.hist(np.abs(true_to_form_estimation_error_ratio), bins = 8)
     plt.ylabel('Frequency [-]')
     plt.xlabel('True to form ratio [-]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.grid()
     plt.savefig(output_folder_path+"/true_to_form_ratio.pdf",bbox_inches="tight")
     plt.show()
@@ -513,6 +518,7 @@ if __name__=="__main__":
     plt.scatter((simulated_observations.concatenated_times-observation_times_list[0]*np.ones(len(simulated_observations.concatenated_times)))/constants.JULIAN_DAY,std_mHz_function((simulated_observations.concatenated_times-observation_times_list[0]*np.ones(len(simulated_observations.concatenated_times)))/constants.JULIAN_DAY))
     plt.ylabel('Std noise [mHz]')
     plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.grid()
     plt.ylim([-3,3])
     plt.savefig(output_folder_path+"/std_noise_time.pdf",bbox_inches="tight")
@@ -521,9 +527,10 @@ if __name__=="__main__":
 
     # Formal to apriori ratio
     plt.figure(figsize=(15, 6))
-    plt.plot(range(6,len(parameter_perturbation)),sigma_values[-1][6:]/parameter_perturbation[6:],'o--')
+    plt.plot(range(6,len(parameter_perturbation)),np.abs(sigma_values[-1][6:]/parameter_perturbation[6:]),'o--')
     plt.ylabel('Formal to Apriori Ratio')
     plt.xlabel('Estimated Parameters')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.xticks(range(6,len(parameter_perturbation)),labels=['F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
         r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
         r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
@@ -553,7 +560,7 @@ if __name__=="__main__":
         r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
         r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     plt.grid()
-    plt.title('Correlation Matrix')
+    plt.title('Correlation Matrix - Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.savefig(output_folder_path+"/correlation_matrix.pdf",bbox_inches="tight")
     plt.show()
     plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = True
@@ -569,6 +576,7 @@ if __name__=="__main__":
         F_values,'-o')
     plt.ylabel(r'1-$\sigma$ F [-]')
     plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.grid()
     plt.savefig(output_folder_path+"/Fvalues_time.pdf",bbox_inches="tight")
     plt.show()
@@ -583,6 +591,7 @@ if __name__=="__main__":
         sigma_FCN_values,'-o')
     plt.ylabel(r'1-$\sigma$ $\sigma_{FCN}$ [rad/s]')
     plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.grid()
     plt.savefig(output_folder_path+"/sigmaFCNvalues_time.pdf",bbox_inches="tight")
     plt.show()
@@ -605,6 +614,7 @@ if __name__=="__main__":
         zlander_values,'b-o',label='$z_{RISE}$')
     plt.ylabel(r'1-$\sigma$ x,y,z [m]')
     plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend()
     plt.grid()
     plt.savefig(output_folder_path+"/xyzlander_time.pdf",bbox_inches="tight")
@@ -650,6 +660,7 @@ if __name__=="__main__":
         np.array(sin4spin_values)/mas,'-o',label=r'$\psi^s_4$')
     plt.ylabel(r'1-$\sigma$ $\psi$ [mas]')
     plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend()
     plt.grid()
     plt.savefig(output_folder_path+"/psispin_time.pdf",bbox_inches="tight")
@@ -679,6 +690,7 @@ if __name__=="__main__":
         np.array(ypsin1_values)/mas,'-o',label=r'$Yp^s_1$')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend()
     plt.grid()
     plt.savefig(output_folder_path+"/polarmotionamp1_time.pdf",bbox_inches="tight")
@@ -708,6 +720,7 @@ if __name__=="__main__":
         np.array(ypsin2_values)/mas,'-o',label=r'$Yp^s_2$')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend()
     plt.grid()
     plt.savefig(output_folder_path+"/polarmotionamp2_time.pdf",bbox_inches="tight")
@@ -737,6 +750,7 @@ if __name__=="__main__":
         np.array(ypsin3_values)/mas,'-o',label=r'$Yp^s_3$')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend()
     plt.grid()
     plt.savefig(output_folder_path+"/polarmotionamp3_time.pdf",bbox_inches="tight")
@@ -766,6 +780,7 @@ if __name__=="__main__":
         np.array(ypsin4_values)/mas,'-o',label=r'$Yp^s_4$')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend()
     plt.grid()
     plt.savefig(output_folder_path+"/polarmotionamp4_time.pdf",bbox_inches="tight")
@@ -795,6 +810,7 @@ if __name__=="__main__":
         np.array(ypsin5_values)/mas,'-o',label=r'$Yp^s_5$')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend()
     plt.grid()
     plt.savefig(output_folder_path+"/polarmotionamp5_time.pdf",bbox_inches="tight")
