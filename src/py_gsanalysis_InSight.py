@@ -13,7 +13,6 @@ if __name__=="__main__":
     import sys
     sys.path.insert(0, "/home/cfortunylombra/tudat-bundle/cmake-build-release-wsl/tudatpy/")
     import os
-    import copy
     import datetime
     import numpy as np
     from tudatpy.kernel import constants, numerical_simulation

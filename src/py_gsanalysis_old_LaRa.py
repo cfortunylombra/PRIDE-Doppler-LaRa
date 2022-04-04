@@ -13,7 +13,6 @@ if __name__=="__main__":
     import sys
     sys.path.insert(0, "/home/cfortunylombra/tudat-bundle/cmake-build-release-wsl/tudatpy/")
     import os
-    import copy
     import numpy as np
     import datetime
     import matplotlib.pyplot as plt
