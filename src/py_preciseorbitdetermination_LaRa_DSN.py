@@ -15,6 +15,7 @@ if __name__=="__main__":
     import os
     import datetime
     import numpy as np
+    import scipy.interpolate
     import scipy.sparse
     import matplotlib.pyplot as plt
     from multiprocessing import Pool
@@ -277,8 +278,32 @@ if __name__=="__main__":
             endpass_epoch = (endpass_date - datetime.datetime(2000,1,1,12,0,0,0)).total_seconds()
 
             observation_times_list.extend(np.arange(startpass_epoch,endpass_epoch+observation_interval,observation_interval))
-
+    
     observation_start_epoch = min(observation_times_list)
+
+    # Computing solar plasma noise
+    LaRa_SEP_angle = list()
+    LaRa_solar_noise = list()
+    LaRa_time_solar_SEP = list()
+    LaRa_time_solar_noise = list()
+
+    for LaRa_time_pointer in observation_times_list:
+        r1 = spice_interface.get_body_cartesian_position_at_epoch("Earth","Sun","ECLIPJ2000","NONE",LaRa_time_pointer)
+        r2 = spice_interface.get_body_cartesian_position_at_epoch("Mars","Sun","ECLIPJ2000","NONE",LaRa_time_pointer)
+
+        LaRa_SEP_angle.append((np.pi-np.arccos(np.dot(r1,r2)/(np.linalg.norm(r1)*np.linalg.norm(r2))))/2)
+
+        if LaRa_SEP_angle[-1]>=np.deg2rad(antenna_min_elevation) and LaRa_SEP_angle[-1]<=np.deg2rad(90):
+            LaRa_solar_noise.append(1.76*10**(-14)*(np.sin(LaRa_SEP_angle[-1]))**(-1.98)+6.25*10**(-14)*(np.sin(LaRa_SEP_angle[-1]))**(0.06))
+            LaRa_time_solar_noise.append(LaRa_time_pointer)
+        elif LaRa_SEP_angle[-1]>np.deg2rad(90) and LaRa_SEP_angle[-1]<=np.deg2rad(170):
+            LaRa_solar_noise.append((1.76*10**(-14)+6.25*10**(-14))*(np.sin(LaRa_SEP_angle[-1]))**(1.05))
+            LaRa_time_solar_noise.append(LaRa_time_pointer)
+        elif LaRa_SEP_angle[-1]>np.deg2rad(170) and LaRa_SEP_angle[-1]<=np.deg2rad(180):
+            LaRa_solar_noise.append(1.27*10**(-14))
+            LaRa_time_solar_noise.append(LaRa_time_pointer)
+
+        LaRa_time_solar_SEP.append(LaRa_time_pointer)
 
     # Create observation viability settings and calculators
     viability_settings_list = list()
@@ -288,16 +313,23 @@ if __name__=="__main__":
     viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(body_avoidance_angle)))
     viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
 
+    # Nearest interpolation for LaRa
+    std_noise_function = scipy.interpolate.interp1d(LaRa_time_solar_noise,LaRa_solar_noise,fill_value='extrapolate', kind='nearest')
+
+    # Insert seed
+    np.random.seed(42)
+
+    # Function to compute the standard deviation for LaRa
+    def std_mHz_callable(t):
+        return np.array([np.random.normal(0,std_noise_function(t))])
+
     # Create measurement simulation input
-    observation_simulation_settings = observation.tabulated_simulation_settings_list(
-        dict({observation.two_way_doppler_type:observation_settings_list}),observation_times_list,
-        viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter)
-
-    # Define noise levels
-    doppler_noise = 0.9690046298313253e-3/base_frequency
-
-    # Create noise functions
-    observation.add_gaussian_noise_to_settings(observation_simulation_settings,doppler_noise,observation.two_way_doppler_type)
+    observation_simulation_settings = list()
+    for pointer_link_ends in range(0,len(observation_settings_list)):
+        observation_simulation_settings.append(observation.tabulated_simulation_settings(observation.two_way_doppler_type,
+            observation_settings_list[pointer_link_ends],observation_times_list,
+            viability_settings = viability_settings_list,reference_link_end_type = observation.transmitter,
+            noise_function = std_mHz_callable))
     
     # Simulate required observation
     simulated_observations = estimation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
@@ -343,7 +375,7 @@ if __name__=="__main__":
 
     # Estimate parameters
     pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size, inverse_apriori_covariance = inverse_a_priori_covariance, apriori_parameter_correction = parameter_perturbation)
-    vector_weights = doppler_noise*np.ones(len(simulated_observations.concatenated_times))
+    vector_weights = std_noise_function(simulated_observations.concatenated_times)
     pod_input.set_weight(1/vector_weights**2) 
     
     # Perform estimation
@@ -401,14 +433,11 @@ if __name__=="__main__":
     vector_weights = np.array([vector_weights[i] for i in index_sort])
     estimation_information_matrix[:] = np.array([estimation_information_matrix[i] for i in index_sort])
     doppler_residuals[:] = np.array([doppler_residuals[i] for i in index_sort])
-
-    # Create the W matrix by dividing the square of the noise levels
-    weight_matrix = np.diag(1/vector_weights**2)
     
     # Function for the normalized covariance matrix
     def norm_covariance_matrix_func(time_index):
-        return np.transpose(estimation_information_matrix[:time_index+1])@scipy.sparse.diags(1/vector_weights[:time_index+1]**2)@estimation_information_matrix[:time_index+1]\
-            +norm_inverse_a_priori_covariance
+        return np.linalg.inv(np.transpose(estimation_information_matrix[:time_index+1])@scipy.sparse.diags(1/vector_weights[:time_index+1]**2)@estimation_information_matrix[:time_index+1]\
+            +norm_inverse_a_priori_covariance)
 
     # Compute the normalized covariance matrix using 4 CPUs
     norm_covariance_matrix_dict = Pool(4)
@@ -423,7 +452,7 @@ if __name__=="__main__":
         for i in range(0,np.shape(norm_covariance_values[time_index])[0]):
             for j in range(0,np.shape(norm_covariance_values[time_index])[1]):
                 covariance_matrix[i][j] = norm_covariance_values[time_index][i][j]/\
-                   (1/(estimation_information_matrix_normalization[i]*estimation_information_matrix_normalization[j]))
+                   (estimation_information_matrix_normalization[i]*estimation_information_matrix_normalization[j])
         return covariance_matrix 
 
     # Compute the unnormalized covariance matrix using 4 CPUs
@@ -435,7 +464,7 @@ if __name__=="__main__":
 
     # Function for the standard deviation (formal)
     def sigma_covariance_matrix_func(time_index):
-        return 1/np.sqrt(covariance_values[time_index].diagonal())
+        return np.sqrt(covariance_values[time_index].diagonal())
 
     # Take the standard deviation (formal) from the diagonal of the unnormalized covariance matrix using 4 CPUs
     sigma_covariance_matrix_dict = Pool(4)
@@ -450,7 +479,7 @@ if __name__=="__main__":
         for i in range(0,np.shape(covariance_values[time_index])[0]):
             for j in range(0,np.shape(covariance_values[time_index])[1]):
                 correlation_matrix[i][j] = covariance_values[time_index][i][j]/\
-                    (1/(sigma_values[time_index][i]*sigma_values[time_index][j]))
+                    (sigma_values[time_index][i]*sigma_values[time_index][j])
         return correlation_matrix
 
     # Compute correlation matrix using 4 CPUs
@@ -484,6 +513,17 @@ if __name__=="__main__":
     plt.savefig(output_folder_path+"/true_to_form_ratio.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
+
+    # Plot to check the viability of the Sun
+    plt.figure(figsize=(15, 6))
+    plt.scatter((simulated_observations.concatenated_times-observation_times_list[0]*np.ones(len(simulated_observations.concatenated_times)))/constants.JULIAN_DAY,std_noise_function(simulated_observations.concatenated_times)/10**(-3)*base_frequency)
+    plt.ylabel('Std noise [mHz]')
+    plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.grid()
+    plt.savefig(output_folder_path+"/std_noise_time.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all') 
 
     # Formal to apriori ratio
     plt.figure(figsize=(15, 6))
