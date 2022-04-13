@@ -53,7 +53,7 @@ if __name__=="__main__":
                 std_mHz.append(float(line_split[2]))
             else:
                 index_gap = len(time_days)
-
+    print(np.mean(std_mHz))
     # Plot - mean as a function of time
     plt.figure(figsize=(15,6))
     plt.plot(time_days,mean_mHz)
