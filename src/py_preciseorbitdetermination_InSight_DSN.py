@@ -321,6 +321,7 @@ if __name__=="__main__":
     def std_mHz_callable(t):
         return np.array([np.random.normal(0,std_mHz_function((t-observation_times_list[0])/constants.JULIAN_DAY)*10**(-3)/base_frequency)])
 
+    # Create measurement simulation input
     observation_simulation_settings = list()
     for pointer_link_ends in range(0,len(observation_settings_list)):
         observation_simulation_settings.append(observation.tabulated_simulation_settings(observation.two_way_doppler_type,
@@ -539,22 +540,6 @@ if __name__=="__main__":
         r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     plt.grid()
     plt.savefig(output_folder_path+"/formal_to_a_priori.pdf",bbox_inches="tight")
-    plt.show()
-    plt.close('all')
-
-    # Formal to apriori ratio
-    plt.figure(figsize=(15, 6))
-    plt.plot(range(6,len(parameter_perturbation)),np.abs(formal_error[6:]/parameter_perturbation[6:]),'o--')
-    plt.ylabel('Formal to Apriori Ratio')
-    plt.xlabel('Estimated Parameters')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
-    plt.xticks(range(6,len(parameter_perturbation)),labels=['F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
-        r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-        r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-        r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-        r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-    plt.grid()
-    plt.savefig(output_folder_path+"/formal_to_a_priori_2.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
 

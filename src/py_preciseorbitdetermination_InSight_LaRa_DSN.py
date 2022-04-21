@@ -194,8 +194,8 @@ if __name__=="__main__":
     initial_time_step = 1 #second
     minimum_step_size = initial_time_step #seconds
     maximum_step_size = 60*60*24 #seconds
-    relative_error_tolerance = 1.0E-15
-    absolute_error_tolerance = 1.0E-15
+    relative_error_tolerance = 1.0E-12
+    absolute_error_tolerance = 1.0E-12
 
     integrator_settings = propagation_setup.integrator.runge_kutta_variable_step_size(
         simulation_start_epoch,
