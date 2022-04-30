@@ -17,6 +17,7 @@ if __name__=="__main__":
     import datetime
     import scipy.interpolate
     import scipy.sparse
+    import scipy.sparse.linalg
     import matplotlib.pyplot as plt
     from multiprocessing import Pool
     from tudatpy.kernel import constants, numerical_simulation
@@ -42,11 +43,11 @@ if __name__=="__main__":
     simulation_duration_days = 2956 #days; until 31/12/2026
     simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
-    start_date = 2459580.5 #in Julian days = 27/11/2018 00:00:00; Taken from the txt file sent by Sebastien
-    RISE_simulation_duration_days = 0 #days
-    RISE_simulation_duration = RISE_simulation_duration_days*constants.JULIAN_DAY #seconds
-    simulation_duration_days = 1826 #days; until 31/12/2026
-    simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
+    #start_date = 2459580.5 #in Julian days = 27/11/2018 00:00:00; Taken from the txt file sent by Sebastien
+    #RISE_simulation_duration_days = 0 #days
+    #RISE_simulation_duration = RISE_simulation_duration_days*constants.JULIAN_DAY #seconds
+    #simulation_duration_days = 600 #days; until 31/12/2026
+    #simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
     # RISE landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
     RISE_reflector_name = "RISE"
@@ -85,7 +86,7 @@ if __name__=="__main__":
     LaRa_transmitter_names = ['DSS 43','DSS 63','DSS 14']
 
     # PRIDE stations boolean
-    PRIDE_boolean = False
+    PRIDE_boolean = True
 
     # Viability settings for RISE
     RISE_earth_min = 10 #deg
@@ -455,10 +456,13 @@ if __name__=="__main__":
 
     # Find the index position for each link_end
     link_ends_numbers = list()
+    link_ends_transmitter = list()
     for link_end_pointer in observation_settings_list:
         link_ends_numbers.append(link_ends_sort.index(link_end_pointer))
+        link_ends_transmitter.append(link_end_pointer[observation.transmitter][1])
 
     #print(link_ends_numbers)
+    #print(link_ends_transmitter)
 
     ########################################################################################################################
     ################################################## DEFINE PARAMETERS TO ESTIMATE #######################################
@@ -712,65 +716,244 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/doppler_residuals.dat",doppler_residuals,fmt='%.15e')
     np.savetxt(output_folder_path+"/vector_weights.dat",vector_weights,fmt='%.15e')
 
+    # CPU number for parallel computing
+    CPU_par = 5
+
+    # Sort index
+    index_sort = np.argsort(concatenated_times)
+
+    # Function to sort concatenated times
+    def sort_concatenated_times_func(index):
+        return concatenated_times[index]
+
+    # Sort concatenated times
+    sort_concatenated_times_dict = Pool(CPU_par)
+    print("Sorting concatenated times")
+    concatenated_times_sort = sort_concatenated_times_dict.map(sort_concatenated_times_func,index_sort)
+    sort_concatenated_times_dict.close()
+    sort_concatenated_times_dict.join()
+
+    # Remove duplicated concatenated times
+    concatenated_times_no_duplicated = list(set(list(concatenated_times_sort)))
+    concatenated_times_no_duplicated.sort()
+
+    # Function to sort concatenated times index
+    def sort_concatenated_times_index_func(index):
+        return list(concatenated_times_sort).index(index)
+
+    # Sort concatenated times index
+    sort_concatenated_times_index_dict = Pool(CPU_par)
+    print("Sorting time indices")
+    concatenated_times_index = sort_concatenated_times_index_dict.map(sort_concatenated_times_index_func,concatenated_times_no_duplicated)
+    sort_concatenated_times_index_dict.close()
+    sort_concatenated_times_index_dict.join()
+
+    # Function to sort concatenated times count
+    def sort_concatenated_times_count_func(index):
+        return list(concatenated_times_sort).count(index)
+
+    # Sort concatenated times count
+    sort_concatenated_times_count_dict = Pool(CPU_par)
+    print("Sorting time counts")
+    concatenated_times_count = sort_concatenated_times_count_dict.map(sort_concatenated_times_count_func,concatenated_times_no_duplicated)
+    sort_concatenated_times_count_dict.close()
+    sort_concatenated_times_count_dict.join()
+
+    # Function to sort vector weights
+    def sort_vector_weights_func(index):
+        return vector_weights[index]
+
+    # Sort concatenated times
+    sort_vector_weights_dict = Pool(CPU_par)
+    print("Sorting vector weigths")
+    vector_weights_sort = sort_vector_weights_dict.map(sort_vector_weights_func,index_sort)
+    sort_vector_weights_dict.close()
+    sort_vector_weights_dict.join()
+
+    # Function to sort estimation information matrix
+    def sort_estimation_information_matrix_func(index):
+        return estimation_information_matrix[index][:]
+
+    # Sort concatenated times
+    sort_estimation_information_matrix_dict = Pool(CPU_par)
+    print("Sorting estimation information matrices")
+    estimation_information_matrix_sort = sort_estimation_information_matrix_dict.map(sort_estimation_information_matrix_func,index_sort)
+    sort_estimation_information_matrix_dict.close()
+    sort_estimation_information_matrix_dict.join()
+
+    # Function to sort doppler residuals
+    def sort_residuals_func(index):
+        return doppler_residuals[index][:]
+
+    # Sort concatenated residuals
+    sort_residuals_dict = Pool(CPU_par)
+    print("Sorting residuals")
+    residuals_sort = sort_residuals_dict.map(sort_residuals_func,index_sort)
+    sort_residuals_dict.close()
+    sort_residuals_dict.join()
+
+    # Function to sort concatenated link ends
+    def sort_concatenated_link_ends_func(index):
+        return concatenated_link_ends[index]
+
+    # Sort concatenated link ends
+    sort_concatenated_link_ends_dict = Pool(CPU_par)
+    print("Sorting concatenated link ends")
+    concatenated_link_ends_sort = sort_concatenated_link_ends_dict.map(sort_concatenated_link_ends_func,index_sort)
+    sort_concatenated_link_ends_dict.close()
+    sort_concatenated_link_ends_dict.join()
+
+    # Function to sort concatenated link ends names
+    def sort_concatenated_link_ends_names_func(index):
+        return concatenated_link_end_names_list[index]
+
+    # Sort concatenated link ends names
+    sort_concatenated_link_ends_names_dict = Pool(CPU_par)
+    print("Sorting concatenated link ends names")
+    concatenated_link_end_names_list_sort = sort_concatenated_link_ends_names_dict.map(sort_concatenated_link_ends_names_func,index_sort)
+    sort_concatenated_link_ends_names_dict.close()
+    sort_concatenated_link_ends_names_dict.join()
+
+    '''
     # Sort with respect to time
     index_sort = np.argsort(concatenated_times)
-    concatenated_times = np.array([concatenated_times[i] for i in index_sort])
+    concatenated_times_sort = np.array([concatenated_times[i] for i in index_sort])
     concatenated_times_no_duplicated = list(set(list(concatenated_times)))
     concatenated_times_no_duplicated.sort()
-    concatenated_times_index = np.array([list(concatenated_times).index(i) for i in concatenated_times_no_duplicated])
-    concatenated_times_count = np.array([list(concatenated_times).count(i) for i in concatenated_times_no_duplicated])
+    concatenated_times_index = np.array([list(concatenated_times_sort).index(i) for i in concatenated_times_no_duplicated])
+    concatenated_times_count = np.array([list(concatenated_times_sort).count(i) for i in concatenated_times_no_duplicated])
     concatenated_link_ends = np.array([concatenated_link_ends[i] for i in index_sort])
     concatenated_link_end_names_list = list([concatenated_link_end_names_list[i] for i in index_sort])
-    vector_weights = np.array([vector_weights[i] for i in index_sort])
-    estimation_information_matrix[:] = np.array([estimation_information_matrix[i] for i in index_sort])
+    vector_weights_sort = np.array([vector_weights[i] for i in index_sort])
+    estimation_information_matrix[:] = np.array([estimation_information_matrix[i][:] for i in index_sort])
     doppler_residuals[:] = np.array([doppler_residuals[i] for i in index_sort])
+    estimation_information_matrix_sort = estimation_information_matrix
+    '''
 
     # Save sorted data
-    np.savetxt(output_folder_path+"/weights_diagonal_sort.dat",pod_output.weights_matrix_diagonal,fmt='%.15e')
-    np.savetxt(output_folder_path+"/estimation_information_matrix_sort.dat",estimation_information_matrix,fmt='%.15e')
-    np.savetxt(output_folder_path+"/estimation_information_matrix_normalization_sort.dat",
-        estimation_information_matrix_normalization,fmt='%.15e')
-    np.savetxt(output_folder_path+"/concatenated_times_sort.dat",concatenated_times,fmt='%.15e')
+    np.savetxt(output_folder_path+"/estimation_information_matrix_sort.dat",estimation_information_matrix_sort,fmt='%.15e')
+    np.savetxt(output_folder_path+"/concatenated_times_sort.dat",concatenated_times_sort,fmt='%.15e')
     np.savetxt(output_folder_path+"/concatenated_times_sort_no_duplicated.dat",concatenated_times_no_duplicated,fmt='%.15e')
     np.savetxt(output_folder_path+"/concatenated_times_sort_index.dat",concatenated_times_index,fmt='%.15e')
     np.savetxt(output_folder_path+"/concatenated_times_sort_count.dat",concatenated_times_count,fmt='%.15e')
-    np.savetxt(output_folder_path+"/concatenated_link_ends_sort.dat",concatenated_link_ends,fmt='%.15e')
-    np.savetxt(output_folder_path+"/concatenated_link_end_names_sort.dat",concatenated_link_end_names_list, fmt='%s')
-    np.savetxt(output_folder_path+"/doppler_residuals_sort.dat",doppler_residuals,fmt='%.15e')
-    np.savetxt(output_folder_path+"/vector_weights_sort.dat",vector_weights,fmt='%.15e')
+    np.savetxt(output_folder_path+"/concatenated_link_ends_sort.dat",concatenated_link_ends_sort,fmt='%.15e')
+    np.savetxt(output_folder_path+"/concatenated_link_end_names_sort.dat",concatenated_link_end_names_list_sort, fmt='%s')
+    np.savetxt(output_folder_path+"/doppler_residuals_sort.dat",residuals_sort,fmt='%.15e')
+    np.savetxt(output_folder_path+"/vector_weights_sort.dat",vector_weights_sort,fmt='%.15e')
 
     ########################################################################################################################
     ################################################## COVARIANCE ANALYSIS #################################################
     ########################################################################################################################
 
+    # Step evaluation
+    step_eval = 200
+    arange_eval = np.arange(0,len(concatenated_times_no_duplicated),step_eval) 
+    time_eval = [concatenated_times_no_duplicated[i] for i in arange_eval]
+    
     # Normalized inverse a priori covariance
     norm_inverse_a_priori_covariance = np.diag(inverse_a_priori_covariance.diagonal()/(estimation_information_matrix_normalization**2))
 
+    # Initialize inverted weighting matrix
+    #inv_weight = (scipy.sparse.diags(1/np.array(vector_weights_sort)**2)).tocsr() #Same as correlation to 0
+    inv_weight_complex = scipy.sparse.coo_matrix((0,0))
+    
+    # Define fixed correlation between PRIDE and DSN stations
+    correlation = 0
+
+    # Iteratate along each time value
+    for time_index in range(0,len(concatenated_times_no_duplicated)):
+        # Understand whether there are PRIDE stations
+        count_time_obs = concatenated_times_count[time_index]
+        end_index = concatenated_times_index[time_index]
+
+        # If one observation, means that there are no PRIDE stations and the matrix added is a single value
+        if count_time_obs == 1:
+            inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,(vector_weights_sort[end_index])**(-2)))
+        # More than observations = PRIDE stations present or two (or more) DSN observations at the same time
+        else:
+            start_index = end_index - (count_time_obs)
+            # Sort the receiver link ends, since there can be several transmitters
+            receiver_link_ends = np.argsort(concatenated_link_ends_sort[start_index:end_index])
+            
+            # Sorting again part of the arrays
+            estimation_information_matrix_sort_short = [None]*count_time_obs
+            residuals_sort_short = [None]*count_time_obs
+            for row_index in range(0,np.shape(estimation_information_matrix_sort_short)[0]):
+                estimation_information_matrix_sort_short[receiver_link_ends[row_index]] = estimation_information_matrix_sort[start_index+row_index]
+                residuals_sort_short[receiver_link_ends[row_index]] = residuals_sort[start_index+row_index]
+            estimation_information_matrix_sort[start_index:end_index] = estimation_information_matrix_sort_short
+            residuals_sort[start_index:end_index] = residuals_sort_short
+            concatenated_times_sort[start_index:end_index] = np.array(concatenated_times_sort[start_index:end_index])[receiver_link_ends]
+            concatenated_link_ends_sort[start_index:end_index] = np.array(concatenated_link_ends_sort[start_index:end_index])[receiver_link_ends]
+            concatenated_link_end_names_list_sort[start_index:end_index] = np.array(concatenated_link_end_names_list_sort[start_index:end_index])[receiver_link_ends]
+            vector_weights_sort[start_index:end_index] = np.array(vector_weights_sort[start_index:end_index])[receiver_link_ends]
+
+            # Understanding which transmitters are involved
+            transmitters_count = list()
+            transmitters_total = list()
+            for receiver_index in range(start_index,end_index):
+                transmitter_station = link_ends_transmitter[link_ends_numbers.index(concatenated_link_ends_sort[receiver_index])]
+                transmitters_total.append(transmitter_station)
+                if not transmitter_station in transmitters_count:
+                    transmitters_count.append(transmitter_station)
+            
+            # Counting how many receiver there are for each transmitter
+            transmitter_count_number = list()    
+            for transmitter_index in transmitters_count:
+                transmitter_count_number.append(transmitters_total.count(transmitter_index))
+
+            # Building the weighting matrix block
+            start_index_block = start_index
+            for split_count in transmitter_count_number:
+                block_weight = (scipy.sparse.coo_matrix((split_count,split_count))).toarray()
+                for row_index in range(0,split_count):
+                    for column_index in range(0,split_count):
+                        if row_index == column_index:
+                            block_weight[row_index][column_index] = vector_weights_sort[start_index_block+row_index]**2
+                        else:
+                            block_weight[row_index][column_index] = correlation*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
+                inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
+                start_index_block += split_count
+                
+    # Conver the inverted weighting matrix to Compressed Sparse Row format
+    inv_weight_complex_total = (inv_weight_complex).tocsr()
+
     # Function for the normalized covariance matrix
     def norm_covariance_matrix_func(time_index):
-        return np.linalg.inv(np.transpose(estimation_information_matrix[:concatenated_times_index[time_index]+1])@scipy.sparse.diags(1/vector_weights[:concatenated_times_index[time_index]+1]**2)@estimation_information_matrix[:concatenated_times_index[time_index]+1]\
-            +norm_inverse_a_priori_covariance)
+        return np.transpose(estimation_information_matrix_sort[:concatenated_times_index[time_index]+1])@inv_weight_complex_total[:concatenated_times_index[time_index]+1,:concatenated_times_index[time_index]+1]@estimation_information_matrix_sort[:concatenated_times_index[time_index]+1]\
+            +norm_inverse_a_priori_covariance
 
-    # Compute the normalized covariance matrix using 4 CPUs
-    norm_covariance_matrix_dict = Pool(4)
-    print("Calculating the normalized covariance matrix")
-    norm_covariance_values = norm_covariance_matrix_dict.map(norm_covariance_matrix_func,range(0,len(concatenated_times_no_duplicated)))
+    # Compute the normalized covariance matrix using several CPUs
+    norm_covariance_matrix_dict = Pool(CPU_par)
+    print("Calculating the inverse of W and the normalized covariance matrix")
+    norm_covariance_values = norm_covariance_matrix_dict.map(norm_covariance_matrix_func,arange_eval)  
     norm_covariance_matrix_dict.close()
     norm_covariance_matrix_dict.join()
 
+    # Function for the invert the covariance matrix
+    def inv_covariance_matrix_func(time_index):
+        return np.linalg.inv(norm_covariance_values[time_index])
+
+    # Compute the inversion of the covariance matrix using several CPUs
+    inv_covariance_matrix_dict = Pool(CPU_par)
+    print("Calculating the inverse normalized covariance matrix")
+    inv_covariance_matrix_values = inv_covariance_matrix_dict.map(inv_covariance_matrix_func,range(0,len(arange_eval)))  
+    inv_covariance_matrix_dict.close()
+    inv_covariance_matrix_dict.join()
+
     # Function for the covariance matrix
     def covariance_matrix_func(time_index):
-        covariance_matrix = np.zeros(np.shape(norm_covariance_values[time_index]))
-        for i in range(0,np.shape(norm_covariance_values[time_index])[0]):
-            for j in range(0,np.shape(norm_covariance_values[time_index])[1]):
-                covariance_matrix[i][j] = norm_covariance_values[time_index][i][j]/\
+        covariance_matrix = np.zeros(np.shape(inv_covariance_matrix_values[time_index]))
+        for i in range(0,np.shape(inv_covariance_matrix_values[time_index])[0]):
+            for j in range(0,np.shape(inv_covariance_matrix_values[time_index])[1]):
+                covariance_matrix[i][j] = inv_covariance_matrix_values[time_index][i][j]/\
                    (estimation_information_matrix_normalization[i]*estimation_information_matrix_normalization[j])
         return covariance_matrix 
 
-    # Compute the unnormalized covariance matrix using 4 CPUs
-    covariance_matrix_dict = Pool(4)
+    # Compute the unnormalized covariance matrix using several CPUs
+    covariance_matrix_dict = Pool(CPU_par)
     print("Calculating the unnormalized covariance matrix")
-    covariance_values = covariance_matrix_dict.map(covariance_matrix_func,range(0,len(concatenated_times_no_duplicated)))
+    covariance_values = covariance_matrix_dict.map(covariance_matrix_func,range(0,len(arange_eval)))
     covariance_matrix_dict.close()
     covariance_matrix_dict.join()
 
@@ -778,12 +961,16 @@ if __name__=="__main__":
     def sigma_covariance_matrix_func(time_index):
         return np.sqrt(covariance_values[time_index].diagonal())
 
-    # Take the standard deviation (formal) from the diagonal of the unnormalized covariance matrix using 4 CPUs
-    sigma_covariance_matrix_dict = Pool(4)
+    # Take the standard deviation (formal) from the diagonal of the unnormalized covariance matrix using several CPUs
+    sigma_covariance_matrix_dict = Pool(CPU_par)
     print("Calculating the standard deviation (formal)")
-    sigma_values = sigma_covariance_matrix_dict.map(sigma_covariance_matrix_func,range(0,len(concatenated_times_no_duplicated)))
+    sigma_values = sigma_covariance_matrix_dict.map(sigma_covariance_matrix_func,range(0,len(arange_eval)))
     sigma_covariance_matrix_dict.close()
     sigma_covariance_matrix_dict.join()
+
+    # Verification
+    #print("A:",inverse_a_priori_covariance.diagonal()**(-0.5))
+    #print("F:",sigma_values[1])
 
     # Function for the correlation matrix
     def correlation_matrix_func(time_index):
@@ -795,11 +982,32 @@ if __name__=="__main__":
         return correlation_matrix
 
     # Compute correlation matrix using 4 CPUs
-    correlation_matrix_dict = Pool(4)
+    correlation_matrix_dict = Pool(CPU_par)
     print("Calculating the correlation matrix")
-    correlation_values = correlation_matrix_dict.map(correlation_matrix_func,range(0,len(concatenated_times_no_duplicated)))
+    correlation_values = correlation_matrix_dict.map(correlation_matrix_func,range(0,len(arange_eval)))
     correlation_matrix_dict.close()
     correlation_matrix_dict.join()
+
+    # Compute correlation matrix only for LaRa mission
+    if len(LaRa_observation_times_list)!=0:
+        index_start_LaRa = list(concatenated_times_sort).index(min(LaRa_concatenated_times))-(list(concatenated_times_sort).count(min(LaRa_concatenated_times))-1)
+        
+        inv_norm_covariance_LaRa_value = np.linalg.inv(np.transpose(estimation_information_matrix_sort[index_start_LaRa:])@scipy.sparse.diags(1/np.array(vector_weights_sort[index_start_LaRa:])**2)@estimation_information_matrix_sort[index_start_LaRa:]\
+                +norm_inverse_a_priori_covariance)
+
+        covariance_matrix_LaRa = np.zeros(np.shape(inv_norm_covariance_LaRa_value))
+        for i in range(0,np.shape(inv_norm_covariance_LaRa_value)[0]):
+            for j in range(0,np.shape(inv_norm_covariance_LaRa_value)[1]):
+                covariance_matrix_LaRa[i][j] = inv_norm_covariance_LaRa_value[i][j]/\
+                    (estimation_information_matrix_normalization[i]*estimation_information_matrix_normalization[j])
+
+        sigma_LaRa_value = np.sqrt(covariance_matrix_LaRa.diagonal())
+
+        correlation_matrix_LaRa = np.zeros(np.shape(covariance_matrix_LaRa))
+        for i in range(0,np.shape(covariance_matrix_LaRa)[0]):
+            for j in range(0,np.shape(covariance_matrix_LaRa)[1]):
+                correlation_matrix_LaRa[i][j] =covariance_matrix_LaRa[i][j]/\
+                    (sigma_LaRa_value[i]*sigma_LaRa_value[j])
 
     ########################################################################################################################
     ################################################## PLOTS ###############################################################
@@ -829,7 +1037,7 @@ if __name__=="__main__":
     plt.savefig(output_folder_path+"/std_noise_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all') 
-
+    
     # Formal to apriori ratio
     plt.figure(figsize=(15, 6))
     plt.plot(range(0,len(parameter_perturbation)),np.abs(pod_output.formal_errors/parameter_perturbation[:]),'o--')
@@ -917,6 +1125,143 @@ if __name__=="__main__":
     plt.show()
     plt.close('all')
 
+    # Final correlation matrix 
+    plt.figure(figsize=(18,18))
+    plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = False
+    plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = True
+    plt.imshow(np.abs(correlation_values[-1]))
+    plt.colorbar()
+    if len(LaRa_observation_times_list)==0:
+        plt.xticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+            r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
+            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
+            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
+            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
+        plt.yticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+            r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
+            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
+            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
+            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
+    elif len(RISE_observation_times_list)==0:
+        plt.xticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+            r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
+            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
+            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
+            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
+        plt.yticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+            r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
+            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
+            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
+            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
+    else:
+        plt.xticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+            r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
+            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
+            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
+            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
+        plt.yticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+            r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
+            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
+            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
+            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
+    plt.grid()
+    plt.title('Final Correlation Matrix - Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.savefig(output_folder_path+"/correlation_matrix_final.pdf",bbox_inches="tight")
+    plt.show()
+    plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = True
+    plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = False
+    plt.close('all')
+
+    # RISE correlation matrix 
+    if len(RISE_observation_times_list)!=0:
+        plt.figure(figsize=(18,18))
+        plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = False
+        plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = True
+        end_RISE_observation_time = max(RISE_observation_times_list)
+        idx_nearest = np.abs(end_RISE_observation_time-np.array(time_eval)).argmin()
+        plt.imshow(np.abs(correlation_values[idx_nearest]))
+        plt.colorbar()
+        if len(LaRa_observation_times_list)==0:
+            plt.xticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+                r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
+                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+                r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
+                r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
+                r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
+            plt.yticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+                r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
+                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+                r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
+                r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
+                r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
+        else:
+            plt.xticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+                r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
+                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+                r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
+                r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
+                r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
+            plt.yticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+                r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
+                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+                r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
+                r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
+                r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
+        plt.grid()
+        plt.title('RISE Correlation Matrix - Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+        plt.savefig(output_folder_path+"/correlation_matrix_RISE.pdf",bbox_inches="tight")
+        plt.show()
+        plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = True
+        plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = False
+        plt.close('all')
+
+    # LaRa correlation matrix 
+    if len(LaRa_observation_times_list)!=0:
+        plt.figure(figsize=(18,18))
+        plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = False
+        plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = True
+        plt.imshow(np.abs(correlation_matrix_LaRa))
+        plt.colorbar()
+        if len(RISE_observation_times_list)==0:
+            plt.xticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+                r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
+                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+                r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
+                r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
+                r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
+            plt.yticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+                r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
+                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+                r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
+                r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
+                r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
+        else:
+            plt.xticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+                r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
+                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+                r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
+                r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
+                r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
+            plt.yticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+                r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
+                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+                r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
+                r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
+                r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
+        plt.grid()
+        plt.title('LaRa Correlation Matrix - Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+        plt.savefig(output_folder_path+"/correlation_matrix_LaRa.pdf",bbox_inches="tight")
+        plt.show()
+        plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = True
+        plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = False
+        plt.close('all')
+    
     # 1-sigma position as a function of time
     plt.figure(figsize=(15, 6))
     colormap = plt.cm.gist_ncar
@@ -924,15 +1269,15 @@ if __name__=="__main__":
     x_values = list()
     y_values = list()
     z_values = list()
-    for time_index in range(0,len(concatenated_times_no_duplicated)):
+    for time_index in range(0,len(time_eval)):
         x_values.append(sigma_values[time_index][0])
         y_values.append(sigma_values[time_index][1])
         z_values.append(sigma_values[time_index][2])
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         x_values,'-o',label='$x$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         y_values,'-o',label='$y$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         z_values,'-o',label='$z$')
     plt.ylabel(r'1-$\sigma$ x,y,z [m]')
     plt.xlabel('Time [days]')
@@ -950,15 +1295,15 @@ if __name__=="__main__":
     xdot_values = list()
     ydot_values = list()
     zdot_values = list()
-    for time_index in range(0,len(concatenated_times_no_duplicated)):
+    for time_index in range(0,len(time_eval)):
         xdot_values.append(sigma_values[time_index][3])
         ydot_values.append(sigma_values[time_index][4])
         zdot_values.append(sigma_values[time_index][5])
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         xdot_values,'-o',label=r'$\dot{x}$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         ydot_values,'-o',label=r'$\dot{y}$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         zdot_values,'-o',label=r'$\dot{z}$')
     plt.ylabel(r'1-$\sigma$ $\dot{x}$,$\dot{y}$,$\dot{z}$ [m/s]')
     plt.xlabel('Time [days]')
@@ -972,9 +1317,9 @@ if __name__=="__main__":
     # 1-sigma F as a function of time
     plt.figure(figsize=(15, 6))
     F_values = list()
-    for time_index in range(0,len(concatenated_times_no_duplicated)):
+    for time_index in range(0,len(time_eval)):
         F_values.append(sigma_values[time_index][6])
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         F_values,'-o')
     plt.ylabel(r'1-$\sigma$ F [-]')
     plt.xlabel('Time [days]')
@@ -987,9 +1332,9 @@ if __name__=="__main__":
     # 1-sigma sigma_FCN as a function of time
     plt.figure(figsize=(15, 6))
     sigma_FCN_values = list()
-    for time_index in range(0,len(concatenated_times_no_duplicated)):
+    for time_index in range(0,len(time_eval)):
         sigma_FCN_values.append(sigma_values[time_index][7])
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         sigma_FCN_values,'-o')
     plt.ylabel(r'1-$\sigma$ $\sigma_{FCN}$ [rad/s]')
     plt.xlabel('Time [days]')
@@ -1011,7 +1356,7 @@ if __name__=="__main__":
         xLaRalander_values = list()
         yLaRalander_values = list()
         zLaRalander_values = list()
-    for time_index in range(0,len(concatenated_times_no_duplicated)):
+    for time_index in range(0,len(time_eval)):
         if len(RISE_observation_times_list)!=0:
             xRISElander_values.append(sigma_values[time_index][8])
             yRISElander_values.append(sigma_values[time_index][9])
@@ -1023,18 +1368,18 @@ if __name__=="__main__":
             zLaRalander_values.append(sigma_values[time_index][10+add_par])
 
     if len(RISE_observation_times_list)!=0:        
-        plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+        plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
             xRISElander_values,'-o',label='$x_{RISE}$')
-        plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+        plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
             yRISElander_values,'-o',label='$y_{RISE}$')
-        plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+        plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
             zRISElander_values,'-o',label='$z_{RISE}$')
     if len(LaRa_observation_times_list)!=0:
-        plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+        plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
             xLaRalander_values,'-o',label='$x_{LaRa}$')
-        plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+        plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
             yLaRalander_values,'-o',label='$y_{LaRa}$')
-        plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+        plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
             zLaRalander_values,'-o',label='$z_{LaRa}$')
     plt.ylabel(r'1-$\sigma$ x,y,z [m]')
     plt.xlabel('Time [days]')
@@ -1057,7 +1402,7 @@ if __name__=="__main__":
     sin3spin_values = list()
     cos4spin_values = list()
     sin4spin_values = list()
-    for time_index in range(0,len(concatenated_times_no_duplicated)):
+    for time_index in range(0,len(time_eval)):
         cos1spin_values.append(sigma_values[time_index][11+add_par])
         sin1spin_values.append(sigma_values[time_index][12+add_par])
         cos2spin_values.append(sigma_values[time_index][13+add_par])
@@ -1066,21 +1411,21 @@ if __name__=="__main__":
         sin3spin_values.append(sigma_values[time_index][16+add_par])
         cos4spin_values.append(sigma_values[time_index][17+add_par])
         sin4spin_values.append(sigma_values[time_index][18+add_par])
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(cos1spin_values)/mas,'-o',label=r'$\psi^c_1$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(sin1spin_values)/mas,'-o',label=r'$\psi^s_1$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(cos2spin_values)/mas,'-o',label=r'$\psi^c_2$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(sin2spin_values)/mas,'-o',label=r'$\psi^s_2$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(cos3spin_values)/mas,'-o',label=r'$\psi^c_3$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(sin3spin_values)/mas,'-o',label=r'$\psi^s_3$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(cos4spin_values)/mas,'-o',label=r'$\psi^c_4$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(sin4spin_values)/mas,'-o',label=r'$\psi^s_4$')
     plt.ylabel(r'1-$\sigma$ $\psi$ [mas]')
     plt.xlabel('Time [days]')
@@ -1099,18 +1444,18 @@ if __name__=="__main__":
     xpsin1_values = list()
     ypcos1_values = list()
     ypsin1_values = list()
-    for time_index in range(0,len(concatenated_times_no_duplicated)):
+    for time_index in range(0,len(time_eval)):
         xpcos1_values.append(sigma_values[time_index][19+add_par])
         xpsin1_values.append(sigma_values[time_index][20+add_par])
         ypcos1_values.append(sigma_values[time_index][21+add_par])
         ypsin1_values.append(sigma_values[time_index][22+add_par])
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(xpcos1_values)/mas,'-o',label=r'$Xp^c_1$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(xpsin1_values)/mas,'-o',label=r'$Xp^s_1$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(ypcos1_values)/mas,'-o',label=r'$Yp^c_1$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(ypsin1_values)/mas,'-o',label=r'$Yp^s_1$')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
@@ -1129,18 +1474,18 @@ if __name__=="__main__":
     xpsin2_values = list()
     ypcos2_values = list()
     ypsin2_values = list()
-    for time_index in range(0,len(concatenated_times_no_duplicated)):
+    for time_index in range(0,len(time_eval)):
         xpcos2_values.append(sigma_values[time_index][23+add_par])
         xpsin2_values.append(sigma_values[time_index][24+add_par])
         ypcos2_values.append(sigma_values[time_index][25+add_par])
         ypsin2_values.append(sigma_values[time_index][26+add_par])
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(xpcos2_values)/mas,'-o',label=r'$Xp^c_2$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(xpsin2_values)/mas,'-o',label=r'$Xp^s_2$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(ypcos2_values)/mas,'-o',label=r'$Yp^c_2$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(ypsin2_values)/mas,'-o',label=r'$Yp^s_2$')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
@@ -1159,18 +1504,18 @@ if __name__=="__main__":
     xpsin3_values = list()
     ypcos3_values = list()
     ypsin3_values = list()
-    for time_index in range(0,len(concatenated_times_no_duplicated)):
+    for time_index in range(0,len(time_eval)):
         xpcos3_values.append(sigma_values[time_index][27+add_par])
         xpsin3_values.append(sigma_values[time_index][28+add_par])
         ypcos3_values.append(sigma_values[time_index][29+add_par])
         ypsin3_values.append(sigma_values[time_index][30+add_par])   
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(xpcos3_values)/mas,'-o',label=r'$Xp^c_3$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(xpsin3_values)/mas,'-o',label=r'$Xp^s_3$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(ypcos3_values)/mas,'-o',label=r'$Yp^c_3$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(ypsin3_values)/mas,'-o',label=r'$Yp^s_3$')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
@@ -1189,18 +1534,18 @@ if __name__=="__main__":
     xpsin4_values = list()
     ypcos4_values = list()
     ypsin4_values = list()
-    for time_index in range(0,len(concatenated_times_no_duplicated)):
+    for time_index in range(0,len(time_eval)):
         xpcos4_values.append(sigma_values[time_index][31+add_par])
         xpsin4_values.append(sigma_values[time_index][32+add_par])
         ypcos4_values.append(sigma_values[time_index][33+add_par])
         ypsin4_values.append(sigma_values[time_index][34+add_par])    
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(xpcos4_values)/mas,'-o',label=r'$Xp^c_4$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(xpsin4_values)/mas,'-o',label=r'$Xp^s_4$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(ypcos4_values)/mas,'-o',label=r'$Yp^c_4$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(ypsin4_values)/mas,'-o',label=r'$Yp^s_4$')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
@@ -1219,18 +1564,18 @@ if __name__=="__main__":
     xpsin5_values = list()
     ypcos5_values = list()
     ypsin5_values = list()
-    for time_index in range(0,len(concatenated_times_no_duplicated)):
+    for time_index in range(0,len(time_eval)):
         xpcos5_values.append(sigma_values[time_index][35+add_par])
         xpsin5_values.append(sigma_values[time_index][36+add_par])
         ypcos5_values.append(sigma_values[time_index][37+add_par])
         ypsin5_values.append(sigma_values[time_index][38+add_par])
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(xpcos5_values)/mas,'-o',label=r'$Xp^c_5$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(xpsin5_values)/mas,'-o',label=r'$Xp^s_5$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(ypcos5_values)/mas,'-o',label=r'$Yp^c_5$')
-    plt.plot((concatenated_times_no_duplicated-observation_start_epoch*np.ones(len(concatenated_times_no_duplicated)))/constants.JULIAN_DAY,
+    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(ypsin5_values)/mas,'-o',label=r'$Yp^s_5$')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
