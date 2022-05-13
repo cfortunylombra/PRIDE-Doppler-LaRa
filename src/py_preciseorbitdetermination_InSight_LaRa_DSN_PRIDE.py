@@ -34,20 +34,57 @@ if __name__=="__main__":
     # days in a week
     days_in_a_week = 7 #days
 
-    # Initial date of the simulation
-    start_date = 2458449.5 #in Julian days = 27/11/2018 00:00:00; Taken from the txt file sent by Sebastien
+    # CPU number for parallel computing
+    CPU_par = 5
 
-    # Duration of the simulation
-    RISE_simulation_duration_days = 998 #days 
-    RISE_simulation_duration = RISE_simulation_duration_days*constants.JULIAN_DAY #seconds
-    simulation_duration_days = 2956 #days; until 31/12/2026
-    simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
+    # Booleans to understand whether we want to simulate together RISE and LaRa missions, or separetely
+    RISE_boolean = True
+    LaRa_boolean = True
+    
+    if LaRa_boolean:
+        # PRIDE stations boolean
+        PRIDE_boolean = True
 
-    start_date = 2458449.5#2459580.5 #in Julian days = 27/11/2018 00:00:00; Taken from the txt file sent by Sebastien
-    RISE_simulation_duration_days = 998 #days
-    RISE_simulation_duration = RISE_simulation_duration_days*constants.JULIAN_DAY #seconds
-    simulation_duration_days = 998 #days; until 31/12/2026
-    simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
+        # Define fixed correlation between PRIDE and DSN stations
+        correlation = 0.95
+    else:
+        # Always
+        PRIDE_boolean = False
+        
+        correlation = 0
+
+    # Evaluation step 
+    step_eval = 500
+
+    # Output folder
+    if LaRa_boolean:
+        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean)+'_PRIDE'+str(PRIDE_boolean)+'_corr'+str(correlation))
+    else:
+        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean))
+    os.makedirs(output_folder_path,exist_ok=True)
+
+    if RISE_boolean:
+        # Initial date of the simulation
+        start_date = 2458449.5 #in Julian days = 27/11/2018 00:00:00; Taken from the txt file sent by Sebastien
+
+        # Duration of the simulation
+        RISE_simulation_duration_days = 998 #days 
+        RISE_simulation_duration = RISE_simulation_duration_days*constants.JULIAN_DAY #seconds
+        if LaRa_boolean:
+            simulation_duration_days = 2956 #days; until 31/12/2026
+        else:
+            simulation_duration_days = 998 #days
+        simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
+    
+    elif LaRa_boolean:
+        # Initial date of the simulation
+        start_date = 2459580.5 #in Julian days = 01/01/2022; Taken from the txt file sent by Sebastien
+        
+        # Duration of the simulation
+        RISE_simulation_duration_days = 0 #days
+        RISE_simulation_duration = RISE_simulation_duration_days*constants.JULIAN_DAY #seconds
+        simulation_duration_days = 2956-998 #days; until 31/12/2026
+        simulation_duration = simulation_duration_days*constants.JULIAN_DAY #seconds
 
     # RISE landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
     RISE_reflector_name = "RISE"
@@ -85,9 +122,6 @@ if __name__=="__main__":
     # Earth-based transmitter for LaRa
     LaRa_transmitter_names = ['DSS 43','DSS 63','DSS 14']
 
-    # PRIDE stations boolean
-    PRIDE_boolean = True
-
     # Viability settings for RISE
     RISE_earth_min = 10 #deg
     RISE_earth_max = 30 #deg
@@ -99,16 +133,6 @@ if __name__=="__main__":
     LaRa_earth_max = 45 #deg
     LaRa_antenna_min_elevation = 10 #deg
     LaRa_body_avoidance_angle = 10 #deg
-
-    # Output folder
-    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE_LaRa_PRIDE_onlyRISE')
-    os.makedirs(output_folder_path,exist_ok=True)
-
-    # Define fixed correlation between PRIDE and DSN stations
-    correlation = 0.95
-
-    # Evaluation step 
-    step_eval = 250
 
     ########################################################################################################################
     ################################################## CREATE ENVIRONMENT ##################################################
@@ -250,7 +274,7 @@ if __name__=="__main__":
     # Define propagator settings
     propagator_settings = propagation_setup.propagator.translational(central_bodies,acceleration_models,bodies_to_propagate,initial_state,termination_condition)
 
-    # Define integrator settings #IMPROVE THE INTEGRATOR????
+    # Define integrator settings
     initial_time_step = 1 #second
     minimum_step_size = initial_time_step #seconds
     maximum_step_size = 60*60*24 #seconds
@@ -266,7 +290,7 @@ if __name__=="__main__":
         relative_error_tolerance,
         absolute_error_tolerance)
 
-        ########################################################################################################################
+    ########################################################################################################################
     ################################################## DEFINE OBSERVATIONS TIMES ###########################################
     ######################################################################################################################## 
 
@@ -640,7 +664,7 @@ if __name__=="__main__":
     parameter_perturbation[18+add_par]=16*mas # seconds; Taken from the PhD from Sebastien LeMaistre
     # Polar motion amplitude for full planetary rotational model of Mars
     parameter_perturbation[19+add_par:]=50*mas*np.ones(20) # seconds; Taken from UNCERTAINTIES ON MARS INTERIOR PARAMETERS DEDUCED FROM ORIENTATION PARAMETERS USING DIFFERENT RADIOLINKS: ANALYTICAL SIMULATIONS.
-
+    
     print("Perturbation vector is:")
     print(parameter_perturbation)
 
@@ -673,7 +697,7 @@ if __name__=="__main__":
     vector_weights = np.array(vector_weights)
 
     pod_input.set_weight(1/vector_weights**2) 
-    
+
     # Perform estimation
     pod_output = estimator.perform_estimation(pod_input)
 
@@ -722,9 +746,6 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/concatenated_link_end_names.dat",concatenated_link_end_names_list, fmt='%s')
     np.savetxt(output_folder_path+"/doppler_residuals.dat",doppler_residuals,fmt='%.15e')
     np.savetxt(output_folder_path+"/vector_weights.dat",vector_weights,fmt='%.15e')
-
-    # CPU number for parallel computing
-    CPU_par = 5
 
     # Sort index
     index_sort = np.argsort(concatenated_times)
@@ -838,7 +859,7 @@ if __name__=="__main__":
     '''
 
     # Initialize inverted weighting matrix
-    inv_weight = (scipy.sparse.diags(1/np.array(vector_weights_sort)**2)).tocsr() #Same as correlation to 0
+    #inv_weight = (scipy.sparse.diags(1/np.array(vector_weights_sort)**2)).tocsr() #Same as correlation to 0
     inv_weight_complex = scipy.sparse.coo_matrix((0,0))
     
     # Delete arrays where two DSN have observation at the same time
@@ -972,7 +993,8 @@ if __name__=="__main__":
     inv_weight_complex_total = (inv_weight_complex).tocsr()
 
     # Partial covariance
-    #partial_cov = np.transpose(estimation_information_matrix_sort)@(inv_weight_complex_total.sqrt())
+    if PRIDE_boolean==False or correlation==0:
+        partial_cov = np.transpose(estimation_information_matrix_sort)@(inv_weight_complex_total.sqrt())
 
     # Save sorted data
     np.savetxt(output_folder_path+"/estimation_information_matrix_sort.dat",estimation_information_matrix_sort,fmt='%.15e')
@@ -984,7 +1006,8 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/concatenated_link_end_names_sort.dat",concatenated_link_end_names_list_sort, fmt='%s')
     np.savetxt(output_folder_path+"/doppler_residuals_sort.dat",residuals_sort,fmt='%.15e')
     np.savetxt(output_folder_path+"/vector_weights_sort.dat",vector_weights_sort,fmt='%.15e')
-    #np.savetxt(output_folder_path+"/partial_cov.dat",partial_cov,fmt='%.15e')
+    if PRIDE_boolean==False or correlation==0:
+        np.savetxt(output_folder_path+"/partial_cov.dat",partial_cov,fmt='%.15e')
 
     ########################################################################################################################
     ################################################## COVARIANCE ANALYSIS #################################################
@@ -1364,12 +1387,17 @@ if __name__=="__main__":
         x_values.append(sigma_values[time_index][0])
         y_values.append(sigma_values[time_index][1])
         z_values.append(sigma_values[time_index][2])
+    np.savetxt(output_folder_path+"/xposition_plot.dat",x_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/yposition_plot.dat",y_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/zposition_plot.dat",z_values,fmt='%.15e')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         x_values,'-o',label='$x$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         y_values,'-o',label='$y$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         z_values,'-o',label='$z$')
+    if RISE_boolean and LaRa_boolean:
+        plt.axvline(x=(LaRa_observation_times_list[0]-observation_start_epoch)/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ x,y,z [m]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
@@ -1390,12 +1418,17 @@ if __name__=="__main__":
         xdot_values.append(sigma_values[time_index][3])
         ydot_values.append(sigma_values[time_index][4])
         zdot_values.append(sigma_values[time_index][5])
+    np.savetxt(output_folder_path+"/xdotvelocity_plot.dat",xdot_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/ydotvelocity_plot.dat",ydot_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/zdotvelocity_plot.dat",zdot_values,fmt='%.15e')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         xdot_values,'-o',label=r'$\dot{x}$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         ydot_values,'-o',label=r'$\dot{y}$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         zdot_values,'-o',label=r'$\dot{z}$')
+    if RISE_boolean and LaRa_boolean:
+        plt.axvline(x=(LaRa_observation_times_list[0]-observation_start_epoch)/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ $\dot{x}$,$\dot{y}$,$\dot{z}$ [m/s]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
@@ -1410,8 +1443,11 @@ if __name__=="__main__":
     F_values = list()
     for time_index in range(0,len(time_eval)):
         F_values.append(sigma_values[time_index][6])
+    np.savetxt(output_folder_path+"/corefactor_plot.dat",F_values,fmt='%.15e')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         F_values,'-o')
+    if RISE_boolean and LaRa_boolean:
+        plt.axvline(x=(LaRa_observation_times_list[0]-observation_start_epoch)/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ F [-]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
@@ -1425,8 +1461,11 @@ if __name__=="__main__":
     sigma_FCN_values = list()
     for time_index in range(0,len(time_eval)):
         sigma_FCN_values.append(sigma_values[time_index][7])
+    np.savetxt(output_folder_path+"/sigmaFCN_plot.dat",sigma_FCN_values,fmt='%.15e')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         sigma_FCN_values,'-o')
+    if RISE_boolean and LaRa_boolean:
+        plt.axvline(x=(LaRa_observation_times_list[0]-observation_start_epoch)/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ $\sigma_{FCN}$ [rad/s]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
@@ -1458,7 +1497,10 @@ if __name__=="__main__":
             yLaRalander_values.append(sigma_values[time_index][9+add_par])
             zLaRalander_values.append(sigma_values[time_index][10+add_par])
 
-    if len(RISE_observation_times_list)!=0:        
+    if len(RISE_observation_times_list)!=0:
+        np.savetxt(output_folder_path+"/xRISE_plot.dat",xRISElander_values,fmt='%.15e')
+        np.savetxt(output_folder_path+"/yRISE_plot.dat",yRISElander_values,fmt='%.15e')
+        np.savetxt(output_folder_path+"/zRISE_plot.dat",zRISElander_values,fmt='%.15e')        
         plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
             xRISElander_values,'-o',label='$x_{RISE}$')
         plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
@@ -1466,12 +1508,17 @@ if __name__=="__main__":
         plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
             zRISElander_values,'-o',label='$z_{RISE}$')
     if len(LaRa_observation_times_list)!=0:
+        np.savetxt(output_folder_path+"/xLaRa_plot.dat",xLaRalander_values,fmt='%.15e')
+        np.savetxt(output_folder_path+"/yLaRa_plot.dat",yLaRalander_values,fmt='%.15e')
+        np.savetxt(output_folder_path+"/zLaRa_plot.dat",zLaRalander_values,fmt='%.15e')
         plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
             xLaRalander_values,'-o',label='$x_{LaRa}$')
         plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
             yLaRalander_values,'-o',label='$y_{LaRa}$')
         plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
             zLaRalander_values,'-o',label='$z_{LaRa}$')
+    if RISE_boolean and LaRa_boolean:
+        plt.axvline(x=(LaRa_observation_times_list[0]-observation_start_epoch)/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ x,y,z [m]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
@@ -1502,6 +1549,14 @@ if __name__=="__main__":
         sin3spin_values.append(sigma_values[time_index][16+add_par])
         cos4spin_values.append(sigma_values[time_index][17+add_par])
         sin4spin_values.append(sigma_values[time_index][18+add_par])
+    np.savetxt(output_folder_path+"/cos1spin_plot.dat",cos1spin_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/sin1spin_plot.dat",sin1spin_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/cos2spin_plot.dat",cos2spin_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/sin2spin_plot.dat",sin2spin_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/cos3spin_plot.dat",cos3spin_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/sin3spin_plot.dat",sin3spin_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/cos4spin_plot.dat",cos4spin_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/sin4spin_plot.dat",sin4spin_values,fmt='%.15e')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(cos1spin_values)/mas,'-o',label=r'$\psi^c_1$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
@@ -1518,6 +1573,8 @@ if __name__=="__main__":
         np.array(cos4spin_values)/mas,'-o',label=r'$\psi^c_4$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(sin4spin_values)/mas,'-o',label=r'$\psi^s_4$')
+    if RISE_boolean and LaRa_boolean:
+        plt.axvline(x=(LaRa_observation_times_list[0]-observation_start_epoch)/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ $\psi$ [mas]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
@@ -1540,6 +1597,10 @@ if __name__=="__main__":
         xpsin1_values.append(sigma_values[time_index][20+add_par])
         ypcos1_values.append(sigma_values[time_index][21+add_par])
         ypsin1_values.append(sigma_values[time_index][22+add_par])
+    np.savetxt(output_folder_path+"/xpcos1_plot.dat",xpcos1_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/xpsin1_plot.dat",xpsin1_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/ypcos1_plot.dat",ypcos1_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/ypsin1_plot.dat",ypsin1_values,fmt='%.15e')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(xpcos1_values)/mas,'-o',label=r'$Xp^c_1$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
@@ -1548,6 +1609,8 @@ if __name__=="__main__":
         np.array(ypcos1_values)/mas,'-o',label=r'$Yp^c_1$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(ypsin1_values)/mas,'-o',label=r'$Yp^s_1$')
+    if RISE_boolean and LaRa_boolean:
+        plt.axvline(x=(LaRa_observation_times_list[0]-observation_start_epoch)/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
@@ -1570,6 +1633,10 @@ if __name__=="__main__":
         xpsin2_values.append(sigma_values[time_index][24+add_par])
         ypcos2_values.append(sigma_values[time_index][25+add_par])
         ypsin2_values.append(sigma_values[time_index][26+add_par])
+    np.savetxt(output_folder_path+"/xpcos2_plot.dat",xpcos2_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/xpsin2_plot.dat",xpsin2_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/ypcos2_plot.dat",ypcos2_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/ypsin2_plot.dat",ypsin2_values,fmt='%.15e')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(xpcos2_values)/mas,'-o',label=r'$Xp^c_2$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
@@ -1578,6 +1645,8 @@ if __name__=="__main__":
         np.array(ypcos2_values)/mas,'-o',label=r'$Yp^c_2$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(ypsin2_values)/mas,'-o',label=r'$Yp^s_2$')
+    if RISE_boolean and LaRa_boolean:
+        plt.axvline(x=(LaRa_observation_times_list[0]-observation_start_epoch)/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
@@ -1599,7 +1668,11 @@ if __name__=="__main__":
         xpcos3_values.append(sigma_values[time_index][27+add_par])
         xpsin3_values.append(sigma_values[time_index][28+add_par])
         ypcos3_values.append(sigma_values[time_index][29+add_par])
-        ypsin3_values.append(sigma_values[time_index][30+add_par])   
+        ypsin3_values.append(sigma_values[time_index][30+add_par])
+    np.savetxt(output_folder_path+"/xpcos3_plot.dat",xpcos3_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/xpsin3_plot.dat",xpsin3_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/ypcos3_plot.dat",ypcos3_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/ypsin3_plot.dat",ypsin3_values,fmt='%.15e') 
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(xpcos3_values)/mas,'-o',label=r'$Xp^c_3$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
@@ -1608,6 +1681,8 @@ if __name__=="__main__":
         np.array(ypcos3_values)/mas,'-o',label=r'$Yp^c_3$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(ypsin3_values)/mas,'-o',label=r'$Yp^s_3$')
+    if RISE_boolean and LaRa_boolean:
+        plt.axvline(x=(LaRa_observation_times_list[0]-observation_start_epoch)/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
@@ -1629,7 +1704,11 @@ if __name__=="__main__":
         xpcos4_values.append(sigma_values[time_index][31+add_par])
         xpsin4_values.append(sigma_values[time_index][32+add_par])
         ypcos4_values.append(sigma_values[time_index][33+add_par])
-        ypsin4_values.append(sigma_values[time_index][34+add_par])    
+        ypsin4_values.append(sigma_values[time_index][34+add_par]) 
+    np.savetxt(output_folder_path+"/xpcos4_plot.dat",xpcos4_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/xpsin4_plot.dat",xpsin4_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/ypcos4_plot.dat",ypcos4_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/ypsin4_plot.dat",ypsin4_values,fmt='%.15e')   
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(xpcos4_values)/mas,'-o',label=r'$Xp^c_4$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
@@ -1638,6 +1717,8 @@ if __name__=="__main__":
         np.array(ypcos4_values)/mas,'-o',label=r'$Yp^c_4$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(ypsin4_values)/mas,'-o',label=r'$Yp^s_4$')
+    if RISE_boolean and LaRa_boolean:
+        plt.axvline(x=(LaRa_observation_times_list[0]-observation_start_epoch)/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
@@ -1660,6 +1741,10 @@ if __name__=="__main__":
         xpsin5_values.append(sigma_values[time_index][36+add_par])
         ypcos5_values.append(sigma_values[time_index][37+add_par])
         ypsin5_values.append(sigma_values[time_index][38+add_par])
+    np.savetxt(output_folder_path+"/xpcos5_plot.dat",xpcos5_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/xpsin5_plot.dat",xpsin5_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/ypcos5_plot.dat",ypcos5_values,fmt='%.15e')
+    np.savetxt(output_folder_path+"/ypsin5_plot.dat",ypsin5_values,fmt='%.15e')  
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(xpcos5_values)/mas,'-o',label=r'$Xp^c_5$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
@@ -1668,6 +1753,8 @@ if __name__=="__main__":
         np.array(ypcos5_values)/mas,'-o',label=r'$Yp^c_5$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         np.array(ypsin5_values)/mas,'-o',label=r'$Yp^s_5$')
+    if RISE_boolean and LaRa_boolean:
+        plt.axvline(x=(LaRa_observation_times_list[0]-observation_start_epoch)/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
