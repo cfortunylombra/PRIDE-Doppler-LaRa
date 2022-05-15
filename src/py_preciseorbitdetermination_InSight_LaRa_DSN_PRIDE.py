@@ -45,11 +45,15 @@ if __name__=="__main__":
         # PRIDE stations boolean
         PRIDE_boolean = True
 
+        remove_PRIDE_weight_boolean = True
+
         # Define fixed correlation between PRIDE and DSN stations
-        correlation = 0.95
+        correlation = 0
     else:
         # Always
         PRIDE_boolean = False
+
+        remove_PRIDE_weight_boolean = False
         
         correlation = 0
 
@@ -58,7 +62,7 @@ if __name__=="__main__":
 
     # Output folder
     if LaRa_boolean:
-        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean)+'_PRIDE'+str(PRIDE_boolean)+'_corr'+str(correlation))
+        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean)+'_PRIDE'+str(PRIDE_boolean)+str(remove_PRIDE_weight_boolean)+'_corr'+str(correlation))
     else:
         output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean))
     os.makedirs(output_folder_path,exist_ok=True)
@@ -491,9 +495,11 @@ if __name__=="__main__":
     # Find the index position for each link_end
     link_ends_numbers = list()
     link_ends_transmitter = list()
+    link_ends_receiver = list()
     for link_end_pointer in observation_settings_list:
         link_ends_numbers.append(link_ends_sort.index(link_end_pointer))
         link_ends_transmitter.append(link_end_pointer[observation.transmitter][1])
+        link_ends_receiver.append(link_end_pointer[observation.receiver][1])
 
     #print(link_ends_numbers)
     #print(link_ends_transmitter)
@@ -842,22 +848,6 @@ if __name__=="__main__":
     sort_concatenated_link_ends_names_dict.close()
     sort_concatenated_link_ends_names_dict.join()
 
-    '''
-    # Sort with respect to time
-    index_sort = np.argsort(concatenated_times)
-    concatenated_times_sort = np.array([concatenated_times[i] for i in index_sort])
-    concatenated_times_no_duplicated = list(set(list(concatenated_times)))
-    concatenated_times_no_duplicated.sort()
-    concatenated_times_index = np.array([list(concatenated_times_sort).index(i) for i in concatenated_times_no_duplicated])
-    concatenated_times_count = np.array([list(concatenated_times_sort).count(i) for i in concatenated_times_no_duplicated])
-    concatenated_link_ends = np.array([concatenated_link_ends[i] for i in index_sort])
-    concatenated_link_end_names_list = list([concatenated_link_end_names_list[i] for i in index_sort])
-    vector_weights_sort = np.array([vector_weights[i] for i in index_sort])
-    estimation_information_matrix[:] = np.array([estimation_information_matrix[i][:] for i in index_sort])
-    doppler_residuals[:] = np.array([doppler_residuals[i] for i in index_sort])
-    estimation_information_matrix_sort = estimation_information_matrix
-    '''
-
     # Initialize inverted weighting matrix
     #inv_weight = (scipy.sparse.diags(1/np.array(vector_weights_sort)**2)).tocsr() #Same as correlation to 0
     inv_weight_complex = scipy.sparse.coo_matrix((0,0))
@@ -885,31 +875,22 @@ if __name__=="__main__":
             # Sorting again part of the arrays
             estimation_information_matrix_sort_short = [None]*count_time_obs
             residuals_sort_short = [None]*count_time_obs
-            #concatenated_link_ends_sort_short = [None]*count_time_obs
-            #concatenated_link_end_names_list_sort_short = [None]*count_time_obs
-            #vector_weights_sort_short = [None]*count_time_obs
             for row_index in range(0,np.shape(estimation_information_matrix_sort_short)[0]):
                 estimation_information_matrix_sort_short[row_index] = estimation_information_matrix_sort[start_index+receiver_link_ends[row_index]]
                 residuals_sort_short[row_index] = residuals_sort[start_index+receiver_link_ends[row_index]]
-                #concatenated_link_ends_sort_short[receiver_link_ends[row_index]] = concatenated_link_ends_sort[start_index+row_index]
-                #concatenated_link_end_names_list_sort_short[receiver_link_ends[row_index]] = concatenated_link_end_names_list_sort[start_index+row_index]
-                #vector_weights_sort_short[receiver_link_ends[row_index]] = vector_weights_sort[start_index+row_index]
             estimation_information_matrix_sort[start_index:end_index] = estimation_information_matrix_sort_short
             residuals_sort[start_index:end_index] = residuals_sort_short
-            #concatenated_link_ends_sort[start_index:end_index] = concatenated_link_ends_sort_short
-            #concatenated_link_end_names_list_sort[start_index:end_index] = concatenated_link_end_names_list_sort_short
-            #vector_weights_sort[start_index:end_index] = vector_weights_sort_short
-            #concatenated_times_sort[start_index:end_index] = np.array(concatenated_times_sort[start_index:end_index])[receiver_link_ends]
-            concatenated_link_ends_sort[start_index:end_index] = np.array(concatenated_link_ends_sort[start_index:end_index])[receiver_link_ends]#[concatenated_link_ends_sort[start_index+i] for i in receiver_link_ends]
             concatenated_link_end_names_list_sort[start_index:end_index] = np.array(concatenated_link_end_names_list_sort[start_index:end_index])[receiver_link_ends]
             vector_weights_sort[start_index:end_index] = np.array(vector_weights_sort[start_index:end_index])[receiver_link_ends]
             #print(concatenated_link_ends_sort[start_index:end_index])
             # Understanding which transmitters are involved
             transmitters_count = list()
             transmitters_total = list()
+            receivers_total = list()
             for receiver_index in range(start_index,end_index):
                 transmitter_station = link_ends_transmitter[link_ends_numbers.index(concatenated_link_ends_sort[receiver_index])]
                 transmitters_total.append(transmitter_station)
+                receivers_total.append(link_ends_receiver[link_ends_numbers.index(concatenated_link_ends_sort[receiver_index])])
                 if not transmitter_station in transmitters_count:
                     transmitters_count.append(transmitter_station)
             
@@ -938,27 +919,42 @@ if __name__=="__main__":
                 inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
 
             elif len(transmitter_count_number)>1:
-                #print(transmitters_count,start_index_block,transmitters_total)
+                #print(transmitters_count,start_index_block,transmitters_total,receivers_total)
                 index_not_delete = 1
                 start_index_block = start_index
+                total_split = 0
                 for index_split_count in range(0,len(transmitter_count_number)):
                     if index_split_count == index_not_delete:
-                        split_count = transmitter_count_number[index_split_count]
-                        block_weight = (scipy.sparse.coo_matrix((split_count,split_count))).toarray()
-                        for row_index in range(0,split_count):
-                            for column_index in range(0,split_count):
-                                if row_index == column_index:
-                                    block_weight[row_index][column_index] = vector_weights_sort[start_index_block+row_index]**2
+                        if remove_PRIDE_weight_boolean:
+                            split_count = transmitter_count_number[index_split_count]
+                            block_weight = (scipy.sparse.coo_matrix((1,1))).toarray()
+                            for row_index in range(0,split_count):
+                                if transmitters_total[total_split+row_index]==receivers_total[total_split+row_index]:
+                                    block_weight[0][0] = vector_weights_sort[start_index_block+row_index]**2
+                                    inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
                                 else:
-                                    block_weight[row_index][column_index] = correlation*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
-                        inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
-                        start_index_block += split_count
+                                    indices_delete.append(start_index_block+row_index)
+                            start_index_block += split_count
+                        else:
+                            split_count = transmitter_count_number[index_split_count]
+                            block_weight = (scipy.sparse.coo_matrix((split_count,split_count))).toarray()
+                            for row_index in range(0,split_count):
+                                for column_index in range(0,split_count):
+                                    if row_index == column_index:
+                                        block_weight[row_index][column_index] = vector_weights_sort[start_index_block+row_index]**2
+                                    else:
+                                        block_weight[row_index][column_index] = correlation*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
+                            inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
+                            start_index_block += split_count
                     else:
                         split_count = transmitter_count_number[index_split_count]
                         indices_delete.extend(range(start_index_block,start_index_block+split_count))
                         #print(split_count,list(range(start_index_block,start_index_block+split_count)))
                         start_index_block += split_count
+
+                    total_split+=split_count
     
+    # Delete terms
     for index_delete in indices_delete[::-1]:
         estimation_information_matrix_sort.pop(index_delete)
         residuals_sort.pop(index_delete)
@@ -966,6 +962,10 @@ if __name__=="__main__":
         concatenated_link_ends_sort.pop(index_delete)
         concatenated_link_end_names_list_sort.pop(index_delete)
         vector_weights_sort.pop(index_delete)
+
+    # Remove duplicated concatenated times
+    concatenated_times_no_duplicated = list(set(list(concatenated_times_sort)))
+    concatenated_times_no_duplicated.sort()
 
     # Function to sort concatenated times index
     def sort_concatenated_times_index_func(index):
@@ -1016,6 +1016,8 @@ if __name__=="__main__":
     # Step evaluation
     arange_eval = np.arange(0,len(concatenated_times_no_duplicated),step_eval) 
     time_eval = [concatenated_times_no_duplicated[i] for i in arange_eval]
+
+    np.savetxt(output_folder_path+"/time_plot.dat",time_eval,fmt='%.15e')
     
     # Normalized inverse a priori covariance
     norm_inverse_a_priori_covariance = np.diag(inverse_a_priori_covariance.diagonal()/(estimation_information_matrix_normalization**2))
@@ -1445,13 +1447,14 @@ if __name__=="__main__":
         F_values.append(sigma_values[time_index][6])
     np.savetxt(output_folder_path+"/corefactor_plot.dat",F_values,fmt='%.15e')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        F_values,'-o')
+        F_values,'-o',label='F')
     if RISE_boolean and LaRa_boolean:
         plt.axvline(x=(LaRa_observation_times_list[0]-observation_start_epoch)/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ F [-]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.grid()
+    plt.legend()
     plt.savefig(output_folder_path+"/Fvalues_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
@@ -1463,13 +1466,14 @@ if __name__=="__main__":
         sigma_FCN_values.append(sigma_values[time_index][7])
     np.savetxt(output_folder_path+"/sigmaFCN_plot.dat",sigma_FCN_values,fmt='%.15e')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        sigma_FCN_values,'-o')
+        sigma_FCN_values,'-o',label=r'$\sigma_{FCN}$')
     if RISE_boolean and LaRa_boolean:
         plt.axvline(x=(LaRa_observation_times_list[0]-observation_start_epoch)/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ $\sigma_{FCN}$ [rad/s]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.grid()
+    plt.legend()
     plt.savefig(output_folder_path+"/sigmaFCNvalues_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
