@@ -15,7 +15,7 @@ if __name__=="__main__":
     import os
     import numpy as np
     import matplotlib.pyplot as plt
-    from mpl_toolkits.basemap import Basemap
+    from mpl_toolkits.basemap import Basemap # conda install basemap
     from tudatpy.kernel.astro import element_conversion
 
     np.set_printoptions(suppress=True,precision=15)

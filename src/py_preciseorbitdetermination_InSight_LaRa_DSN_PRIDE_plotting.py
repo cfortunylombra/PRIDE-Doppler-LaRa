@@ -20,8 +20,9 @@ if __name__=="__main__":
     ########################################################################################################################
 
     benchmark_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISEFalse_LaRaTrue_PRIDETrueTrue_corr0')
-    main_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISEFalse_LaRaTrue_PRIDETrue_corr0')
+    main_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISEFalse_LaRaTrue_PRIDETrueFalse_corr0.99')
     output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_comparison_plot')
+    os.makedirs(output_folder_path,exist_ok=True)
 
     # Booleans to understand whether we want to simulate together RISE and LaRa missions, or separetely
     RISE_boolean = False
@@ -62,7 +63,7 @@ if __name__=="__main__":
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=time_eval[0])))
     plt.grid()
     plt.legend()
-    #plt.savefig(output_folder_path+"/positionvalues_time.pdf",bbox_inches="tight")
+    plt.savefig(output_folder_path+"/positionvalues_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
 
@@ -96,7 +97,7 @@ if __name__=="__main__":
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=time_eval[0])))
     plt.grid()
     plt.legend()
-    #plt.savefig(output_folder_path+"/velocityvalues_time.pdf",bbox_inches="tight")
+    plt.savefig(output_folder_path+"/velocityvalues_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
 
@@ -115,7 +116,7 @@ if __name__=="__main__":
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=time_eval[0])))
     plt.grid()
     plt.legend()
-    #plt.savefig(output_folder_path+"/Fvalues_time.pdf",bbox_inches="tight")
+    plt.savefig(output_folder_path+"/Fvalues_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
 
@@ -135,7 +136,7 @@ if __name__=="__main__":
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=time_eval[0])))
     plt.grid()
     plt.legend()
-    #plt.savefig(output_folder_path+"/sigmaFCNvalues_time.pdf",bbox_inches="tight")
+    plt.savefig(output_folder_path+"/sigmaFCNvalues_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
 
@@ -200,7 +201,7 @@ if __name__=="__main__":
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=time_eval[0])))
     plt.legend()
     plt.grid()
-    #plt.savefig(output_folder_path+"/xyzlander_time.pdf",bbox_inches="tight")
+    plt.savefig(output_folder_path+"/xyzlander_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
 
@@ -266,7 +267,7 @@ if __name__=="__main__":
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=time_eval[0])))
     plt.legend(ncol=2)
     plt.grid()
-    #plt.savefig(output_folder_path+"/psispin_time.pdf",bbox_inches="tight")
+    plt.savefig(output_folder_path+"/psispin_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
 
@@ -308,7 +309,7 @@ if __name__=="__main__":
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=time_eval[0])))
     plt.legend(ncol=2)
     plt.grid()
-    #plt.savefig(output_folder_path+"/polarmotionamp1_time.pdf",bbox_inches="tight")
+    plt.savefig(output_folder_path+"/polarmotionamp1_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
 
@@ -350,7 +351,7 @@ if __name__=="__main__":
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=time_eval[0])))
     plt.legend(ncol=2)
     plt.grid()
-    #plt.savefig(output_folder_path+"/polarmotionamp2_time.pdf",bbox_inches="tight")
+    plt.savefig(output_folder_path+"/polarmotionamp2_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
 
@@ -392,7 +393,7 @@ if __name__=="__main__":
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=time_eval[0])))
     plt.legend(ncol=2)
     plt.grid()
-    #plt.savefig(output_folder_path+"/polarmotionamp3_time.pdf",bbox_inches="tight")
+    plt.savefig(output_folder_path+"/polarmotionamp3_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
 
@@ -434,7 +435,7 @@ if __name__=="__main__":
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=time_eval[0])))
     plt.legend(ncol=2)
     plt.grid()
-    #plt.savefig(output_folder_path+"/polarmotionamp4_time.pdf",bbox_inches="tight")
+    plt.savefig(output_folder_path+"/polarmotionamp4_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
 
@@ -476,7 +477,7 @@ if __name__=="__main__":
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=time_eval[0])))
     plt.legend(ncol=2)
     plt.grid()
-    #plt.savefig(output_folder_path+"/polarmotionamp5_time.pdf",bbox_inches="tight")
+    plt.savefig(output_folder_path+"/polarmotionamp5_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
 

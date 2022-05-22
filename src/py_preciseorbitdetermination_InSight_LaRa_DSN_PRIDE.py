@@ -38,17 +38,17 @@ if __name__=="__main__":
     CPU_par = 5
 
     # Booleans to understand whether we want to simulate together RISE and LaRa missions, or separetely
-    RISE_boolean = True
+    RISE_boolean = False
     LaRa_boolean = True
     
     if LaRa_boolean:
         # PRIDE stations boolean
         PRIDE_boolean = True
 
-        remove_PRIDE_weight_boolean = True
+        remove_PRIDE_weight_boolean = False
 
         # Define fixed correlation between PRIDE and DSN stations
-        correlation = 0
+        correlation = 0.99
     else:
         # Always
         PRIDE_boolean = False
@@ -58,7 +58,7 @@ if __name__=="__main__":
         correlation = 0
 
     # Evaluation step 
-    step_eval = 500
+    step_eval = 1
 
     # Output folder
     if LaRa_boolean:
@@ -251,7 +251,7 @@ if __name__=="__main__":
         Earth = [propagation_setup.acceleration.point_mass_gravity()],
         Venus = [propagation_setup.acceleration.point_mass_gravity()],
         Mercury = [propagation_setup.acceleration.point_mass_gravity()],
-        Sun = [propagation_setup.acceleration.point_mass_gravity()], # WHY NOT THE MOON? DEFINE MORE ACCURATE ACCELERATIONS
+        Sun = [propagation_setup.acceleration.point_mass_gravity()],
     )
 
     acceleration_settings = {"Mars": accelerations_settings_Mars}
@@ -849,7 +849,7 @@ if __name__=="__main__":
     sort_concatenated_link_ends_names_dict.join()
 
     # Initialize inverted weighting matrix
-    #inv_weight = (scipy.sparse.diags(1/np.array(vector_weights_sort)**2)).tocsr() #Same as correlation to 0
+    #inv_weight = (scipy.sparse.diags(1/np.array(vector_weights_sort)**2)).tocsr() #Same as correlation to 1
     inv_weight_complex = scipy.sparse.coo_matrix((0,0))
     
     # Delete arrays where two DSN have observation at the same time
@@ -872,6 +872,7 @@ if __name__=="__main__":
             receiver_link_ends = np.argsort(concatenated_link_ends_sort[start_index:end_index])
             #print(receiver_link_ends)
             #print(concatenated_link_ends_sort[start_index:end_index])
+
             # Sorting again part of the arrays
             estimation_information_matrix_sort_short = [None]*count_time_obs
             residuals_sort_short = [None]*count_time_obs
@@ -882,7 +883,9 @@ if __name__=="__main__":
             residuals_sort[start_index:end_index] = residuals_sort_short
             concatenated_link_end_names_list_sort[start_index:end_index] = np.array(concatenated_link_end_names_list_sort[start_index:end_index])[receiver_link_ends]
             vector_weights_sort[start_index:end_index] = np.array(vector_weights_sort[start_index:end_index])[receiver_link_ends]
+            concatenated_link_ends_sort[start_index:end_index] = np.array(concatenated_link_ends_sort[start_index:end_index])[receiver_link_ends]
             #print(concatenated_link_ends_sort[start_index:end_index])
+            
             # Understanding which transmitters are involved
             transmitters_count = list()
             transmitters_total = list()
@@ -899,6 +902,7 @@ if __name__=="__main__":
             for transmitter_index in transmitters_count:
                 transmitter_count_number.append(transmitters_total.count(transmitter_index))
             #print(start_index,transmitter_count_number,transmitters_count,concatenated_link_ends_sort[start_index:end_index])
+            #print(transmitters_total,receivers_total)
             #print(concatenated_link_end_names_list_sort[start_index:end_index])
 
             # Verification
@@ -907,24 +911,41 @@ if __name__=="__main__":
 
             # Building the weighting matrix block
             start_index_block = start_index
+            # When only we have the same transmitter
             if len(transmitter_count_number)==1:
-                split_count = transmitter_count_number[0]
-                block_weight = (scipy.sparse.coo_matrix((split_count,split_count))).toarray()
-                for row_index in range(0,split_count):
-                    for column_index in range(0,split_count):
-                        if row_index == column_index:
-                            block_weight[row_index][column_index] = vector_weights_sort[start_index_block+row_index]**2
+                # When only the closed-loop observations are taken into account
+                if remove_PRIDE_weight_boolean:
+                    split_count = transmitter_count_number[0]
+                    block_weight = (scipy.sparse.coo_matrix((1,1))).toarray()
+                    for row_index in range(0,split_count):
+                        if transmitters_total[row_index]==receivers_total[row_index]:
+                            block_weight[0][0] = vector_weights_sort[start_index_block+row_index]**2
+                            inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
                         else:
-                            block_weight[row_index][column_index] = correlation*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
-                inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
+                            indices_delete.append(start_index_block+row_index)
 
+                # When all the PRIDE observations are taken into account
+                else:
+                    split_count = transmitter_count_number[0]
+                    block_weight = (scipy.sparse.coo_matrix((split_count,split_count))).toarray()
+                    for row_index in range(0,split_count):
+                        for column_index in range(0,split_count):
+                            if row_index == column_index:
+                                block_weight[row_index][column_index] = vector_weights_sort[start_index_block+row_index]**2
+                            else:
+                                block_weight[row_index][column_index] = correlation*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
+                    inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
+
+            # When different transmitters are available
             elif len(transmitter_count_number)>1:
                 #print(transmitters_count,start_index_block,transmitters_total,receivers_total)
                 index_not_delete = 1
                 start_index_block = start_index
                 total_split = 0
                 for index_split_count in range(0,len(transmitter_count_number)):
+                    # Only the transmitter with index_not_delete is taken into consideration
                     if index_split_count == index_not_delete:
+                        # When only the closed-loop observations are taken into account
                         if remove_PRIDE_weight_boolean:
                             split_count = transmitter_count_number[index_split_count]
                             block_weight = (scipy.sparse.coo_matrix((1,1))).toarray()
@@ -935,6 +956,8 @@ if __name__=="__main__":
                                 else:
                                     indices_delete.append(start_index_block+row_index)
                             start_index_block += split_count
+
+                        # When all the PRIDE observations are taken into account
                         else:
                             split_count = transmitter_count_number[index_split_count]
                             block_weight = (scipy.sparse.coo_matrix((split_count,split_count))).toarray()
@@ -946,6 +969,8 @@ if __name__=="__main__":
                                         block_weight[row_index][column_index] = correlation*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
                             inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
                             start_index_block += split_count
+
+                    # Remove all the observations from other transmitters
                     else:
                         split_count = transmitter_count_number[index_split_count]
                         indices_delete.extend(range(start_index_block,start_index_block+split_count))
@@ -963,13 +988,10 @@ if __name__=="__main__":
         concatenated_link_end_names_list_sort.pop(index_delete)
         vector_weights_sort.pop(index_delete)
 
-    # Remove duplicated concatenated times
-    concatenated_times_no_duplicated = list(set(list(concatenated_times_sort)))
-    concatenated_times_no_duplicated.sort()
-
-    # Function to sort concatenated times index
-    def sort_concatenated_times_index_func(index):
-        return list(concatenated_times_sort).index(index)
+    # Unit test for when remove_PRIDE_weight_boolean==TRUE, check whether the concatenated_times_sort is the same as concatenated_times_no_duplicated
+    if remove_PRIDE_weight_boolean:
+        if concatenated_times_sort != concatenated_times_no_duplicated:
+                sys.exit()
 
     # Sort concatenated times index
     sort_concatenated_times_index_dict = Pool(CPU_par)
