@@ -15,6 +15,7 @@ if __name__=="__main__":
     import os
     import numpy as np
     import matplotlib.pyplot as plt
+    import matplotlib.image as mpimg
     from mpl_toolkits.basemap import Basemap # conda install basemap
     from tudatpy.kernel.astro import element_conversion
 
@@ -73,7 +74,7 @@ if __name__=="__main__":
     fig = plt.figure(figsize=(8,6), edgecolor='w')
     m = Basemap(projection='cyl', resolution = 'h',
         llcrnrlat = -90, urcrnrlat = 90,
-        llcrnrlon= -180, urcrnrlon = 180)
+        llcrnrlon= -180, urcrnrlon = 180, suppress_ticks=False)
 
     # Add scatter points (DSN transmitters)
     j = 0
@@ -105,10 +106,33 @@ if __name__=="__main__":
         spherical_state = element_conversion.cartesian_to_spherical( cartesian_state )
         m.scatter(np.rad2deg(spherical_state[2]), np.rad2deg(spherical_state[1]), s = 10, color = cm(j*20), marker=markers[j%len(markers)],label=i)
         j+=1
-        
+    
+    plt.xlabel("Longitude [deg]")
+    plt.ylabel("Latitude [deg]")
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     draw_map(m)
 
-    fig.savefig('output/DSN-EVN-stations.pdf',bbox_inches="tight")
+    fig.savefig('../output/DSN-EVN-stations.pdf',bbox_inches="tight")
+
+    # RISE landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
+    RISE_reflector_name = "RISE"
+    RISE_reflector_latitude_deg = 4.5 #North degrees
+    RISE_reflector_longitude_deg = 135.62 #East degrees
+
+    # LaRa landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
+    LaRa_reflector_name = "LaRa"
+    LaRa_reflector_latitude_deg = 18.3 #North degrees
+    LaRa_reflector_longitude_deg = 335.37 #East degrees
+
+    plt.figure(figsize=(8,6))
+    img_mars = mpimg.imread('./Mars_MGS_colorhillshade_mola_1024.jpg')
+    plt.scatter(RISE_reflector_longitude_deg,RISE_reflector_latitude_deg,s=70,c='purple',marker='o',edgecolors='white',label="InSight")
+    plt.scatter(LaRa_reflector_longitude_deg-360,LaRa_reflector_latitude_deg,s=70,c='orange',marker='o',edgecolors='white',label="ExoMars")
+    plt.xlabel("Longitude [deg]")
+    plt.ylabel("Latitude [deg]")
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.imshow(img_mars,extent = [-180,180,-90,90])
+
+
 
 print("--- %s seconds ---" % (time.time() - run_time))

@@ -38,30 +38,27 @@ if __name__=="__main__":
     CPU_par = 5
 
     # Booleans to understand whether we want to simulate together RISE and LaRa missions, or separetely
-    RISE_boolean = True
+    RISE_boolean = False
     LaRa_boolean = True
     
     if LaRa_boolean:
         # PRIDE stations boolean
         PRIDE_boolean = True
-        
-        # Boolean for removing PRIDE stations only after the POD
+
         remove_PRIDE_weight_boolean = False
 
         # Define fixed correlation between PRIDE and DSN stations
-        correlation = 0
+        correlation = 0.99
     else:
-        # PRIDE stations boolean
+        # Always
         PRIDE_boolean = False
-        
-        # Boolean for removing PRIDE stations only after the POD 
+
         remove_PRIDE_weight_boolean = False
         
-        # Define fixed correlation between PRIDE and DSN stations
         correlation = 0
 
     # Evaluation step 
-    step_eval = 500
+    step_eval = 1
 
     # Output folder
     if LaRa_boolean:
@@ -156,11 +153,9 @@ if __name__=="__main__":
     # Define bodies in the simulation
     bodies_to_create = ["Saturn","Jupiter","Mars","Moon","Earth","Venus","Mercury","Sun"] 
 
-    # Define frame
     global_frame_origin = "SSB" #Barycenter of Solar System
     global_frame_orientation = "ECLIPJ2000"
-    
-    # Define body settings
+
     body_settings = environment_setup.get_default_body_settings_time_limited(
         bodies_to_create,
         simulation_start_epoch-constants.JULIAN_DAY,
@@ -172,7 +167,7 @@ if __name__=="__main__":
     # Reset frame origin
     environment_setup.ephemeris.frame_origin = "Sun"
 
-    #Mars rotation model (High-accuracy)
+    #Mars rotation model
     body_settings.get("Mars").rotation_model_settings = environment_setup.rotation_model.mars_high_accuracy()
 
     bodies = environment_setup.create_system_of_bodies(body_settings)
@@ -378,7 +373,6 @@ if __name__=="__main__":
         if len(LaRa_observation_times_list)!=0:
             LaRa_observation_start_epoch = min(LaRa_observation_times_list)
 
-    # Sortht the observation times, and find the start epoch
     RISE_observation_times_list.sort()
     LaRa_observation_times_list.sort()
     observation_start_epoch = min(RISE_observation_times_list+LaRa_observation_times_list)
@@ -442,7 +436,7 @@ if __name__=="__main__":
 
             observation_settings_list.append(two_way_link_ends)
 
-        # Define link ends for LaRa-PRIDE (adding PRIDE stations)
+        # Define link ends for LaRa-PRIDE
         if PRIDE_boolean:
             for pointer_LaRa_transmitter in LaRa_transmitter_names:
                 for pointer_LaRa_pride_station in list(radio_telescopes_dict.keys()):
@@ -495,7 +489,10 @@ if __name__=="__main__":
                 link_ends_sort.append(two_way_link_ends)
                 DSN_link_ends_number+=1
 
-    # Find the index position, transmitter and receiver for each link-end
+    #print(link_ends_sort)
+    #print(observation_settings_list)
+
+    # Find the index position for each link_end
     link_ends_numbers = list()
     link_ends_transmitter = list()
     link_ends_receiver = list()
@@ -503,6 +500,9 @@ if __name__=="__main__":
         link_ends_numbers.append(link_ends_sort.index(link_end_pointer))
         link_ends_transmitter.append(link_end_pointer[observation.transmitter][1])
         link_ends_receiver.append(link_end_pointer[observation.receiver][1])
+
+    #print(link_ends_numbers)
+    #print(link_ends_transmitter)
 
     ########################################################################################################################
     ################################################## DEFINE PARAMETERS TO ESTIMATE #######################################
@@ -634,54 +634,53 @@ if __name__=="__main__":
     # Simulate required observation
     simulated_observations = estimation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
 
-    # A priori
-    apriori_vector = np.zeros(parameters_set.parameter_set_size) 
+    # Perturbation
+    parameter_perturbation = np.zeros(parameters_set.parameter_set_size) 
     mas =np.pi/(180.0*1000.0*3600.0) # Conversion from milli arc seconds to seconds 
     # Position of Mars
-    apriori_vector[0:3]=1000*np.ones(3) # meters; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
+    parameter_perturbation[0:3]=1000*np.ones(3) # meters; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
     # Velocity of Mars
-    apriori_vector[3:6]=0.0002*np.ones(3) #meters per sec; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
+    parameter_perturbation[3:6]=0.0002*np.ones(3) #meters per sec; Taken from Improving the Accuracy of the Martian Ephemeris Short-Term Prediction
     # Core factor of the celestial body of Mars
-    apriori_vector[6]=0.07 # Unitless; Taken from A global solution for the Mars static and seasonal gravity, Mars orientation, Phobos and Deimos masses, and Mars ephemeris
+    parameter_perturbation[6]=0.07 # Unitless; Taken from A global solution for the Mars static and seasonal gravity, Mars orientation, Phobos and Deimos masses, and Mars ephemeris
     # Free core nutation rate of the celestial body of Mars
-    apriori_vector[7]=-np.deg2rad(1.5)/constants.JULIAN_DAY #rad/s; Taken from A global solution for the Mars static and seasonal gravity, Mars orientation, Phobos and Deimos masses, and Mars ephemeris
+    parameter_perturbation[7]=-np.deg2rad(1.5)/constants.JULIAN_DAY #rad/s; Taken from A global solution for the Mars static and seasonal gravity, Mars orientation, Phobos and Deimos masses, and Mars ephemeris
     # Ground station position of Mars    
     if len(RISE_observation_times_list)!=0 and len(LaRa_observation_times_list)!=0:
         add_par = 3
     else:
         add_par = 0
-    apriori_vector[8:11+add_par]=30*np.ones(3+add_par) # meters; Taken from Position Determination of a Lander and Rover at Mars With Warth-Based Differential Tracking
+    parameter_perturbation[8:11+add_par]=30*np.ones(3+add_par) # meters; Taken from Position Determination of a Lander and Rover at Mars With Warth-Based Differential Tracking
     # Periodic spin variation for full planetary rotational model of Mars # Mars Pathfinder model
     # First order - cosine term
-    apriori_vector[11+add_par]=23*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    parameter_perturbation[11+add_par]=23*mas # seconds; Taken from the PhD from Sebastien LeMaistre
     # First order - sine term
-    apriori_vector[12+add_par]=26*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    parameter_perturbation[12+add_par]=26*mas # seconds; Taken from the PhD from Sebastien LeMaistre
     # Second order - cosine term
-    apriori_vector[13+add_par]=22*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    parameter_perturbation[13+add_par]=22*mas # seconds; Taken from the PhD from Sebastien LeMaistre
     # Second order - sine term
-    apriori_vector[14+add_par]=22*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    parameter_perturbation[14+add_par]=22*mas # seconds; Taken from the PhD from Sebastien LeMaistre
     # Third order - cosine term
-    apriori_vector[15+add_par]=18*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    parameter_perturbation[15+add_par]=18*mas # seconds; Taken from the PhD from Sebastien LeMaistre
     # Third order - sine term
-    apriori_vector[16+add_par]=19*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    parameter_perturbation[16+add_par]=19*mas # seconds; Taken from the PhD from Sebastien LeMaistre
     # Fourth order - cosine term
-    apriori_vector[17+add_par]=16*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    parameter_perturbation[17+add_par]=16*mas # seconds; Taken from the PhD from Sebastien LeMaistre
     # Fourth order - sine term
-    apriori_vector[18+add_par]=16*mas # seconds; Taken from the PhD from Sebastien LeMaistre
+    parameter_perturbation[18+add_par]=16*mas # seconds; Taken from the PhD from Sebastien LeMaistre
     # Polar motion amplitude for full planetary rotational model of Mars
-    apriori_vector[19+add_par:]=50*mas*np.ones(20) # seconds; Taken from UNCERTAINTIES ON MARS INTERIOR PARAMETERS DEDUCED FROM ORIENTATION PARAMETERS USING DIFFERENT RADIOLINKS: ANALYTICAL SIMULATIONS.
+    parameter_perturbation[19+add_par:]=50*mas*np.ones(20) # seconds; Taken from UNCERTAINTIES ON MARS INTERIOR PARAMETERS DEDUCED FROM ORIENTATION PARAMETERS USING DIFFERENT RADIOLINKS: ANALYTICAL SIMULATIONS.
     
-    # print("Apriori vector is:")
-    print(apriori_vector)
+    print("Perturbation vector is:")
+    print(parameter_perturbation)
 
     # Define a priori covariance
-    inverse_a_priori_covariance = np.diag(1/apriori_vector**2)
+    inverse_a_priori_covariance = np.diag(1/parameter_perturbation**2)
 
     # Estimate parameters
-    pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size, inverse_apriori_covariance = inverse_a_priori_covariance)
-    pod_input.define_estimation_settings(reintegrate_equations_on_first_iteration = False,reintegrate_variational_equations = False)
+    pod_input = estimation.PodInput(simulated_observations,parameters_set.parameter_set_size, inverse_apriori_covariance = inverse_a_priori_covariance, apriori_parameter_correction = parameter_perturbation)
+    #pod_input.define_estimation_settings(reintegrate_variational_equations = False)
     
-    # Observations visibles
     concatenated_times_array = np.array(simulated_observations.concatenated_times)
     if len(RISE_observation_times_list)!=0 and LaRa_observation_start_epoch!=None:
         RISE_concatenated_times = concatenated_times_array[concatenated_times_array<LaRa_observation_start_epoch]
@@ -700,17 +699,14 @@ if __name__=="__main__":
     # Define noise levels for weights for LaRa
     if len(LaRa_observation_times_list)!=0:
         vector_weights.extend(list(LaRa_std_noise_function(LaRa_concatenated_times)))
-    
-    # Weights list becomes an array
+
     vector_weights = np.array(vector_weights)
 
-    # .set_weight function has been created
     pod_input.set_weight(1/vector_weights**2) 
 
     # Perform estimation
-    pod_output = estimator.perform_estimation(pod_input,convergence_checker = estimation.estimation_convergence_checker(maximum_iterations = 1))
+    pod_output = estimator.perform_estimation(pod_input)
 
-    # Understand whether there are any duplicated time values
     if len(RISE_observation_times_list)!=0: 
         print(len(RISE_concatenated_times),len(RISE_observation_times_list))
         print('Is there any duplicated RISE time value? :',any(list(RISE_concatenated_times).count(x) > 1 for x in list(RISE_observation_times_list)))
@@ -723,7 +719,6 @@ if __name__=="__main__":
     ################################################## PROVIDE OUTPUT TO CONSOLE  ##########################################
     ########################################################################################################################
 
-    # Computation estimation, formal errors
     estimation_error = np.subtract(pod_output.parameter_estimate,truth_parameter)
     print('True estimation error is:')
     print(estimation_error.astype('d'))
@@ -740,7 +735,6 @@ if __name__=="__main__":
     concatenated_link_end_names = simulated_observations.concatenated_link_end_names
     doppler_residuals = pod_output.residual_history
 
-    # Compute how many DSN link ends there are
     DSN_concatenated_link_ends = list()
     for i in range(0,DSN_link_ends_number):
        DSN_concatenated_link_ends.extend(list(concatenated_link_ends[concatenated_link_ends==link_ends_numbers[i]]))
@@ -855,7 +849,7 @@ if __name__=="__main__":
     sort_concatenated_link_ends_names_dict.join()
 
     # Initialize inverted weighting matrix
-    #inv_weight_complex = (scipy.sparse.diags(1/np.array(vector_weights_sort)**2)).tocsr() #Same as correlation to 1
+    #inv_weight = (scipy.sparse.diags(1/np.array(vector_weights_sort)**2)).tocsr() #Same as correlation to 1
     inv_weight_complex = scipy.sparse.coo_matrix((0,0))
     
     # Delete arrays where two DSN have observation at the same time
@@ -863,10 +857,10 @@ if __name__=="__main__":
 
     # Iteratate along each time value
     for time_index in range(0,len(concatenated_times_no_duplicated)):
-        # Understand whether there are PRIDE stations (or two or more DSN link ends)
+        # Understand whether there are PRIDE stations
         count_time_obs = concatenated_times_count[time_index]
         start_index = concatenated_times_index[time_index]
-        
+        #print(start_index,count_time_obs)
         # If one observation, means that there are no PRIDE stations and the matrix added is a single value
         if count_time_obs == 1:
             inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,(vector_weights_sort[start_index])**(-2)))
@@ -876,8 +870,10 @@ if __name__=="__main__":
             end_index = start_index + (count_time_obs)
             # Sort the receiver link ends, since there can be several transmitters
             receiver_link_ends = np.argsort(concatenated_link_ends_sort[start_index:end_index])
+            #print(receiver_link_ends)
+            #print(concatenated_link_ends_sort[start_index:end_index])
 
-            # Sorting again part of the arrays (with respect to the order of the link ends)
+            # Sorting again part of the arrays
             estimation_information_matrix_sort_short = [None]*count_time_obs
             residuals_sort_short = [None]*count_time_obs
             for row_index in range(0,np.shape(estimation_information_matrix_sort_short)[0]):
@@ -888,8 +884,9 @@ if __name__=="__main__":
             concatenated_link_end_names_list_sort[start_index:end_index] = np.array(concatenated_link_end_names_list_sort[start_index:end_index])[receiver_link_ends]
             vector_weights_sort[start_index:end_index] = np.array(vector_weights_sort[start_index:end_index])[receiver_link_ends]
             concatenated_link_ends_sort[start_index:end_index] = np.array(concatenated_link_ends_sort[start_index:end_index])[receiver_link_ends]
+            #print(concatenated_link_ends_sort[start_index:end_index])
             
-            # Understanding which transmitters and receivers are involved
+            # Understanding which transmitters are involved
             transmitters_count = list()
             transmitters_total = list()
             receivers_total = list()
@@ -900,10 +897,13 @@ if __name__=="__main__":
                 if not transmitter_station in transmitters_count:
                     transmitters_count.append(transmitter_station)
             
-            # Counting how many receivers there are for each transmitter
+            # Counting how many receiver there are for each transmitter
             transmitter_count_number = list()    
             for transmitter_index in transmitters_count:
                 transmitter_count_number.append(transmitters_total.count(transmitter_index))
+            #print(start_index,transmitter_count_number,transmitters_count,concatenated_link_ends_sort[start_index:end_index])
+            #print(transmitters_total,receivers_total)
+            #print(concatenated_link_end_names_list_sort[start_index:end_index])
 
             # Verification
             if len(concatenated_times_sort[start_index:end_index]) != concatenated_times_sort.count(concatenated_times_sort[start_index]):
@@ -915,75 +915,68 @@ if __name__=="__main__":
             if len(transmitter_count_number)==1:
                 # When only the closed-loop observations are taken into account
                 if remove_PRIDE_weight_boolean:
-                    # Number of receivers for a transmitter
                     split_count = transmitter_count_number[0]
                     block_weight = (scipy.sparse.coo_matrix((1,1))).toarray()
                     for row_index in range(0,split_count):
-                        # When transmitter = receiver -> add in the inv_weight
                         if transmitters_total[row_index]==receivers_total[row_index]:
                             block_weight[0][0] = vector_weights_sort[start_index_block+row_index]**2
                             inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
-                        # When transmitter !=r receiver -> delete index
                         else:
                             indices_delete.append(start_index_block+row_index)
 
                 # When all the PRIDE observations are taken into account
                 else:
-                    # Number of receivers for a transmitter
                     split_count = transmitter_count_number[0]
                     block_weight = (scipy.sparse.coo_matrix((split_count,split_count))).toarray()
                     for row_index in range(0,split_count):
                         for column_index in range(0,split_count):
-                            # Diagonal element
                             if row_index == column_index:
                                 block_weight[row_index][column_index] = vector_weights_sort[start_index_block+row_index]**2
-                            # Non-diagonal element
                             else:
                                 block_weight[row_index][column_index] = correlation*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
                     inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
 
             # When different transmitters are available
             elif len(transmitter_count_number)>1:
-                index_not_delete = 1 # Always choosing DSS 43 or 63 -> Reason: DSS 14 (Goldstone) there are no PRIDE stations close-by
+                #print(transmitters_count,start_index_block,transmitters_total,receivers_total)
+                index_not_delete = 1
                 start_index_block = start_index
                 total_split = 0
                 for index_split_count in range(0,len(transmitter_count_number)):
-                    # Number of receivers for a transmitter
-                    split_count = transmitter_count_number[index_split_count]
-
                     # Only the transmitter with index_not_delete is taken into consideration
                     if index_split_count == index_not_delete:
                         # When only the closed-loop observations are taken into account
                         if remove_PRIDE_weight_boolean:
+                            split_count = transmitter_count_number[index_split_count]
                             block_weight = (scipy.sparse.coo_matrix((1,1))).toarray()
                             for row_index in range(0,split_count):
-                                # When transmitter = receiver -> add in the inv_weight
                                 if transmitters_total[total_split+row_index]==receivers_total[total_split+row_index]:
                                     block_weight[0][0] = vector_weights_sort[start_index_block+row_index]**2
                                     inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
-                                # When transmitter !=r receiver -> delete index
                                 else:
                                     indices_delete.append(start_index_block+row_index)
+                            start_index_block += split_count
 
                         # When all the PRIDE observations are taken into account
                         else:
+                            split_count = transmitter_count_number[index_split_count]
                             block_weight = (scipy.sparse.coo_matrix((split_count,split_count))).toarray()
                             for row_index in range(0,split_count):
                                 for column_index in range(0,split_count):
-                                    # Diagonal element
                                     if row_index == column_index:
                                         block_weight[row_index][column_index] = vector_weights_sort[start_index_block+row_index]**2
-                                    # Non-diagonal element
                                     else:
                                         block_weight[row_index][column_index] = correlation*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
                             inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
+                            start_index_block += split_count
 
                     # Remove all the observations from other transmitters
                     else:
+                        split_count = transmitter_count_number[index_split_count]
                         indices_delete.extend(range(start_index_block,start_index_block+split_count))
+                        #print(split_count,list(range(start_index_block,start_index_block+split_count)))
+                        start_index_block += split_count
 
-                    # Increasing the start_index_block and total_split
-                    start_index_block += split_count
                     total_split+=split_count
     
     # Delete terms
@@ -1173,26 +1166,26 @@ if __name__=="__main__":
     
     # Formal to apriori ratio
     plt.figure(figsize=(15, 6))
-    plt.plot(range(0,len(apriori_vector)),np.abs(pod_output.formal_errors/apriori_vector[:]),'o--')
+    plt.plot(range(0,len(parameter_perturbation)),np.abs(pod_output.formal_errors/parameter_perturbation[:]),'o--')
     plt.ylabel('Formal to Apriori Ratio')
     plt.xlabel('Estimated Parameters')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     #'''
     if len(LaRa_observation_times_list)==0:
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
+        plt.xticks(range(0,len(parameter_perturbation)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
             r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     elif len(RISE_observation_times_list)==0:
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
+        plt.xticks(range(0,len(parameter_perturbation)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
             r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     else:
     #'''
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
+        plt.xticks(range(0,len(parameter_perturbation)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
             r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
@@ -1204,26 +1197,26 @@ if __name__=="__main__":
 
     # Formal to apriori ratio
     plt.figure(figsize=(15, 6))
-    plt.plot(range(0,len(apriori_vector)),np.abs(sigma_values[-1][:]/apriori_vector[:]),'o--')
+    plt.plot(range(0,len(parameter_perturbation)),np.abs(sigma_values[-1][:]/parameter_perturbation[:]),'o--')
     plt.ylabel('Formal to Apriori Ratio')
     plt.xlabel('Estimated Parameters')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     #'''
     if len(LaRa_observation_times_list)==0:
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
+        plt.xticks(range(0,len(parameter_perturbation)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
             r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     elif len(RISE_observation_times_list)==0:
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
+        plt.xticks(range(0,len(parameter_perturbation)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
             r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     else:
     #'''
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
+        plt.xticks(range(0,len(parameter_perturbation)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
             r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
@@ -1235,26 +1228,26 @@ if __name__=="__main__":
 
     # Formal to apriori ratio simple
     plt.figure(figsize=(15, 6))
-    plt.plot(range(6,len(apriori_vector)),np.abs(sigma_values[-1][6:]/apriori_vector[6:]),'o--')
+    plt.plot(range(6,len(parameter_perturbation)),np.abs(sigma_values[-1][6:]/parameter_perturbation[6:]),'o--')
     plt.ylabel('Formal to Apriori Ratio')
     plt.xlabel('Estimated Parameters')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     #'''
     if len(LaRa_observation_times_list)==0:
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
+        plt.xticks(range(0,len(parameter_perturbation)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
             r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     elif len(RISE_observation_times_list)==0:
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
+        plt.xticks(range(0,len(parameter_perturbation)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
             r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     else:
     #'''
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
+        plt.xticks(range(0,len(parameter_perturbation)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
             r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
@@ -1272,26 +1265,26 @@ if __name__=="__main__":
     plt.colorbar()
     #'''
     if len(LaRa_observation_times_list)==0:
-        plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+        plt.xticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
             r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
             r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-        plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+        plt.yticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
             r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
             r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     elif len(RISE_observation_times_list)==0:
-        plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+        plt.xticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
             r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
             r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-        plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+        plt.yticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
             r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
             r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
@@ -1299,13 +1292,13 @@ if __name__=="__main__":
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     else:
     #'''
-        plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+        plt.xticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
             r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
             r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-        plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+        plt.yticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
             r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
             r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
@@ -1330,13 +1323,13 @@ if __name__=="__main__":
         plt.colorbar()
         #'''
         if len(LaRa_observation_times_list)==0:
-            plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+            plt.xticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
                 r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
                 r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
                 r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
                 r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
                 r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-            plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+            plt.yticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
                 r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
                 r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
                 r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
@@ -1344,13 +1337,13 @@ if __name__=="__main__":
                 r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
         else:
         #'''
-            plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+            plt.xticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
                 r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
                 r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
                 r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
                 r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
                 r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-            plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+            plt.yticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
                 r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
                 r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
                 r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
@@ -1373,13 +1366,13 @@ if __name__=="__main__":
         plt.colorbar()
         #'''
         if len(RISE_observation_times_list)==0:
-            plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+            plt.xticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
                 r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
                 r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
                 r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
                 r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
                 r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-            plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+            plt.yticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
                 r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
                 r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
                 r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
@@ -1387,13 +1380,13 @@ if __name__=="__main__":
                 r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
         else:
         #'''
-            plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+            plt.xticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
                 r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
                 r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
                 r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
                 r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
                 r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-            plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
+            plt.yticks(range(0,len(parameter_perturbation)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
                 r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
                 r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
                 r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
@@ -1410,7 +1403,7 @@ if __name__=="__main__":
     # 1-sigma position as a function of time
     plt.figure(figsize=(15, 6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(apriori_vector[0:3])))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(parameter_perturbation[0:3])))))
     x_values = list()
     y_values = list()
     z_values = list()
@@ -1441,7 +1434,7 @@ if __name__=="__main__":
     # 1-sigma position as a velocity of time
     plt.figure(figsize=(15, 6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(apriori_vector[3:6])))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(parameter_perturbation[3:6])))))
     xdot_values = list()
     ydot_values = list()
     zdot_values = list()
@@ -1510,7 +1503,7 @@ if __name__=="__main__":
     # 1-sigma x_RISE,y_RISE,z_RISE,x_LaRa,y_LaRa,z_LaRa as a function of time
     plt.figure(figsize=(15, 6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(apriori_vector[8:11+add_par])))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(parameter_perturbation[8:11+add_par])))))
     if len(RISE_observation_times_list)!=0:
         xRISElander_values = list()
         yRISElander_values = list()
@@ -1564,7 +1557,7 @@ if __name__=="__main__":
     # 1-sigma spin variations as a function of time
     plt.figure(figsize=(15, 6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(apriori_vector[11+add_par:19+add_par])))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(parameter_perturbation[11+add_par:19+add_par])))))
     cos1spin_values = list()
     sin1spin_values = list()
     cos2spin_values = list()
@@ -1620,7 +1613,7 @@ if __name__=="__main__":
     # 1-sigma polar motion (order 1) as a function of time
     plt.figure(figsize=(15, 6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(apriori_vector[19+add_par:23+add_par])))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(parameter_perturbation[19+add_par:23+add_par])))))
     xpcos1_values = list()
     xpsin1_values = list()
     ypcos1_values = list()
@@ -1656,7 +1649,7 @@ if __name__=="__main__":
     # 1-sigma polar motion (order 2) as a function of time
     plt.figure(figsize=(15, 6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(apriori_vector[23+add_par:27+add_par])))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(parameter_perturbation[23+add_par:27+add_par])))))
     xpcos2_values = list()
     xpsin2_values = list()
     ypcos2_values = list()
@@ -1692,7 +1685,7 @@ if __name__=="__main__":
     # 1-sigma polar motion (order 3) as a function of time
     plt.figure(figsize=(15, 6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(apriori_vector[27+add_par:31+add_par])))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(parameter_perturbation[27+add_par:31+add_par])))))
     xpcos3_values = list()
     xpsin3_values = list()
     ypcos3_values = list()
@@ -1728,7 +1721,7 @@ if __name__=="__main__":
     # 1-sigma polar motion (order 4) as a function of time
     plt.figure(figsize=(15, 6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(apriori_vector[31+add_par:35+add_par])))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(parameter_perturbation[31+add_par:35+add_par])))))
     xpcos4_values = list()
     xpsin4_values = list()
     ypcos4_values = list()
@@ -1764,7 +1757,7 @@ if __name__=="__main__":
     # 1-sigma polar motion (order 5) as a function of time
     plt.figure(figsize=(15, 6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(apriori_vector[35+add_par:])))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(parameter_perturbation[35+add_par:])))))
     xpcos5_values = list()
     xpsin5_values = list()
     ypcos5_values = list()
