@@ -35,7 +35,7 @@ if __name__=="__main__":
     days_in_a_week = 7 #days
 
     # CPU number for parallel computing
-    CPU_par = 5
+    CPU_par = 14
 
     # Booleans to understand whether we want to simulate together RISE and LaRa missions, or separetely
     RISE_boolean = True
@@ -61,7 +61,7 @@ if __name__=="__main__":
         correlation = 0
 
     # Evaluation step 
-    step_eval = 500
+    step_eval = 1
 
     # Output folder
     if LaRa_boolean:
@@ -671,7 +671,7 @@ if __name__=="__main__":
     # Polar motion amplitude for full planetary rotational model of Mars
     apriori_vector[19+add_par:]=50*mas*np.ones(20) # seconds; Taken from UNCERTAINTIES ON MARS INTERIOR PARAMETERS DEDUCED FROM ORIENTATION PARAMETERS USING DIFFERENT RADIOLINKS: ANALYTICAL SIMULATIONS.
     
-    # print("Apriori vector is:")
+    print("Apriori vector is:")
     print(apriori_vector)
 
     # Define a priori covariance
@@ -712,11 +712,11 @@ if __name__=="__main__":
 
     # Understand whether there are any duplicated time values
     if len(RISE_observation_times_list)!=0: 
-        print(len(RISE_concatenated_times),len(RISE_observation_times_list))
+        print('len(RISE concatenated times):',len(RISE_concatenated_times),' len(RISE obs times):',len(RISE_observation_times_list))
         print('Is there any duplicated RISE time value? :',any(list(RISE_concatenated_times).count(x) > 1 for x in list(RISE_observation_times_list)))
     
     if len(LaRa_observation_times_list)!=0:
-        print(len(LaRa_concatenated_times),len(LaRa_observation_times_list))
+        print('len(LaRa concatenated times):',len(LaRa_concatenated_times),' len(LaRa obs times):',len(LaRa_observation_times_list))
         print('Is there any duplicated LaRa time value? :',any(list(LaRa_concatenated_times).count(x) > 1 for x in list(LaRa_observation_times_list)))
      
     ########################################################################################################################
