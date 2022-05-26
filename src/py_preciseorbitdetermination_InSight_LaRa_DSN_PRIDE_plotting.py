@@ -20,7 +20,8 @@ if __name__=="__main__":
     ########################################################################################################################
 
     benchmark_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISEFalse_LaRaTrue_PRIDEFalseFalse_corr0')
-    main_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISEFalse_LaRaTrue_PRIDETrueTrue_corr0')
+    main_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISEFalse_LaRaTrue_PRIDETrueFalse_corr0.99')
+    main2_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISEFalse_LaRaTrue_PRIDETrueFalse_corr0')
     output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_comparison_plot')
     os.makedirs(output_folder_path,exist_ok=True)
 
@@ -31,6 +32,7 @@ if __name__=="__main__":
     mas =np.pi/(180.0*1000.0*3600.0) # Conversion from milli arc seconds to seconds 
     
     time_eval = np.loadtxt(main_folder+'/time_plot.dat')
+    time_eval2 = np.loadtxt(main2_folder+'/time_plot.dat')
     time_bench_eval = np.loadtxt(benchmark_folder+'/time_plot.dat')
 
     # 1-sigma position as a function of time
@@ -104,12 +106,15 @@ if __name__=="__main__":
     # 1-sigma F as a function of time
     plt.figure(figsize=(15, 6))
     F_values = np.loadtxt(main_folder+'/corefactor_plot.dat')
+    F2_values = np.loadtxt(main2_folder+'/corefactor_plot.dat')
     F_bench_values = np.loadtxt(benchmark_folder+'/corefactor_plot.dat')
     
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        F_values,'-o',label='F')
+        F_values,'--',label=r'F - DSN+PRIDE $\rho$=0.99')#label='F')
+    plt.plot((time_eval2-time_eval[0]*np.ones(len(time_eval2)))/constants.JULIAN_DAY,
+        F2_values,'--',label=r'F - DSN+PRIDE $\rho$=0')#label='F')
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        F_bench_values,'--',label=r'F$_b$')
+        F_bench_values,'--',label=r'F - only DSN')#r'F$_b$')
     plt.axvline(x=(6.944957280000000e+08-time_eval[0])/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ F [-]')
     plt.xlabel('Time [days]')

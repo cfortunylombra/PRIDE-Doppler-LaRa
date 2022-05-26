@@ -2,7 +2,7 @@
 
 PRIDE-Doppler-LaRa is an object-oriented Python tool for research in the field of PRIDE (Planetary Radio Interferometry and Doppler Experiments).
 
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/cfortunylombra/PRIDE-Doppler-LaRa/graphs/commit-activity) ![python 3.8](https://img.shields.io/badge/version-latest-blue.svg) ![python 3.8](https://img.shields.io/badge/python-3.8-blue.svg) ![platform Linux,macos](https://img.shields.io/badge/platform-Linux,_macos-blue.svg)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/cfortunylombra/PRIDE-Doppler-LaRa/graphs/commit-activity) ![python 3.8](https://img.shields.io/badge/version-latest-blue.svg) ![python 3.8](https://img.shields.io/badge/python-3.8-blue.svg) ![platform Linux](https://img.shields.io/badge/platform-Linux)
 
 ---
 
@@ -23,10 +23,16 @@ PRIDE-Doppler-LaRa is an object-oriented Python tool for research in the field o
 
 To install `tudat-bundle`, please follow carefully the [setup instructions](https://github.com/tudat-team/tudat-bundle#setup).
 
+Inside `tudat-bundle`, the following GitHub are utilized:
+* `tudat`: https://github.com/cfortunylombra/tudat-fork.git -> branch: `feature/maximum_viability_fix` using `git checkout -b feature/maximum_viability_fix`
+* `tudatpy`: https://github.com/cfortunylombra/tudatpy-fork.git -> branch: `feature/expose_observation_estimation_fix` using `git checkout -b feature/expose_observation_estimation_fix`
+
+
+
 ### Documentation
 
-* [TudatPy](https://tudat-space.readthedocs.io)
-* [Tudat](https://tudat.tudelft.nl/)
+* [TudatPy](https://docs.tudat.space/en/stable/)
+* [API](https://py.api.tudat.space/en/latest/)
 
 ---
 

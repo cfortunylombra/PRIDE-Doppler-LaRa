@@ -1,5 +1,5 @@
 """
-Description: Environment Setup for the Precise Orbit Determination (RISE with DSN)
+Description: Environment Setup for the Precise Orbit Determination (RISE with DSN) (Removing DOppler noise)
 
 Author: C. Fortuny-Lombraña
 """
