@@ -71,7 +71,7 @@ if __name__=="__main__":
 
     # Plot the antennas in a map
     cm = plt.get_cmap('gist_rainbow')
-    fig = plt.figure(figsize=(8,6), edgecolor='w')
+    plt.figure(figsize=(8,6), edgecolor='w')
     m = Basemap(projection='cyl', resolution = 'h',
         llcrnrlat = -90, urcrnrlat = 90,
         llcrnrlon= -180, urcrnrlon = 180, suppress_ticks=False)
@@ -112,7 +112,7 @@ if __name__=="__main__":
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     draw_map(m)
 
-    fig.savefig('../output/DSN-EVN-stations.pdf',bbox_inches="tight")
+    plt.savefig('./output/DSN-EVN-stations.pdf',bbox_inches="tight")
 
     # RISE landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
     RISE_reflector_name = "RISE"
@@ -123,9 +123,8 @@ if __name__=="__main__":
     LaRa_reflector_name = "LaRa"
     LaRa_reflector_latitude_deg = 18.3 #North degrees
     LaRa_reflector_longitude_deg = 335.37 #East degrees
-
     plt.figure(figsize=(8,6))
-    img_mars = mpimg.imread('./Mars_MGS_colorhillshade_mola_1024.jpg')
+    img_mars = mpimg.imread('./src/Mars_MGS_colorhillshade_mola_1024.jpg')
     plt.scatter(RISE_reflector_longitude_deg,RISE_reflector_latitude_deg,s=70,c='purple',marker='o',edgecolors='white',label="InSight")
     plt.scatter(LaRa_reflector_longitude_deg-360,LaRa_reflector_latitude_deg,s=70,c='orange',marker='o',edgecolors='white',label="ExoMars")
     plt.xlabel("Longitude [deg]")
@@ -133,6 +132,6 @@ if __name__=="__main__":
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.imshow(img_mars,extent = [-180,180,-90,90])
 
-
+    plt.savefig('./output/Mars-stations.pdf',bbox_inches="tight")
 
 print("--- %s seconds ---" % (time.time() - run_time))

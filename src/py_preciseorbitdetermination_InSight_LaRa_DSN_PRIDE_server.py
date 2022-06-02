@@ -11,7 +11,7 @@ if __name__=="__main__":
     ########################################################################################################################
 
     import sys
-    sys.path.insert(0, "/home/cfortunylombra/tudat-bundle/cmake-build-release-wsl/tudatpy/")
+    sys.path.insert(0, "/home/carlos/tudat-bundle/build_release/tudatpy/")
     import os
     import numpy as np
     import datetime
@@ -65,7 +65,7 @@ if __name__=="__main__":
 
     # Output folder
     if LaRa_boolean:
-        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean)+'_PRIDE'+str(PRIDE_boolean)+str(remove_PRIDE_weight_boolean)+'_corr'+str(correlation))
+        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/PODnoise_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean)+'_PRIDE'+str(PRIDE_boolean)+str(remove_PRIDE_weight_boolean)+'_corr'+str(correlation))
     else:
         output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean))
     os.makedirs(output_folder_path,exist_ok=True)
@@ -699,7 +699,7 @@ if __name__=="__main__":
             vector_weights.extend(list([RISE_std_mHz_function((concatenated_times_array[index]-RISE_observation_start_epoch_reference_noise)/constants.JULIAN_DAY)*10**(-3)/base_frequency]))
         if link_end_name[observation.reflector1][1] == LaRa_reflector_name:
             if link_end_name[observation.transmitter] == link_end_name[observation.receiver]:
-                vector_weights.extend(list(LaRa_std_noise_function([concatenated_times_array[index]])))
+                vector_weights.extend(list(LaRa_std_noise_function([concatenated_times_array[index]])/1.5))
             else:
                 vector_weights.extend(list(LaRa_std_noise_function([concatenated_times_array[index]])))
 

@@ -35,7 +35,7 @@ if __name__=="__main__":
     days_in_a_week = 7 #days
 
     # CPU number for parallel computing
-    CPU_par = 14
+    CPU_par = 5
 
     # Booleans to understand whether we want to simulate together RISE and LaRa missions, or separetely
     RISE_boolean = True
@@ -61,13 +61,13 @@ if __name__=="__main__":
         correlation = 0
 
     # Evaluation step 
-    step_eval = 1
+    step_eval = 500
 
     # Output folder
     if LaRa_boolean:
-        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean)+'_PRIDE'+str(PRIDE_boolean)+str(remove_PRIDE_weight_boolean)+'_corr'+str(correlation))
+        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/PODnoise_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean)+'_PRIDE'+str(PRIDE_boolean)+str(remove_PRIDE_weight_boolean)+'_corr'+str(correlation))
     else:
-        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean))
+        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/PODnoise_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean))
     os.makedirs(output_folder_path,exist_ok=True)
 
     if RISE_boolean:
@@ -699,10 +699,10 @@ if __name__=="__main__":
             vector_weights.extend(list([RISE_std_mHz_function((concatenated_times_array[index]-RISE_observation_start_epoch_reference_noise)/constants.JULIAN_DAY)*10**(-3)/base_frequency]))
         if link_end_name[observation.reflector1][1] == LaRa_reflector_name:
             if link_end_name[observation.transmitter] == link_end_name[observation.receiver]:
-                vector_weights.extend(list(LaRa_std_noise_function([concatenated_times_array[index]])))
+                vector_weights.extend(list(LaRa_std_noise_function([concatenated_times_array[index]])/1.5))
             else:
                 vector_weights.extend(list(LaRa_std_noise_function([concatenated_times_array[index]])))
-
+    
     # Weights list becomes an array
     vector_weights = np.array(vector_weights)
 
@@ -1171,18 +1171,18 @@ if __name__=="__main__":
     plt.grid()
     plt.savefig(output_folder_path+"/std_noise_time.pdf",bbox_inches="tight")
     plt.show()
-    plt.close('all') 
+    plt.close('all')
 
     # Plot to check the viability of the Sun v2
     plt.figure(figsize=(15, 6))
-    plt.scatter((concatenated_times_sort-observation_start_epoch*np.ones(concatenated_times_sort))/constants.JULIAN_DAY,vector_weights_sort)
+    plt.scatter((concatenated_times_sort-observation_start_epoch*np.ones(len(concatenated_times_sort)))/constants.JULIAN_DAY,vector_weights_sort)
     plt.ylabel('Std noise [mHz]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.grid()
     plt.savefig(output_folder_path+"/weights_time.pdf",bbox_inches="tight")
     plt.show()
-    plt.close('all')
+    plt.close('all') 
     
     # Formal to apriori ratio
     plt.figure(figsize=(15, 6))

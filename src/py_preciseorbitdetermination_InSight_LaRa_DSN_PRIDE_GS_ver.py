@@ -38,7 +38,7 @@ if __name__=="__main__":
     CPU_par = 14
 
     # Booleans to understand whether we want to simulate together RISE and LaRa missions, or separetely
-    RISE_boolean = True
+    RISE_boolean = False
     LaRa_boolean = True
     
     if LaRa_boolean:
@@ -63,9 +63,12 @@ if __name__=="__main__":
     # Evaluation step 
     step_eval = 1
 
+    # Receiving stations
+    receiving_station_number = 1
+
     # Output folder
     if LaRa_boolean:
-        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean)+'_PRIDE'+str(PRIDE_boolean)+str(remove_PRIDE_weight_boolean)+'_corr'+str(correlation))
+        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/PODst'+str(receiving_station_number)+'_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean)+'_PRIDE'+str(PRIDE_boolean)+str(remove_PRIDE_weight_boolean)+'_corr'+str(correlation))
     else:
         output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean))
     os.makedirs(output_folder_path,exist_ok=True)
@@ -109,25 +112,13 @@ if __name__=="__main__":
 
     # Earth-based transmitters
     transmitters_dict = dict() #Taken from JPL web site
-    transmitters_dict['DSS 43']=np.array([-4460894.9170,2682361.5070,-3674748.1517]) # DSS 43
-    transmitters_dict['DSS 34']=np.array([-4461147.0925,2682439.2385,-3674393.1332]) # DSS 34
-    transmitters_dict['DSS 35']=np.array([-4461273.4175,2682568.9283,-3674151.5223]) # DSS 35 (https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat)
-    transmitters_dict['DSS 36']=np.array([-4461168.7425,2682814.6603,-3674083.3303]) # DSS 36 (https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat)
-    transmitters_dict['DSS 65']=np.array([4849339.6448,-360427.6560,4114750.7428]) # DSS 65
     transmitters_dict['DSS 63']=np.array([4849092.5175,-360180.3480,4115109.2506]) # DSS 63
-    transmitters_dict['DSS 55']=np.array([4849525.2561,-360606.0932,4114495.0843]) # DSS 55
-    transmitters_dict['DSS 54']=np.array([4849434.4877,-360723.8999,4114618.8354]) # DSS 54
-    transmitters_dict['DSS 56']=np.array([4849421.500903,-360549.2280048,4114647.264832]) # DSS 56 (https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/stations/earth_topo_201023.tf)
-    transmitters_dict['DSS 14']=np.array([-2353621.4197,-4641341.4717,3677052.3178]) # DSS 14
-    transmitters_dict['DSS 26']=np.array([-2354890.7996,-4647166.3182,3668871.7546]) # DSS 26
-    transmitters_dict['DSS 24']=np.array([-2354906.7087,-4646840.0834,3669242.3207]) # DSS 24
-    transmitters_dict['DSS 25']=np.array([-2355022.0140,-4646953.2040,3669040.5666]) # DSS 25
 
     # Earth-based transmitter for RISE
     RISE_transmitter_names = ['DSS 43','DSS 34','DSS 35','DSS 36','DSS 65','DSS 63','DSS 55','DSS 54','DSS 56','DSS 14','DSS 26', 'DSS 24', 'DSS 25']
 
     # Earth-based transmitter for LaRa
-    LaRa_transmitter_names = ['DSS 43','DSS 63','DSS 14']
+    LaRa_transmitter_names = ['DSS 63'] #CHANGED
 
     # Viability settings for RISE
     RISE_earth_min = 10 #deg
@@ -182,45 +173,28 @@ if __name__=="__main__":
     ########################################################################################################################
 
     # Empty dictionary for the radio telescopes coordinates
+    radio_telescopes_dict_full = dict()
+    radio_telescopes_dict_full["YEBES40M"] = np.array([4848761.7579,-261484.0570,4123085.1343])
+    radio_telescopes_dict_full["MEDICINA"] = np.array([4461369.5682,919597.2489,4449559.4702])
+    radio_telescopes_dict_full["EFLSBERG"] = np.array([4033947.1525,486990.8961,4900431.0604])
+    radio_telescopes_dict_full["WRT0"] = np.array([3828767.1338,442446.1588,5064921.5700])
+    radio_telescopes_dict_full["WETTZELL"] = np.array([4075539.5173,931735.6497,4801629.6028])
+    radio_telescopes_dict_full["ONSALA60"] = np.array([3370605.7035,711917.8146,5349830.9852])
+    radio_telescopes_dict_full["IRBENE"] = np.array([3183649.341,1276902.985,5359264.715])
+    radio_telescopes_dict_full["HARTRAO"] = np.array([5085442.7721,2668263.9300,-2768696.6299])
+    radio_telescopes_dict_full["BADARY"] = np.array([-838201.2618,3865751.5589,4987670.8708])
+
     radio_telescopes_dict = dict()
-
-    # Read the text file containing the name and cartesian coordinates of the radio telescopes
-    with open(os.path.dirname(os.path.realpath(__file__))+'/gs_locations.dat') as file:
-        lines = file.read().splitlines()
-        
-        # Variables
-        skiplines = 29 #lines to be removed from the description at the beginning of the text file
-        eachgroundstationlines = 6 #lines of specs that contains each ground stations
-
-        lines = lines[skiplines:]
-        number_ground_stations_file = int(len(lines)/eachgroundstationlines) #total number of ground stations 
-
-        for pointer_ground_station in range(0,number_ground_stations_file):
-            name_line_ground_station = lines[pointer_ground_station*eachgroundstationlines+1]
-            coordinates_line_ground_station = lines[pointer_ground_station*eachgroundstationlines+2]
-            
-            if len(name_line_ground_station.split("DBNAME=",1)) == 2:
-                name_ground_station = name_line_ground_station.split("DBNAME=",1)[1].split()[0]
-            elif len(name_line_ground_station.split("DBCODE=",1)) == 2:
-                name_ground_station = name_line_ground_station.split("DBCODE=",1)[1].split()[0]
-            
-            # Since the Sebastien files do not have Hart15M and Hobart12 radio telescopes, they are not included in the simulation
-            if name_ground_station=="HART15M" or name_ground_station=="HOBART12":
-                continue
-            else:
-                x_coordinate_ground_station = float(coordinates_line_ground_station.split("X=",1)[1].split()[0])
-                y_coordinate_ground_station = float(coordinates_line_ground_station.split("Y=",1)[1].split()[0])
-                z_coordinate_ground_station = float(coordinates_line_ground_station.split("Z=",1)[1].split()[0])
-
-                radio_telescopes_dict[name_ground_station] = np.array([x_coordinate_ground_station,y_coordinate_ground_station,z_coordinate_ground_station])
-    
+    for index in range(0,receiving_station_number-1):
+        radio_telescopes_dict[list(radio_telescopes_dict_full.keys())[index]] = radio_telescopes_dict_full[list(radio_telescopes_dict_full.keys())[index]]
+       
     # Earth-based ground station creation
     for pointer_ground_station in range(0,len(transmitters_dict.keys())):
         environment_setup.add_ground_station(
             bodies.get_body("Earth"),
             list(transmitters_dict.keys())[pointer_ground_station],
             transmitters_dict[list(transmitters_dict.keys())[pointer_ground_station]])
-
+    
     # Earth-based radio telescope creation
     for pointer_radio_telescope in range(0,len(radio_telescopes_dict.keys())):
         environment_setup.add_ground_station(
@@ -456,6 +430,8 @@ if __name__=="__main__":
     # Number of link ends for ExoMars mission
     LaRa_link_ends_length = len(observation_settings_list)-RISE_link_ends_length
 
+    print(observation_settings_list)
+
     # Since simulated_observations orders the observations by alphabetical order, the sorted link ends list is determined
     link_ends_sort = list()
     DSN_link_ends_number = 0
@@ -468,12 +444,13 @@ if __name__=="__main__":
                 boolean_DSN_receiver = True
                 for receiver_pointer in Earth_ground_station_list:
                     # DSN receiving stations
-                    if len(transmitter_pointer[1]) == len(receiver_pointer[1]) and transmitter_pointer[1] < receiver_pointer[1] and boolean_DSN_receiver:
+                    if transmitter_pointer[1] == receiver_pointer[1] and boolean_DSN_receiver:
                         two_way_link_ends = dict()
                         two_way_link_ends[observation.transmitter] = ("Earth",transmitter_pointer[1])
                         two_way_link_ends[observation.reflector1] = ("Mars",LaRa_reflector_name)
                         two_way_link_ends[observation.receiver] = ("Earth",transmitter_pointer[1])
                         link_ends_sort.append(two_way_link_ends)
+                        print(two_way_link_ends)
                         DSN_link_ends_number+=1
                         boolean_DSN_receiver = False
 
@@ -495,6 +472,7 @@ if __name__=="__main__":
                 link_ends_sort.append(two_way_link_ends)
                 DSN_link_ends_number+=1
 
+    print(link_ends_sort)
     # Find the index position, transmitter and receiver for each link-end
     link_ends_numbers = list()
     link_ends_transmitter = list()
@@ -570,11 +548,11 @@ if __name__=="__main__":
     # Create observation viability settings and calculators for LaRa
     if len(LaRa_observation_times_list)!=0:
         LaRa_viability_settings_list = list()
-        LaRa_viability_settings_list.append(observation.minimum_elevation_angle_viability(["Earth",""],np.deg2rad(LaRa_antenna_min_elevation)))
-        LaRa_viability_settings_list.append(observation.minimum_elevation_angle_viability(["Mars",""],np.deg2rad(LaRa_earth_min)))
-        LaRa_viability_settings_list.append(observation.maximum_elevation_angle_viability(["Mars",""],np.deg2rad(LaRa_earth_max)))
-        LaRa_viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(LaRa_antenna_min_elevation)))
-        LaRa_viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
+        #LaRa_viability_settings_list.append(observation.minimum_elevation_angle_viability(["Earth",""],np.deg2rad(LaRa_antenna_min_elevation)))
+        #LaRa_viability_settings_list.append(observation.minimum_elevation_angle_viability(["Mars",""],np.deg2rad(LaRa_earth_min)))
+        #LaRa_viability_settings_list.append(observation.maximum_elevation_angle_viability(["Mars",""],np.deg2rad(LaRa_earth_max)))
+        #LaRa_viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(LaRa_antenna_min_elevation)))
+        #LaRa_viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
     
     #Change directory in order to read ResStatPerPass_ForCarlos.txt
     noise_folder_path = os.path.dirname(os.path.realpath(__file__))
@@ -692,16 +670,14 @@ if __name__=="__main__":
 
     # Define noise levels for weights
     vector_weights = list()
-    link_ends = simulated_observations.concatenated_link_end_names
-    for index in range(0,len(concatenated_times_array)):
-        link_end_name = link_ends[index]
-        if link_end_name[observation.reflector1][1] == RISE_reflector_name:
-            vector_weights.extend(list([RISE_std_mHz_function((concatenated_times_array[index]-RISE_observation_start_epoch_reference_noise)/constants.JULIAN_DAY)*10**(-3)/base_frequency]))
-        if link_end_name[observation.reflector1][1] == LaRa_reflector_name:
-            if link_end_name[observation.transmitter] == link_end_name[observation.receiver]:
-                vector_weights.extend(list(LaRa_std_noise_function([concatenated_times_array[index]])))
-            else:
-                vector_weights.extend(list(LaRa_std_noise_function([concatenated_times_array[index]])))
+
+    # Define noise levels for weights for RISE
+    if len(RISE_observation_times_list)!=0: 
+        vector_weights.extend(list(RISE_std_mHz_function((RISE_concatenated_times-RISE_observation_start_epoch_reference_noise)/constants.JULIAN_DAY)*10**(-3)/base_frequency))
+
+    # Define noise levels for weights for LaRa
+    if len(LaRa_observation_times_list)!=0:
+        vector_weights.extend(list(LaRa_std_noise_function(LaRa_concatenated_times)))
 
     # Weights list becomes an array
     vector_weights = np.array(vector_weights)
@@ -1045,8 +1021,11 @@ if __name__=="__main__":
     ########################################################################################################################
 
     # Step evaluation
-    arange_eval = np.arange(0,len(concatenated_times_no_duplicated),step_eval) 
+    arange_eval = np.arange(0,len(concatenated_times_no_duplicated),step_eval)
     time_eval = [concatenated_times_no_duplicated[i] for i in arange_eval]
+
+    arange_eval = [arange_eval[-1]]
+    time_eval = [time_eval[-1]]
 
     np.savetxt(output_folder_path+"/time_plot.dat",time_eval,fmt='%.15e')
     
@@ -1172,17 +1151,6 @@ if __name__=="__main__":
     plt.savefig(output_folder_path+"/std_noise_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all') 
-
-    # Plot to check the viability of the Sun v2
-    plt.figure(figsize=(15, 6))
-    plt.scatter((concatenated_times_sort-observation_start_epoch*np.ones(concatenated_times_sort))/constants.JULIAN_DAY,vector_weights_sort)
-    plt.ylabel('Std noise [mHz]')
-    plt.xlabel('Time [days]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
-    plt.grid()
-    plt.savefig(output_folder_path+"/weights_time.pdf",bbox_inches="tight")
-    plt.show()
-    plt.close('all')
     
     # Formal to apriori ratio
     plt.figure(figsize=(15, 6))

@@ -19,21 +19,22 @@ if __name__=="__main__":
     ################################################## FILES ###############################################################
     ########################################################################################################################
 
-    benchmark_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISEFalse_LaRaTrue_PRIDEFalseFalse_corr0')
-    main_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISEFalse_LaRaTrue_PRIDETrueFalse_corr0.99')
-    main2_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISEFalse_LaRaTrue_PRIDETrueFalse_corr0')
+    benchmark_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISETrue_LaRaTrue_PRIDETrueFalse_corr0')
+    main_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/PODnoise10_RISETrue_LaRaTrue_PRIDETrueFalse_corr0')
     output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_comparison_plot')
     os.makedirs(output_folder_path,exist_ok=True)
 
     # Booleans to understand whether we want to simulate together RISE and LaRa missions, or separetely
-    RISE_boolean = False
+    RISE_boolean = True
     LaRa_boolean = True
 
     mas =np.pi/(180.0*1000.0*3600.0) # Conversion from milli arc seconds to seconds 
     
-    time_eval = np.loadtxt(main_folder+'/time_plot.dat')
-    time_eval2 = np.loadtxt(main2_folder+'/time_plot.dat')
     time_bench_eval = np.loadtxt(benchmark_folder+'/time_plot.dat')
+    time_eval = np.loadtxt(main_folder+'/time_plot.dat')
+
+    label_bench_eval = r'- DSN & PRIDE & $\rho$=0'
+    label_eval = r'- DSN & PRIDE & $\rho$=0 & noise reduced factor 10'
 
     # 1-sigma position as a function of time
     plt.figure(figsize=(15, 6))
@@ -47,18 +48,18 @@ if __name__=="__main__":
     z_bench_values = np.loadtxt(benchmark_folder+'/zposition_plot.dat')
 
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        x_values,'-o',label='$x$')
+        x_values,'-o',label=r'$x$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        y_values,'-o',label='$y$')
+        y_values,'-o',label=r'$y$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        z_values,'-o',label='$z$')
+        z_values,'-o',label=r'$z$'+label_eval,markersize=3)
 
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        x_bench_values,'--',label='$x_b$')
+        x_bench_values,'--',label=r'$x$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        y_bench_values,'--',label='$y_b$')
+        y_bench_values,'--',label=r'$y$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        z_bench_values,'--',label='$z_b$')
+        z_bench_values,'--',label=r'$z$'+label_bench_eval)
     plt.axvline(x=(6.944957280000000e+08-time_eval[0])/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ x,y,z [m]')
     plt.xlabel('Time [days]')
@@ -81,18 +82,18 @@ if __name__=="__main__":
     zdot_bench_values = np.loadtxt(benchmark_folder+'/zdotvelocity_plot.dat')
     
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        xdot_values,'-o',label=r'$\dot{x}$')
+        xdot_values,'-o',label=r'$\dot{x}$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        ydot_values,'-o',label=r'$\dot{y}$')
+        ydot_values,'-o',label=r'$\dot{y}$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        zdot_values,'-o',label=r'$\dot{z}$')
+        zdot_values,'-o',label=r'$\dot{z}$'+label_eval,markersize=3)
 
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        xdot_bench_values,'--',label=r'$\dot{x}_b$')
+        xdot_bench_values,'--',label=r'$\dot{x}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        ydot_bench_values,'--',label=r'$\dot{y}_b$')
+        ydot_bench_values,'--',label=r'$\dot{y}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        zdot_bench_values,'--',label=r'$\dot{z}_b$')
+        zdot_bench_values,'--',label=r'$\dot{z}$'+label_bench_eval)
     plt.axvline(x=(6.944957280000000e+08-time_eval[0])/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ $\dot{x}$,$\dot{y}$,$\dot{z}$ [m/s]')
     plt.xlabel('Time [days]')
@@ -106,15 +107,12 @@ if __name__=="__main__":
     # 1-sigma F as a function of time
     plt.figure(figsize=(15, 6))
     F_values = np.loadtxt(main_folder+'/corefactor_plot.dat')
-    F2_values = np.loadtxt(main2_folder+'/corefactor_plot.dat')
     F_bench_values = np.loadtxt(benchmark_folder+'/corefactor_plot.dat')
     
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        F_values,'--',label=r'F - DSN+PRIDE $\rho$=0.99')#label='F')
-    plt.plot((time_eval2-time_eval[0]*np.ones(len(time_eval2)))/constants.JULIAN_DAY,
-        F2_values,'--',label=r'F - DSN+PRIDE $\rho$=0')#label='F')
+        F_values,'--',label=r'F'+label_eval,markersize=3)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        F_bench_values,'--',label=r'F - only DSN')#r'F$_b$')
+        F_bench_values,'--',label=r'F'+label_bench_eval)
     plt.axvline(x=(6.944957280000000e+08-time_eval[0])/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ F [-]')
     plt.xlabel('Time [days]')
@@ -131,9 +129,9 @@ if __name__=="__main__":
     sigma_FCN_bench_values = np.loadtxt(benchmark_folder+'/sigmaFCN_plot.dat')
     
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        sigma_FCN_values,'-o',label=r'$\sigma_{FCN}$')
+        sigma_FCN_values,'-o',label=r'$\sigma_{FCN}$'+label_eval,markersize=3)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        sigma_FCN_bench_values,'--',label=r'${\sigma_{FCN}}_b$')
+        sigma_FCN_bench_values,'--',label=r'${\sigma_{FCN}}$'+label_bench_eval)
 
     plt.axvline(x=(6.944957280000000e+08-time_eval[0])/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ $\sigma_{FCN}$ [rad/s]')
@@ -158,11 +156,11 @@ if __name__=="__main__":
         zRISElander_values = np.loadtxt(main_folder+'/zRISE_plot.dat')
 
         plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-            xRISElander_values,'-o',label='$x_{RISE}$')
+            xRISElander_values,'-o',label='$x_{RISE}$'+label_eval,markersize=3)
         plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-            yRISElander_values,'-o',label='$y_{RISE}$')
+            yRISElander_values,'-o',label='$y_{RISE}$'+label_eval,markersize=3)
         plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-            zRISElander_values,'-o',label='$z_{RISE}$')
+            zRISElander_values,'-o',label='$z_{RISE}$'+label_eval,markersize=3)
     
     if LaRa_boolean:
         xLaRalander_values = np.loadtxt(main_folder+'/xLaRa_plot.dat')
@@ -170,11 +168,11 @@ if __name__=="__main__":
         zLaRalander_values = np.loadtxt(main_folder+'/zLaRa_plot.dat')
 
         plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-            xLaRalander_values,'-o',label='$x_{LaRa}$')
+            xLaRalander_values,'-o',label='$x_{LaRa}$'+label_eval,markersize=3)
         plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-            yLaRalander_values,'-o',label='$y_{LaRa}$')
+            yLaRalander_values,'-o',label='$y_{LaRa}$'+label_eval,markersize=3)
         plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-            zLaRalander_values,'-o',label='$z_{LaRa}$')
+            zLaRalander_values,'-o',label='$z_{LaRa}$'+label_eval,markersize=3)
 
     if RISE_boolean:
         xRISElander_bench_values = np.loadtxt(benchmark_folder+'/xRISE_plot.dat')
@@ -182,11 +180,11 @@ if __name__=="__main__":
         zRISElander_bench_values = np.loadtxt(benchmark_folder+'/zRISE_plot.dat')
 
         plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-            xRISElander_bench_values,'--',label='${x_{RISE}}_b$')
+            xRISElander_bench_values,'--',label=r'${x_{RISE}}$'+label_bench_eval)
         plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-            xRISElander_bench_values,'--',label='${y_{RISE}}_b$')
+            xRISElander_bench_values,'--',label=r'${y_{RISE}}$'+label_bench_eval)
         plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-            xRISElander_bench_values,'--',label='${z_{RISE}}_b$')
+            xRISElander_bench_values,'--',label=r'${z_{RISE}}$'+label_bench_eval)
     
     if LaRa_boolean:
         xLaRalander_bench_values = np.loadtxt(benchmark_folder+'/xLaRa_plot.dat')
@@ -194,11 +192,11 @@ if __name__=="__main__":
         zLaRalander_bench_values = np.loadtxt(benchmark_folder+'/zLaRa_plot.dat')
 
         plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-            xLaRalander_bench_values,'--',label='${x_{LaRa}}_b$')
+            xLaRalander_bench_values,'--',label=r'${x_{LaRa}}$'+label_bench_eval)
         plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-            yLaRalander_bench_values,'--',label='${y_{LaRa}}_b$')
+            yLaRalander_bench_values,'--',label=r'${y_{LaRa}}$'+label_bench_eval)
         plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-            zLaRalander_bench_values,'--',label='${z_{LaRa}}_b$')
+            zLaRalander_bench_values,'--',label=r'${z_{LaRa}}$'+label_bench_eval)
 
     plt.axvline(x=(6.944957280000000e+08-time_eval[0])/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ x,y,z [m]')
@@ -233,38 +231,38 @@ if __name__=="__main__":
     sin4spin_bench_values = np.loadtxt(benchmark_folder+'/sin4spin_plot.dat')
     
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(cos1spin_values)/mas,'-o',label=r'$\psi^c_1$')
+        np.array(cos1spin_values)/mas,'-o',label=r'$\psi^c_1$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(sin1spin_values)/mas,'-o',label=r'$\psi^s_1$')
+        np.array(sin1spin_values)/mas,'-o',label=r'$\psi^s_1$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(cos2spin_values)/mas,'-o',label=r'$\psi^c_2$')
+        np.array(cos2spin_values)/mas,'-o',label=r'$\psi^c_2$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(sin2spin_values)/mas,'-o',label=r'$\psi^s_2$')
+        np.array(sin2spin_values)/mas,'-o',label=r'$\psi^s_2$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(cos3spin_values)/mas,'-o',label=r'$\psi^c_3$')
+        np.array(cos3spin_values)/mas,'-o',label=r'$\psi^c_3$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(sin3spin_values)/mas,'-o',label=r'$\psi^s_3$')
+        np.array(sin3spin_values)/mas,'-o',label=r'$\psi^s_3$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(cos4spin_values)/mas,'-o',label=r'$\psi^c_4$')
+        np.array(cos4spin_values)/mas,'-o',label=r'$\psi^c_4$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(sin4spin_values)/mas,'-o',label=r'$\psi^s_4$')
+        np.array(sin4spin_values)/mas,'-o',label=r'$\psi^s_4$'+label_eval,markersize=3)
 
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(cos1spin_bench_values)/mas,'--',label=r'${\psi^c_1}_b$')
+        np.array(cos1spin_bench_values)/mas,'--',label=r'${\psi^c_1}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(sin1spin_bench_values)/mas,'--',label=r'${\psi^s_1}_b$')
+        np.array(sin1spin_bench_values)/mas,'--',label=r'${\psi^s_1}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(cos2spin_bench_values)/mas,'--',label=r'${\psi^c_2}_b$')
+        np.array(cos2spin_bench_values)/mas,'--',label=r'${\psi^c_2}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(sin2spin_bench_values)/mas,'--',label=r'${\psi^s_2}_b$')
+        np.array(sin2spin_bench_values)/mas,'--',label=r'${\psi^s_2}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(cos3spin_bench_values)/mas,'--',label=r'${\psi^c_3}_b$')
+        np.array(cos3spin_bench_values)/mas,'--',label=r'${\psi^c_3}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(sin3spin_bench_values)/mas,'--',label=r'${\psi^s_3}_b$')
+        np.array(sin3spin_bench_values)/mas,'--',label=r'${\psi^s_3}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(cos4spin_bench_values)/mas,'--',label=r'${\psi^c_4}_b$')
+        np.array(cos4spin_bench_values)/mas,'--',label=r'${\psi^c_4}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(sin4spin_bench_values)/mas,'--',label=r'${\psi^s_4}_b$')
+        np.array(sin4spin_bench_values)/mas,'--',label=r'${\psi^s_4}$'+label_bench_eval)
     
     plt.axvline(x=(6.944957280000000e+08-time_eval[0])/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ $\psi$ [mas]')
@@ -291,22 +289,22 @@ if __name__=="__main__":
     ypsin1_bench_values = np.loadtxt(benchmark_folder+'/ypsin1_plot.dat')
     
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(xpcos1_values)/mas,'-o',label=r'$Xp^c_1$')
+        np.array(xpcos1_values)/mas,'-o',label=r'$Xp^c_1$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(xpsin1_values)/mas,'-o',label=r'$Xp^s_1$')
+        np.array(xpsin1_values)/mas,'-o',label=r'$Xp^s_1$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(ypcos1_values)/mas,'-o',label=r'$Yp^c_1$')
+        np.array(ypcos1_values)/mas,'-o',label=r'$Yp^c_1$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(ypsin1_values)/mas,'-o',label=r'$Yp^s_1$')
+        np.array(ypsin1_values)/mas,'-o',label=r'$Yp^s_1$'+label_eval,markersize=3)
 
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(xpcos1_bench_values)/mas,'--',label=r'${Xp^c_1}_b$')
+        np.array(xpcos1_bench_values)/mas,'--',label=r'${Xp^c_1}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(xpsin1_bench_values)/mas,'--',label=r'${Xp^s_1}_b$')
+        np.array(xpsin1_bench_values)/mas,'--',label=r'${Xp^s_1}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(ypcos1_bench_values)/mas,'--',label=r'${Yp^c_1}_b$')
+        np.array(ypcos1_bench_values)/mas,'--',label=r'${Yp^c_1}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(ypsin1_bench_values)/mas,'--',label=r'${Yp^s_1}_b$')
+        np.array(ypsin1_bench_values)/mas,'--',label=r'${Yp^s_1}$'+label_bench_eval)
 
     plt.axvline(x=(6.944957280000000e+08-time_eval[0])/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
@@ -333,22 +331,22 @@ if __name__=="__main__":
     ypsin2_bench_values = np.loadtxt(benchmark_folder+'/ypsin2_plot.dat')
     
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(xpcos2_values)/mas,'-o',label=r'$Xp^c_2$')
+        np.array(xpcos2_values)/mas,'-o',label=r'$Xp^c_2$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(xpsin2_values)/mas,'-o',label=r'$Xp^s_2$')
+        np.array(xpsin2_values)/mas,'-o',label=r'$Xp^s_2$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(ypcos2_values)/mas,'-o',label=r'$Yp^c_2$')
+        np.array(ypcos2_values)/mas,'-o',label=r'$Yp^c_2$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(ypsin2_values)/mas,'-o',label=r'$Yp^s_2$')
+        np.array(ypsin2_values)/mas,'-o',label=r'$Yp^s_2$'+label_eval,markersize=3)
 
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(xpcos2_bench_values)/mas,'--',label=r'${Xp^c_2}_b$')
+        np.array(xpcos2_bench_values)/mas,'--',label=r'${Xp^c_2}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(xpsin2_bench_values)/mas,'--',label=r'${Xp^s_2}_b$')
+        np.array(xpsin2_bench_values)/mas,'--',label=r'${Xp^s_2}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(ypcos2_bench_values)/mas,'--',label=r'${Yp^c_2}_b$')
+        np.array(ypcos2_bench_values)/mas,'--',label=r'${Yp^c_2}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(ypsin2_bench_values)/mas,'--',label=r'${Yp^s_2}_b$')
+        np.array(ypsin2_bench_values)/mas,'--',label=r'${Yp^s_2}$'+label_bench_eval)
 
     plt.axvline(x=(6.944957280000000e+08-time_eval[0])/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
@@ -375,22 +373,22 @@ if __name__=="__main__":
     ypsin3_bench_values = np.loadtxt(benchmark_folder+'/ypsin3_plot.dat')
     
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(xpcos3_values)/mas,'-o',label=r'$Xp^c_3$')
+        np.array(xpcos3_values)/mas,'-o',label=r'$Xp^c_3$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(xpsin3_values)/mas,'-o',label=r'$Xp^s_3$')
+        np.array(xpsin3_values)/mas,'-o',label=r'$Xp^s_3$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(ypcos3_values)/mas,'-o',label=r'$Yp^c_3$')
+        np.array(ypcos3_values)/mas,'-o',label=r'$Yp^c_3$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(ypsin3_values)/mas,'-o',label=r'$Yp^s_3$')
+        np.array(ypsin3_values)/mas,'-o',label=r'$Yp^s_3$'+label_eval,markersize=3)
 
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(xpcos3_bench_values)/mas,'--',label=r'${Xp^c_3}_b$')
+        np.array(xpcos3_bench_values)/mas,'--',label=r'${Xp^c_3}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(xpsin3_bench_values)/mas,'--',label=r'${Xp^s_3}_b$')
+        np.array(xpsin3_bench_values)/mas,'--',label=r'${Xp^s_3}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(ypcos3_bench_values)/mas,'--',label=r'${Yp^c_3}_b$')
+        np.array(ypcos3_bench_values)/mas,'--',label=r'${Yp^c_3}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(ypsin3_bench_values)/mas,'--',label=r'${Yp^s_3}_b$')
+        np.array(ypsin3_bench_values)/mas,'--',label=r'${Yp^s_3}$'+label_bench_eval)
 
     plt.axvline(x=(6.944957280000000e+08-time_eval[0])/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
@@ -417,22 +415,22 @@ if __name__=="__main__":
     ypsin4_bench_values = np.loadtxt(benchmark_folder+'/ypsin4_plot.dat')
     
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(xpcos4_values)/mas,'-o',label=r'$Xp^c_4$')
+        np.array(xpcos4_values)/mas,'-o',label=r'$Xp^c_4$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(xpsin4_values)/mas,'-o',label=r'$Xp^s_4$')
+        np.array(xpsin4_values)/mas,'-o',label=r'$Xp^s_4$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(ypcos4_values)/mas,'-o',label=r'$Yp^c_4$')
+        np.array(ypcos4_values)/mas,'-o',label=r'$Yp^c_4$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(ypsin4_values)/mas,'-o',label=r'$Yp^s_4$')
+        np.array(ypsin4_values)/mas,'-o',label=r'$Yp^s_4$'+label_eval,markersize=3)
 
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(xpcos4_bench_values)/mas,'--',label=r'${Xp^c_4}_b$')
+        np.array(xpcos4_bench_values)/mas,'--',label=r'${Xp^c_4}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(xpsin4_bench_values)/mas,'--',label=r'${Xp^s_4}_b$')
+        np.array(xpsin4_bench_values)/mas,'--',label=r'${Xp^s_4}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(ypcos4_bench_values)/mas,'--',label=r'${Yp^c_4}_b$')
+        np.array(ypcos4_bench_values)/mas,'--',label=r'${Yp^c_4}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(ypsin4_bench_values)/mas,'--',label=r'${Yp^s_4}_b$')
+        np.array(ypsin4_bench_values)/mas,'--',label=r'${Yp^s_4}$'+label_bench_eval)
 
     plt.axvline(x=(6.944957280000000e+08-time_eval[0])/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
@@ -459,22 +457,22 @@ if __name__=="__main__":
     ypsin5_bench_values = np.loadtxt(benchmark_folder+'/ypsin5_plot.dat')
     
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(xpcos5_values)/mas,'-o',label=r'$Xp^c_5$')
+        np.array(xpcos5_values)/mas,'-o',label=r'$Xp^c_5$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(xpsin5_values)/mas,'-o',label=r'$Xp^s_5$')
+        np.array(xpsin5_values)/mas,'-o',label=r'$Xp^s_5$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(ypcos5_values)/mas,'-o',label=r'$Yp^c_5$')
+        np.array(ypcos5_values)/mas,'-o',label=r'$Yp^c_5$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(ypsin5_values)/mas,'-o',label=r'$Yp^s_5$')
+        np.array(ypsin5_values)/mas,'-o',label=r'$Yp^s_5$'+label_eval,markersize=3)
 
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(xpcos5_bench_values)/mas,'--',label=r'${Xp^c_5}_b$')
+        np.array(xpcos5_bench_values)/mas,'--',label=r'${Xp^c_5}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(xpsin5_bench_values)/mas,'--',label=r'${Xp^s_5}_b$')
+        np.array(xpsin5_bench_values)/mas,'--',label=r'${Xp^s_5}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(ypcos5_bench_values)/mas,'--',label=r'${Yp^c_5}_b$')
+        np.array(ypcos5_bench_values)/mas,'--',label=r'${Yp^c_5}$'+label_bench_eval)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
-        np.array(ypsin5_bench_values)/mas,'--',label=r'${Yp^s_5}_b$')
+        np.array(ypsin5_bench_values)/mas,'--',label=r'${Yp^s_5}$'+label_bench_eval)
 
     plt.axvline(x=(6.944957280000000e+08-time_eval[0])/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
     plt.ylabel(r'1-$\sigma$ $Xp, Yp$ [mas]')
