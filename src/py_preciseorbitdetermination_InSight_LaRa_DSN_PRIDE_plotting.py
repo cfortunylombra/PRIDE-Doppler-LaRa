@@ -1,5 +1,5 @@
 """
-Description: Environment Setup for the Precise Orbit Determination (RISE and LaRa with DSN-PRIDE)
+Description: Plot comparison between data
 
 Author: C. Fortuny-Lombraña
 """
@@ -19,8 +19,8 @@ if __name__=="__main__":
     ################################################## FILES ###############################################################
     ########################################################################################################################
 
-    benchmark_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISETrue_LaRaTrue_PRIDETrueFalse_corr0')
-    main_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/PODnoise10_RISETrue_LaRaTrue_PRIDETrueFalse_corr0')
+    benchmark_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISETrue_LaRaTrue_PRIDEFalseFalse_corr0')
+    main_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD10noise_RISETrue_LaRaTrue_PRIDEFalseFalse_corr0')
     output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_comparison_plot')
     os.makedirs(output_folder_path,exist_ok=True)
 
@@ -33,8 +33,8 @@ if __name__=="__main__":
     time_bench_eval = np.loadtxt(benchmark_folder+'/time_plot.dat')
     time_eval = np.loadtxt(main_folder+'/time_plot.dat')
 
-    label_bench_eval = r'- DSN & PRIDE & $\rho$=0'
-    label_eval = r'- DSN & PRIDE & $\rho$=0 & noise reduced factor 10'
+    label_bench_eval = r'- DSN & $\rho$=0'
+    label_eval = r'- DSN & $\rho$=0 & DSN noise reduced factor 10'
 
     # 1-sigma position as a function of time
     plt.figure(figsize=(15, 6))
@@ -110,7 +110,7 @@ if __name__=="__main__":
     F_bench_values = np.loadtxt(benchmark_folder+'/corefactor_plot.dat')
     
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        F_values,'--',label=r'F'+label_eval,markersize=3)
+        F_values,'-o',label=r'F'+label_eval,markersize=3)
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
         F_bench_values,'--',label=r'F'+label_bench_eval)
     plt.axvline(x=(6.944957280000000e+08-time_eval[0])/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
@@ -231,21 +231,21 @@ if __name__=="__main__":
     sin4spin_bench_values = np.loadtxt(benchmark_folder+'/sin4spin_plot.dat')
     
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(cos1spin_values)/mas,'-o',label=r'$\psi^c_1$'+label_eval,markersize=3)
+        np.array(cos1spin_values)/mas,'-o',label=r'$\phi^c_1$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(sin1spin_values)/mas,'-o',label=r'$\psi^s_1$'+label_eval,markersize=3)
+        np.array(sin1spin_values)/mas,'-o',label=r'$\phi^s_1$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(cos2spin_values)/mas,'-o',label=r'$\psi^c_2$'+label_eval,markersize=3)
+        np.array(cos2spin_values)/mas,'-o',label=r'$\phi^c_2$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(sin2spin_values)/mas,'-o',label=r'$\psi^s_2$'+label_eval,markersize=3)
+        np.array(sin2spin_values)/mas,'-o',label=r'$\phi^s_2$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(cos3spin_values)/mas,'-o',label=r'$\psi^c_3$'+label_eval,markersize=3)
+        np.array(cos3spin_values)/mas,'-o',label=r'$\phi^c_3$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(sin3spin_values)/mas,'-o',label=r'$\psi^s_3$'+label_eval,markersize=3)
+        np.array(sin3spin_values)/mas,'-o',label=r'$\phi^s_3$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(cos4spin_values)/mas,'-o',label=r'$\psi^c_4$'+label_eval,markersize=3)
+        np.array(cos4spin_values)/mas,'-o',label=r'$\phi^c_4$'+label_eval,markersize=3)
     plt.plot((time_eval-time_eval[0]*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(sin4spin_values)/mas,'-o',label=r'$\psi^s_4$'+label_eval,markersize=3)
+        np.array(sin4spin_values)/mas,'-o',label=r'$\phi^s_4$'+label_eval,markersize=3)
 
     plt.plot((time_bench_eval-time_eval[0]*np.ones(len(time_bench_eval)))/constants.JULIAN_DAY,
         np.array(cos1spin_bench_values)/mas,'--',label=r'${\psi^c_1}$'+label_bench_eval)

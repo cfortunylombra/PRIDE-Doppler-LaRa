@@ -1,5 +1,5 @@
 """
-Description: Allan Deviation
+Description: Compute Allan Deviation
 
 Author: C. Fortuny-Lombraña
 """
@@ -24,7 +24,9 @@ if __name__=="__main__":
     from collections import Counter
     from scipy import stats
 
-    integration_time = 20 #s taken from ED045 folder
+    integration_time = 60 #s taken from ED045 folder
+
+    base_frequency = 8400.5*10**6 #Hz
 
     output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/InSight')
     os.makedirs(output_folder_path,exist_ok=True)
@@ -410,8 +412,11 @@ if __name__=="__main__":
                     print("Correlation: ",correlation)
                     print("Slope Allan Deviation: ",slope)
                     print("Slope White Allan Deviation: ",slope_white)
-                    print("Sigma: ",allantools.mdev(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index],\
-                    rate = rate_fdets, data_type = 'freq',taus=integration_time)[1][0])
+                    if taus2[-1] < integration_time:
+                        print("Sigma: 0")
+                    else:
+                        print("Sigma: ",allantools.mdev(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index],\
+                        rate = rate_fdets, data_type = 'freq',taus=integration_time)[1][0]/base_frequency)
                      
                     #slope, intercept, r_value, p_value, std_err = stats.linregress(np.log10(taus2), np.log10(adevs))
                     #y = np.random.normal(np.mean(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index]),np.std(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index]),
@@ -445,8 +450,11 @@ if __name__=="__main__":
                     slope_total.append([slope])
                     slope_white_total.append([slope_white])
                     correlation_total.append([correlation])
-                    sigma_total.append([allantools.mdev(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index],\
-                    rate = rate_fdets, data_type = 'freq',taus=integration_time)[1][0]])
+                    if taus2[-1] < integration_time:
+                        sigma_total.append([0])
+                    else:
+                        sigma_total.append([allantools.mdev(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index],\
+                        rate = rate_fdets, data_type = 'freq',taus=integration_time)[1][0]/base_frequency])
                     if np.mean(correlation)>0.6 and np.abs(slope_white-slope) <0.75 and slope<0:
                         white_boolean.append([True])
                     else:

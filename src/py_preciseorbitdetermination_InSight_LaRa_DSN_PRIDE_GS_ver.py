@@ -1,5 +1,5 @@
 """
-Description: Environment Setup for the Precise Orbit Determination (RISE and LaRa with DSN-PRIDE)
+Description: Precise Orbit Determination only with LaRa without viability settings (V&V)
 
 Author: C. Fortuny-Lombraña
 """
