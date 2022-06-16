@@ -741,6 +741,7 @@ if __name__=="__main__":
     concatenated_link_ends = np.array(simulated_observations.concatenated_link_ends)
     concatenated_link_end_names = simulated_observations.concatenated_link_end_names
     doppler_residuals = pod_output.residual_history
+    observations_list = np.array(simulated_observations.concatenated_observations)
 
     # Compute how many DSN link ends there are
     DSN_concatenated_link_ends = list()
@@ -760,6 +761,7 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/concatenated_link_end_names.dat",concatenated_link_end_names_list, fmt='%s')
     np.savetxt(output_folder_path+"/doppler_residuals.dat",doppler_residuals,fmt='%.15e')
     np.savetxt(output_folder_path+"/vector_weights.dat",vector_weights,fmt='%.15e')
+    np.savetxt(output_folder_path+"/observations_list.dat",observations_list,fmt='%.15e')
 
     # Sort index
     index_sort = np.argsort(concatenated_times)
@@ -856,6 +858,17 @@ if __name__=="__main__":
     sort_concatenated_link_ends_names_dict.close()
     sort_concatenated_link_ends_names_dict.join()
 
+    # Function to sort observations
+    def sort_observations_func(index):
+        return observations_list[index]
+
+    # Sort cobservations
+    sort_observations_dict = Pool(CPU_par)
+    print("Sorting observations")
+    observations_list_sort = sort_observations_dict.map(sort_observations_func,index_sort)
+    sort_observations_dict.close()
+    sort_observations_dict.join()
+
     # Initialize inverted weighting matrix
     #inv_weight_complex = (scipy.sparse.diags(1/np.array(vector_weights_sort)**2)).tocsr() #Same as correlation to 1
     inv_weight_complex = scipy.sparse.coo_matrix((0,0))
@@ -889,6 +902,7 @@ if __name__=="__main__":
             residuals_sort[start_index:end_index] = residuals_sort_short
             concatenated_link_end_names_list_sort[start_index:end_index] = np.array(concatenated_link_end_names_list_sort[start_index:end_index])[receiver_link_ends]
             vector_weights_sort[start_index:end_index] = np.array(vector_weights_sort[start_index:end_index])[receiver_link_ends]
+            observations_list_sort[start_index:end_index] = np.array(observations_list_sort[start_index:end_index])[receiver_link_ends]
             concatenated_link_ends_sort[start_index:end_index] = np.array(concatenated_link_ends_sort[start_index:end_index])[receiver_link_ends]
             
             # Understanding which transmitters and receivers are involved
@@ -996,6 +1010,7 @@ if __name__=="__main__":
         concatenated_link_ends_sort.pop(index_delete)
         concatenated_link_end_names_list_sort.pop(index_delete)
         vector_weights_sort.pop(index_delete)
+        observations_list_sort.pop(index_delete)
 
     # Unit test for when remove_PRIDE_weight_boolean==TRUE, check whether the concatenated_times_sort is the same as concatenated_times_no_duplicated
     if remove_PRIDE_weight_boolean:
@@ -1037,6 +1052,7 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/concatenated_link_end_names_sort.dat",concatenated_link_end_names_list_sort, fmt='%s')
     np.savetxt(output_folder_path+"/doppler_residuals_sort.dat",residuals_sort,fmt='%.15e')
     np.savetxt(output_folder_path+"/vector_weights_sort.dat",vector_weights_sort,fmt='%.15e')
+    np.savetxt(output_folder_path+"/observations_list_sort.dat",observations_list_sort,fmt='%.15e')
     if PRIDE_boolean==False or correlation==0:
         np.savetxt(output_folder_path+"/partial_cov.dat",partial_cov,fmt='%.15e')
 
@@ -1125,9 +1141,9 @@ if __name__=="__main__":
 
     # Compute correlation matrix only for LaRa mission
     if len(LaRa_observation_times_list)!=0:
-        index_start_LaRa = list(concatenated_times_sort).index(min(LaRa_concatenated_times))-(list(concatenated_times_sort).count(min(LaRa_concatenated_times))-1)
+        index_start_LaRa = list(concatenated_times_sort).index(min(LaRa_concatenated_times))
         
-        inv_norm_covariance_LaRa_value = np.linalg.inv(np.transpose(estimation_information_matrix_sort[index_start_LaRa:])@scipy.sparse.diags(1/np.array(vector_weights_sort[index_start_LaRa:])**2)@estimation_information_matrix_sort[index_start_LaRa:]\
+        inv_norm_covariance_LaRa_value = np.linalg.inv(np.transpose(estimation_information_matrix_sort[index_start_LaRa:])@inv_weight_complex_total[index_start_LaRa:,index_start_LaRa:]@estimation_information_matrix_sort[index_start_LaRa:]\
                 +norm_inverse_a_priori_covariance)
 
         covariance_matrix_LaRa = np.zeros(np.shape(inv_norm_covariance_LaRa_value))
@@ -1165,7 +1181,7 @@ if __name__=="__main__":
         plt.scatter((RISE_concatenated_times-observation_start_epoch)/constants.JULIAN_DAY,RISE_std_mHz_function((RISE_concatenated_times-RISE_observation_start_epoch_reference_noise)/constants.JULIAN_DAY))
     if len(LaRa_observation_times_list)!=0: 
         plt.scatter((LaRa_concatenated_times-observation_start_epoch)/constants.JULIAN_DAY,LaRa_std_noise_function(LaRa_concatenated_times)/10**(-3)*base_frequency)
-    plt.ylabel('Std noise [mHz]')
+    plt.ylabel('Std noise [-]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.grid()
@@ -1175,14 +1191,36 @@ if __name__=="__main__":
 
     # Plot to check the viability of the Sun v2
     plt.figure(figsize=(15, 6))
-    plt.scatter((concatenated_times_sort-observation_start_epoch*np.ones(concatenated_times_sort))/constants.JULIAN_DAY,vector_weights_sort)
-    plt.ylabel('Std noise [mHz]')
+    plt.scatter((concatenated_times_sort-observation_start_epoch*np.ones(len(concatenated_times_sort)))/constants.JULIAN_DAY,vector_weights_sort)
+    plt.ylabel('Std noise [-]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.grid()
     plt.savefig(output_folder_path+"/weights_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
+
+    # Plot observations as a function of time
+    plt.figure(figsize=(15,6))
+    plt.scatter((concatenated_times_sort-observation_start_epoch*np.ones(len(concatenated_times_sort)))/constants.JULIAN_DAY,np.array(observations_list_sort)*constants.SPEED_OF_LIGHT)
+    plt.ylabel('Range rate [m/s]')
+    plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.grid()
+    plt.savefig(output_folder_path+"/observations_time.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close("all")
+
+    # Plot residual as a function of time
+    plt.figure(figsize=(15,6))
+    plt.scatter((concatenated_times_sort-observation_start_epoch*np.ones(len(concatenated_times_sort)))/constants.JULIAN_DAY,residuals_sort)
+    plt.ylabel('Residual [-]')
+    plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.grid()
+    plt.savefig(output_folder_path+"/residuals_time.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close("all")
     
     # Formal to apriori ratio
     plt.figure(figsize=(15, 6))

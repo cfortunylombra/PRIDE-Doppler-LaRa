@@ -34,7 +34,7 @@ if __name__=="__main__":
     time_eval = np.loadtxt(main_folder+'/time_plot.dat')
 
     label_bench_eval = r'- DSN & $\rho$=0'
-    label_eval = r'- DSN & $\rho$=0 & DSN noise reduced factor 10'
+    label_eval = r'- DSN & $\rho$=0 & DSN-LaRa/10'
 
     # 1-sigma position as a function of time
     plt.figure(figsize=(15, 6))

@@ -122,13 +122,34 @@ if __name__=="__main__":
             constraints_dict[station_pointer][time_stamp_pointer]['z_bool'] = False
 
     # The False statements are changed to True when the constraints are applied
-    constraints_dict['Hh']['2020-02-22 01:37:57']['IQR_bool'] = True
-    constraints_dict['Hh']['2020-02-22 01:37:57']['IQR_y'] = 2
-    constraints_dict['Hh']['2020-02-22 01:37:57']['IQR_y2'] = 2
+    constraints_dict['Bd']['2020-02-22 01:54:16']['IQR_bool'] = True
+    constraints_dict['Bd']['2020-02-22 01:54:16']['IQR_y'] = 1.25
+    constraints_dict['Bd']['2020-02-22 01:54:16']['IQR_y2'] = 1.25
 
-    constraints_dict['Ww']['2020-02-22 01:30:10']['z_bool'] = True
-    constraints_dict['Ww']['2020-02-22 01:30:10']['z_y'] = 3
-    constraints_dict['Ww']['2020-02-22 01:30:10']['z_y2'] = 3
+    constraints_dict['Cd']['2020-02-22 01:53:25']['IQR_bool'] = True
+    constraints_dict['Cd']['2020-02-22 01:53:25']['IQR_y'] = 1.25
+    constraints_dict['Cd']['2020-02-22 01:53:25']['IQR_y2'] = 1.25
+
+    constraints_dict['Hh']['2020-02-22 01:54:15']['IQR_bool'] = True
+    constraints_dict['Hh']['2020-02-22 01:54:15']['IQR_y'] = 1.25
+    constraints_dict['Hh']['2020-02-22 01:54:15']['IQR_y2'] = 1.25
+
+    constraints_dict['T6']['2020-02-22 01:35:35']['IQR_bool'] = True
+    constraints_dict['T6']['2020-02-22 01:35:35']['IQR_y'] = 1.25
+    constraints_dict['T6']['2020-02-22 01:35:35']['IQR_y2'] = 1.25
+
+    constraints_dict['T6']['2020-02-22 01:54:15']['IQR_bool'] = True
+    constraints_dict['T6']['2020-02-22 01:54:15']['IQR_y'] = 1.25
+    constraints_dict['T6']['2020-02-22 01:54:15']['IQR_y2'] = 1.25
+
+    #OLDS
+    #constraints_dict['Hh']['2020-02-22 01:37:57']['IQR_bool'] = True
+    #constraints_dict['Hh']['2020-02-22 01:37:57']['IQR_y'] = 2
+    #constraints_dict['Hh']['2020-02-22 01:37:57']['IQR_y2'] = 2
+
+    #constraints_dict['Ww']['2020-02-22 01:30:10']['z_bool'] = True
+    #constraints_dict['Ww']['2020-02-22 01:30:10']['z_y'] = 3
+    #constraints_dict['Ww']['2020-02-22 01:30:10']['z_y2'] = 3
 
     constraints_dict['Ef']['2020-10-21 03:35:05']['IQR_bool'] = True
     constraints_dict['Ef']['2020-10-21 03:35:05']['IQR_y'] = 1.5
@@ -175,9 +196,10 @@ if __name__=="__main__":
     x2_axis_fdets = 'Doppler noise [Hz]'
     y_axis_fdets = 'Signal-to-Noise ratio [dB]'
     y2_axis_fdets = 'Doppler noise [Hz]'
+    y3_axis_fdets = 'Freq. detection [Hz]'
 
     # Original files without any automatic cut
-    boolean_fdets = False
+    boolean_fdets = True
     if boolean_fdets:
         # Iterate along the ground stations inside the Fdets JSON file
         for fdets_station_pointer in data_fdets.keys():
@@ -231,10 +253,22 @@ if __name__=="__main__":
                 plt.show()
                 plt.close('all')
 
-                # Fourth plot: Allan deviation using the y2_axis_fdets
+                # Fourth plot: y3_axis_fdets vs x_axis_fdets
+                plt.figure()
+                plt.plot(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets],\
+                    data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y3_axis_fdets],'go-')
+                plt.xlabel(x_axis_fdets)
+                plt.ylabel(y3_axis_fdets)
+                plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer)
+                plt.grid()
+                plt.savefig(output_figures_path+'/Freq_vs_time_initial.pdf',bbox_inches="tight")
+                plt.show()
+                plt.close('all')
+
+                # Fifth plot: Allan deviation using the y2_axis_fdets
                 plt.figure()
                 rate_fdets = 1/Counter(np.diff(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets])).most_common(1)[0][0]
-                taus2, adevs, errors, ns = allantools.mdev(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets],\
+                taus2, adevs, errors, ns = allantools.mdev(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]/(np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y3_axis_fdets])+base_frequency),\
                     rate = rate_fdets, data_type = 'freq',taus='decade')
                 #y = np.random.normal(np.mean(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]),np.std(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]),
                 #        size=len(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]))
@@ -249,10 +283,11 @@ if __name__=="__main__":
                 plt.yscale('log')
                 plt.xlabel('Tau [s]')
                 plt.ylabel('Allan Deviation')
-                plt.legend([plot1,plot2],['Real-data','Simulated White Noise'])
+                plt.legend([plot1,plot2],['Real Measurements','White Noise'])
                 plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer)
                 plt.grid()
                 plt.axis('equal')
+                plt.savefig(output_figures_path+'/allan_deviation.pdf',bbox_inches="tight")
                 plt.show()
                 plt.close('all')
                 
@@ -368,7 +403,7 @@ if __name__=="__main__":
                     plt.close('all')
                 
                     # Third plot: y2_axis_fdets vs x_axis_fdets
-                    #plt.figure()
+                    plt.figure()
                     plt.plot(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets][start_index:end_index],\
                         data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index],'ko-')
                     plt.xlabel(x_axis_fdets)
@@ -378,11 +413,23 @@ if __name__=="__main__":
                     plt.savefig(output_figures_path+'/Doppler_noise_vs_time.pdf',bbox_inches="tight")
                     plt.show()
                     plt.close('all')
+
+                    # Fourth plot: y3_axis_fdets vs x_axis_fdets
+                    plt.figure()
+                    plt.plot(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets][start_index:end_index],\
+                        data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y3_axis_fdets][start_index:end_index],'ko-')
+                    plt.xlabel(x_axis_fdets)
+                    plt.ylabel(y3_axis_fdets)
+                    plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_label))
+                    plt.grid()
+                    plt.savefig(output_figures_path+'/Freq_vs_time.pdf',bbox_inches="tight")
+                    plt.show()
+                    plt.close('all')
                     
-                    # Fourth plot: Allan deviation using the y2_axis_fdets
+                    # Fifth plot: Allan deviation using the y2_axis_fdets
                     plt.figure()
                     rate_fdets = 1/Counter(np.diff(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets][start_index:end_index])).most_common(1)[0][0]
-                    taus2, adevs, errors, ns = allantools.mdev(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index],\
+                    taus2, adevs, errors, ns = allantools.mdev(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index]/(np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y3_axis_fdets][start_index:end_index])+base_frequency),\
                         rate = rate_fdets, data_type = 'freq',taus='decade')
                     #y = np.random.normal(np.mean(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]),np.std(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]),
                     #        size=len(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets]))
@@ -397,7 +444,7 @@ if __name__=="__main__":
                     plt.yscale('log')
                     plt.xlabel('Tau [s]')
                     plt.ylabel('Allan Deviation')
-                    plt.legend([plot1,plot2],['Real-data','Simulated White Noise'])
+                    plt.legend([plot1,plot2],['Real Measurements','White Noise'])
                     plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_label))
                     plt.grid()
                     plt.axis('equal')
@@ -415,8 +462,8 @@ if __name__=="__main__":
                     if taus2[-1] < integration_time:
                         print("Sigma: 0")
                     else:
-                        print("Sigma: ",allantools.mdev(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index],\
-                        rate = rate_fdets, data_type = 'freq',taus=integration_time)[1][0]/base_frequency)
+                        print("Sigma: ",allantools.mdev(np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index])/(np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y3_axis_fdets][start_index:end_index])+base_frequency),\
+                        rate = rate_fdets, data_type = 'freq',taus=integration_time)[1][0])
                      
                     #slope, intercept, r_value, p_value, std_err = stats.linregress(np.log10(taus2), np.log10(adevs))
                     #y = np.random.normal(np.mean(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index]),np.std(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index]),
@@ -453,8 +500,8 @@ if __name__=="__main__":
                     if taus2[-1] < integration_time:
                         sigma_total.append([0])
                     else:
-                        sigma_total.append([allantools.mdev(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index],\
-                        rate = rate_fdets, data_type = 'freq',taus=integration_time)[1][0]/base_frequency])
+                        sigma_total.append([allantools.mdev(np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index])/(np.array(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y3_axis_fdets][start_index:end_index])+base_frequency),\
+                        rate = rate_fdets, data_type = 'freq',taus=integration_time)[1][0]])
                     if np.mean(correlation)>0.6 and np.abs(slope_white-slope) <0.75 and slope<0:
                         white_boolean.append([True])
                     else:
@@ -502,7 +549,7 @@ if __name__=="__main__":
     y2_axis_phases = 'Phase [s]'
     y3_axis_phases = 'Frequency [Hz]'
 
-    boolean_phases = False
+    boolean_phases = True
     if boolean_phases:
         # Iterate along the ground stations inside the Phases JSON file
         for phases_station_pointer in data_phases.keys():
@@ -574,7 +621,7 @@ if __name__=="__main__":
 
                 # Third plot: Allan deviation using the y3_axis_phases
                 plt.figure()
-                taus2, adevs, errors, ns = allantools.mdev(data_phases[phases_station_pointer][phases_station_starttime_pointer][y3_axis_phases],\
+                taus2, adevs, errors, ns = allantools.mdev(np.array(data_phases[phases_station_pointer][phases_station_starttime_pointer][y3_axis_phases])/base_frequency,\
                     rate = rate_phases, data_type = 'freq',taus='decade')
                 #y = np.random.normal(np.mean(data_phases[phases_station_pointer][phases_station_starttime_pointer][y3_axis_phases]),np.std(data_phases[phases_station_pointer][phases_station_starttime_pointer][y3_axis_phases]),
                 #    size = len(data_phases[phases_station_pointer][phases_station_starttime_pointer][y3_axis_phases]))
@@ -590,7 +637,7 @@ if __name__=="__main__":
                 plt.yscale('log')
                 plt.xlabel('Tau [s]')
                 plt.ylabel('Allan Deviation')
-                plt.legend([plot1,plot2],['Real-data','Simulated White Noise'])
+                plt.legend([plot1,plot2],['Real Measurements','White Noise'])
                 plt.title(phases_station_pointer+' station at '+phases_station_starttime_pointer)
                 plt.grid()
                 plt.axis('equal')
@@ -605,14 +652,20 @@ if __name__=="__main__":
                 print("Correlation: ",correlation)
                 print("Slope Allan Deviation: ",slope)
                 print("Slope White Allan Deviation: ",slope_white)
-                print("Sigma: ",allantools.mdev(data_phases[phases_station_pointer][phases_station_starttime_pointer][y3_axis_phases],\
+                if taus2[-1] < integration_time:
+                    print("Sigma: 0")
+                else:
+                    print("Sigma: ",allantools.mdev(np.array(data_phases[phases_station_pointer][phases_station_starttime_pointer][y3_axis_phases])/base_frequency,\
                     rate = rate_phases, data_type = 'freq',taus=integration_time)[1][0])
 
                 # Saving Allan deviation results
                 data_phases[phases_station_pointer][phases_station_starttime_pointer]['Correlation'] = correlation
                 data_phases[phases_station_pointer][phases_station_starttime_pointer]['Slope Allan Deviation'] = slope
                 data_phases[phases_station_pointer][phases_station_starttime_pointer]['Slope White Allan Deviation'] = slope_white
-                data_phases[phases_station_pointer][phases_station_starttime_pointer]['Sigma'] = allantools.mdev(data_phases[phases_station_pointer][phases_station_starttime_pointer][y3_axis_phases],\
+                if taus2[-1] < integration_time:
+                    data_phases[phases_station_pointer][phases_station_starttime_pointer]['Sigma'] = 0
+                else:
+                    data_phases[phases_station_pointer][phases_station_starttime_pointer]['Sigma'] = allantools.mdev(np.array(data_phases[phases_station_pointer][phases_station_starttime_pointer][y3_axis_phases])/base_frequency,\
                     rate = rate_phases, data_type = 'freq',taus=integration_time)[1][0]
 
         # Save the updated data in a JSON file
