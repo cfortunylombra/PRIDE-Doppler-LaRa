@@ -19,8 +19,8 @@ if __name__=="__main__":
     ################################################## FILES ###############################################################
     ########################################################################################################################
 
-    benchmark_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISETrue_LaRaTrue_PRIDEFalseFalse_corr0')
-    main_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD10noise_RISETrue_LaRaTrue_PRIDEFalseFalse_corr0')
+    benchmark_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISETrue_LaRaTrue_PRIDETrueFalse_corr0.9')
+    main_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISETrue_LaRaTrue_PRIDEcomplexTrueFalse')
     output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_comparison_plot')
     os.makedirs(output_folder_path,exist_ok=True)
 
@@ -33,8 +33,8 @@ if __name__=="__main__":
     time_bench_eval = np.loadtxt(benchmark_folder+'/time_plot.dat')
     time_eval = np.loadtxt(main_folder+'/time_plot.dat')
 
-    label_bench_eval = r'- DSN & $\rho$=0'
-    label_eval = r'- DSN & $\rho$=0 & DSN-LaRa/10'
+    label_bench_eval = r'- DSN + PRIDE & $\rho$=0.9'
+    label_eval = r'- DSN + PRIDE & variable $\rho$'
 
     # 1-sigma position as a function of time
     plt.figure(figsize=(15, 6))
@@ -202,7 +202,7 @@ if __name__=="__main__":
     plt.ylabel(r'1-$\sigma$ x,y,z [m]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=time_eval[0])))
-    plt.legend()
+    plt.legend(ncol=2)
     plt.grid()
     plt.savefig(output_folder_path+"/xyzlander_time.pdf",bbox_inches="tight")
     plt.show()
@@ -483,5 +483,36 @@ if __name__=="__main__":
     plt.savefig(output_folder_path+"/polarmotionamp5_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
+
+    # Observations plot
+    plt.figure(figsize=(15,6))
+    time_concatenated_bench_eval = np.loadtxt(benchmark_folder+'/concatenated_times_sort.dat')
+    time_concatenated_eval = np.loadtxt(main_folder+'/concatenated_times_sort.dat')
+    plt.hist((time_concatenated_bench_eval-time_eval[0]*np.ones(len(time_concatenated_bench_eval)))/constants.JULIAN_DAY,bins=int((max(time_bench_eval)-time_eval[0])/constants.JULIAN_DAY)//7,color='blue',histtype='bar',label=label_bench_eval)
+    plt.hist((time_concatenated_eval-time_eval[0]*np.ones(len(time_concatenated_eval)))/constants.JULIAN_DAY,bins=int((max(time_bench_eval)-time_eval[0])/constants.JULIAN_DAY)//7,color='red',histtype='step',label=label_eval)    
+    plt.ylabel('Number of Observations per Week')
+    plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=time_eval[0])))
+    plt.legend()
+    plt.grid()
+    plt.savefig(output_folder_path+"/obs_bars.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    plt.figure(figsize=(15,4))
+    time_concatenated_bench_eval = np.loadtxt(benchmark_folder+'/concatenated_times_sort.dat')
+    time_concatenated_eval = np.loadtxt(main_folder+'/concatenated_times_sort.dat')
+    data = [(time_concatenated_bench_eval-time_eval[0]*np.ones(len(time_concatenated_bench_eval)))/constants.JULIAN_DAY,\
+        (time_concatenated_eval-time_eval[0]*np.ones(len(time_concatenated_eval)))/constants.JULIAN_DAY]
+    plt.hist(data,bins=int((max(time_bench_eval)-time_eval[0])/constants.JULIAN_DAY)//28,histtype='bar',label=[label_bench_eval,label_eval])
+    plt.axvline(x=(6.944957280000000e+08-time_eval[0])/constants.JULIAN_DAY, color='k', linestyle='--')
+    plt.ylabel(r'N$^\circ$ of Obs per 4 Weeks')
+    plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=time_eval[0])))
+    plt.grid()
+    plt.legend()
+    plt.savefig(output_folder_path+"/obs_bars.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all') 
 
 print("--- %s seconds ---" % (time.time() - run_time))

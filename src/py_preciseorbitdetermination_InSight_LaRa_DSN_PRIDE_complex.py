@@ -31,43 +31,38 @@ if __name__=="__main__":
     ################################################## CONSTANTS AND VARIABLES #############################################
     ########################################################################################################################
 
-    # days in a week
+    # Days in a week
     days_in_a_week = 7 #days
 
     # CPU number for parallel computing
     CPU_par = 14
 
-    # Booleans to understand whether we want to simulate together RISE and LaRa missions, or separetely
+    # Booleans to understand whether we want to simulate together RISE and LaRa missions, or separetely - These booleans can be swapped to FALSE
     RISE_boolean = True
     LaRa_boolean = True
     
     if LaRa_boolean:
-        # PRIDE stations boolean
+        # PRIDE stations boolean - This boolean can be swapped to FALSE
         PRIDE_boolean = True
         
-        # Boolean for removing PRIDE stations only after the POD
+        # Boolean for removing PRIDE stations only after the POD - Just for verification of the W matrix
         remove_PRIDE_weight_boolean = False
 
-        # Define fixed correlation between PRIDE and DSN stations
-        correlation = 0
     else:
-        # PRIDE stations boolean
+        # PRIDE stations boolean - This boolean can be swapped to TRUE (Since RISE does not have any PRIDE stations=NO DIFFERENCE)
         PRIDE_boolean = False
         
-        # Boolean for removing PRIDE stations only after the POD 
+        # Boolean for removing PRIDE stations only after the POD - Jus for verification of the W matrix
         remove_PRIDE_weight_boolean = False
-        
-        # Define fixed correlation between PRIDE and DSN stations
-        correlation = 0
 
-    # Evaluation step 
+    # Evaluation step size for the plots of the formal errors as function of time - This int can be increased for decreasing the computation time
     step_eval = 1
 
-    # Output folder
+    # Output folder - Creates new folders for the new plots
     if LaRa_boolean:
-        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean)+'_PRIDE'+str(PRIDE_boolean)+str(remove_PRIDE_weight_boolean)+'_corr'+str(correlation))
+        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean)+'_PRIDEcomplex'+str(PRIDE_boolean)+str(remove_PRIDE_weight_boolean))
     else:
-        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean))
+        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE'+str(RISE_boolean)+'_LaRacomplex'+str(LaRa_boolean))
     os.makedirs(output_folder_path,exist_ok=True)
 
     if RISE_boolean:
@@ -141,6 +136,85 @@ if __name__=="__main__":
     LaRa_antenna_min_elevation = 10 #deg
     LaRa_body_avoidance_angle = 10 #deg
 
+    # Noise sources (X-band at tau=60s)
+    frequency_standard=10**(np.log10(8e-16)+1/2*(np.log10(1000)-np.log10(60)))
+    antenna_mechanical=1.6e-14
+    ground_electronics=10**(np.log10(2e-16)+1/2*(np.log10(1000)-np.log10(60)))
+    stochastic_spacecraft_motion=10**(np.log10(2e-16)+1/2*(np.log10(1000)-np.log10(60)))
+    receiver_thermal_noise=10**(np.log10(1e-16)+1/2*(np.log10(1000)-np.log10(60)))
+    spacecraft_transponder=1.8e-14
+    tropospheric_scintillation=6.5e-14
+
+    # Plasma noise function (tau=60s)
+    def plasma_noise_function(SEP_angle_value):
+        if SEP_angle_value>=np.deg2rad(0) and SEP_angle_value<=np.deg2rad(90):
+            return (1.76*10**(-14)*(np.sin(SEP_angle_value))**(-1.98)+6.25*10**(-14)*(np.sin(SEP_angle_value))**(0.06))
+        elif SEP_angle_value>np.deg2rad(90) and SEP_angle_value<=np.deg2rad(170):
+            return (1.76*10**(-14)+6.25*10**(-14))*(np.sin(SEP_angle_value))**(1.05)
+        elif SEP_angle_value>np.deg2rad(170) and SEP_angle_value<=np.deg2rad(180):
+            return 1.27*10**(-14)
+
+    # Common noise percentage
+    def common_Doppler_noise_percentage_function(SEP_angle_value):
+        # Noise sources (X-band at tau=60s)
+        frequency_standard=10**(np.log10(8e-16)+1/2*(np.log10(1000)-np.log10(60)))
+        antenna_mechanical=1.6e-14
+        ground_electronics=10**(np.log10(2e-16)+1/2*(np.log10(1000)-np.log10(60)))
+        stochastic_spacecraft_motion=10**(np.log10(2e-16)+1/2*(np.log10(1000)-np.log10(60)))
+        receiver_thermal_noise=10**(np.log10(1e-16)+1/2*(np.log10(1000)-np.log10(60)))
+        spacecraft_transponder=1.8e-14
+        tropospheric_scintillation=6.5e-14
+        plasma_noise = plasma_noise_function(SEP_angle_value)
+        
+        common_noise = np.sqrt(frequency_standard**2+plasma_noise**2+stochastic_spacecraft_motion**2+spacecraft_transponder**2+(tropospheric_scintillation/np.sqrt(2))**2)
+        total_noise = np.sqrt(frequency_standard**2+antenna_mechanical**2+ground_electronics**2+stochastic_spacecraft_motion**2+receiver_thermal_noise**2+spacecraft_transponder**2+tropospheric_scintillation**2+plasma_noise**2)
+        return common_noise**2/total_noise**2
+
+    def weather_percentage_function(SEP_angle_value):
+        frequency_standard=10**(np.log10(8e-16)+1/2*(np.log10(1000)-np.log10(60)))
+        antenna_mechanical=1.6e-14
+        ground_electronics=10**(np.log10(2e-16)+1/2*(np.log10(1000)-np.log10(60)))
+        stochastic_spacecraft_motion=10**(np.log10(2e-16)+1/2*(np.log10(1000)-np.log10(60)))
+        receiver_thermal_noise=10**(np.log10(1e-16)+1/2*(np.log10(1000)-np.log10(60)))
+        spacecraft_transponder=1.8e-14
+        tropospheric_scintillation=6.5e-14
+        plasma_noise = plasma_noise_function(SEP_angle_value)
+
+        weather_noise = np.sqrt(tropospheric_scintillation**2)
+        total_noise = np.sqrt(frequency_standard**2+antenna_mechanical**2+ground_electronics**2+stochastic_spacecraft_motion**2+receiver_thermal_noise**2+spacecraft_transponder**2+tropospheric_scintillation**2+plasma_noise**2)
+        return weather_noise**2/total_noise**2
+
+    # Min Doppler Noise from ED045 observations
+    min_Doppler_noise_real_data = dict()
+    min_Doppler_noise_real_data['MEDICINA'] = 1.1893669211845945e-13
+    min_Doppler_noise_real_data['WETTZELL'] = 5.523841298583862e-13
+    min_Doppler_noise_real_data['ONSALA60'] = 1.460047359922946e-13
+    min_Doppler_noise_real_data['EFLSBERG'] = 6.601389242000477e-14
+    min_Doppler_noise_real_data['WRT0'] = 2.8182590417184753e-13
+    min_Doppler_noise_real_data['YEBES40M'] = 1.0347841930949488e-13
+    min_Doppler_noise_real_data['TIANMA65'] = 3.799449475342986e-14
+    min_Doppler_noise_real_data['CEDUNA'] = 2.4417833773786286e-12
+    min_Doppler_noise_real_data['BADARY'] = 1.9464314322469196e-13
+    min_Doppler_noise_real_data['HARTRAO'] = 7.121852569380006e-13
+    min_Doppler_noise_real_data['IRBENE'] = 3.467891060872128e-10
+    for LaRa_transmitter in LaRa_transmitter_names:
+        min_Doppler_noise_real_data[LaRa_transmitter] = 2.564768287601929e-14
+
+    # Parameters chosen from an analysis performed
+    distance_ionospheric = 413e3
+
+    def indicator_Doppler_noise_function(SEP_angle_value):
+        common_Doppler_noise = common_Doppler_noise_percentage_function(SEP_angle_value)*min_Doppler_noise_real_data[LaRa_transmitter_names[0]]
+        
+        indicator_Doppler_noise = dict()
+        for station_1 in list(min_Doppler_noise_real_data.keys()):
+            indicator_Doppler_noise[station_1] = dict()
+            for station_2 in list(min_Doppler_noise_real_data.keys()):
+                if station_1 != station_2:
+                    linear_value = ((min_Doppler_noise_real_data[station_1]-common_Doppler_noise)+(min_Doppler_noise_real_data[station_2]-common_Doppler_noise))/(2*common_Doppler_noise+2*(plasma_noise_function(SEP_angle_value)-plasma_noise_function(np.pi)))
+                    indicator_Doppler_noise[station_1][station_2] = 2-2/(1+np.exp(-10**(-1/2)*linear_value))
+        return indicator_Doppler_noise
+
     ########################################################################################################################
     ################################################## CREATE ENVIRONMENT ##################################################
     ########################################################################################################################
@@ -205,7 +279,7 @@ if __name__=="__main__":
                 name_ground_station = name_line_ground_station.split("DBCODE=",1)[1].split()[0]
             
             # Since the Sebastien files do not have Hart15M and Hobart12 radio telescopes, they are not included in the simulation
-            if name_ground_station=="HART15M" or name_ground_station=="HOBART12":
+            if name_ground_station=="HART15M" or name_ground_station=="HOBART12" or name_ground_station=="WARK30M" or name_ground_station=="HOBART26":
                 continue
             else:
                 x_coordinate_ground_station = float(coordinates_line_ground_station.split("X=",1)[1].split()[0])
@@ -244,6 +318,15 @@ if __name__=="__main__":
          element_conversion.geodetic_position_type)
 
     Mars_ground_station_list = environment_setup.get_ground_station_list(bodies.get_body("Mars"))
+
+    # Distance between stations
+    distance_stations = dict()
+    Earth_ground_station_dict = {**transmitters_dict,**radio_telescopes_dict}
+    for station_1 in Earth_ground_station_dict:
+        distance_stations[station_1] = dict()
+        for station_2 in Earth_ground_station_dict:
+            if station_1 != station_2:
+                distance_stations[station_1][station_2] = np.sqrt((Earth_ground_station_dict[station_1][0]-Earth_ground_station_dict[station_2][0])**2+(Earth_ground_station_dict[station_1][1]-Earth_ground_station_dict[station_2][1])**2+(Earth_ground_station_dict[station_1][2]-Earth_ground_station_dict[station_2][2])**2)
 
     ########################################################################################################################
     ################################################## CREATE ACCELERATION MODELS ##########################################
@@ -870,8 +953,10 @@ if __name__=="__main__":
     sort_observations_dict.join()
 
     # Initialize inverted weighting matrix
-    #inv_weight_complex = (scipy.sparse.diags(1/np.array(vector_weights_sort)**2)).tocsr() #Same as correlation to 1
     inv_weight_complex = scipy.sparse.coo_matrix((0,0))
+
+    # Save the correlation coefficients
+    correlation_list = list()
     
     # Delete arrays where two DSN have observation at the same time
     indices_delete = list()
@@ -939,7 +1024,7 @@ if __name__=="__main__":
                         if transmitters_total[row_index]==receivers_total[row_index]:
                             block_weight[0][0] = vector_weights_sort[start_index_block+row_index]**2
                             inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
-                        # When transmitter !=r receiver -> delete index
+                        # When transmitter != receiver -> delete index
                         else:
                             indices_delete.append(start_index_block+row_index)
 
@@ -948,6 +1033,16 @@ if __name__=="__main__":
                     # Number of receivers for a transmitter
                     split_count = transmitter_count_number[0]
                     block_weight = (scipy.sparse.coo_matrix((split_count,split_count))).toarray()
+
+                    # Compute the the distances from the Sun to Mars and Earth
+                    r1 = spice_interface.get_body_cartesian_position_at_epoch("Earth","Sun","ECLIPJ2000","NONE",concatenated_times_sort[start_index])
+                    r2 = spice_interface.get_body_cartesian_position_at_epoch("Mars","Sun","ECLIPJ2000","NONE",concatenated_times_sort[start_index])
+
+                    # Cosine rule in order to compute the SEP angle
+                    SEP_angle = ((np.pi-np.arccos(np.dot(r1,r2)/(np.linalg.norm(r1)*np.linalg.norm(r2))))/2)
+
+                    indicator_Doppler_noise = indicator_Doppler_noise_function(SEP_angle)
+
                     for row_index in range(0,split_count):
                         for column_index in range(0,split_count):
                             # Diagonal element
@@ -955,7 +1050,13 @@ if __name__=="__main__":
                                 block_weight[row_index][column_index] = vector_weights_sort[start_index_block+row_index]**2
                             # Non-diagonal element
                             else:
-                                block_weight[row_index][column_index] = correlation*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
+                                station_1 = receivers_total[row_index]
+                                station_2 = receivers_total[column_index]
+                                correlation_coefficient = (1-weather_percentage_function(SEP_angle))*indicator_Doppler_noise[station_1][station_2]+weather_percentage_function(SEP_angle)*np.exp(-distance_stations[station_1][station_2]/(2*distance_ionospheric))
+                                block_weight[row_index][column_index] = correlation_coefficient*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
+                                
+                                if row_index>column_index:
+                                    correlation_list.append(correlation_coefficient)
                     inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
 
             # When different transmitters are available
@@ -984,6 +1085,15 @@ if __name__=="__main__":
                         # When all the PRIDE observations are taken into account
                         else:
                             block_weight = (scipy.sparse.coo_matrix((split_count,split_count))).toarray()
+
+                            # Compute the the distances from the Sun to Mars and Earth
+                            r1 = spice_interface.get_body_cartesian_position_at_epoch("Earth","Sun","ECLIPJ2000","NONE",concatenated_times_sort[start_index])
+                            r2 = spice_interface.get_body_cartesian_position_at_epoch("Mars","Sun","ECLIPJ2000","NONE",concatenated_times_sort[start_index])
+
+                            # Cosine rule in order to compute the SEP angle
+                            SEP_angle = ((np.pi-np.arccos(np.dot(r1,r2)/(np.linalg.norm(r1)*np.linalg.norm(r2))))/2)
+
+                            indicator_Doppler_noise = indicator_Doppler_noise_function(SEP_angle)
                             for row_index in range(0,split_count):
                                 for column_index in range(0,split_count):
                                     # Diagonal element
@@ -991,7 +1101,12 @@ if __name__=="__main__":
                                         block_weight[row_index][column_index] = vector_weights_sort[start_index_block+row_index]**2
                                     # Non-diagonal element
                                     else:
-                                        block_weight[row_index][column_index] = correlation*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
+                                        station_1 = receivers_total[total_split+row_index]
+                                        station_2 = receivers_total[total_split+column_index]
+                                        correlation_coefficient = (1-weather_percentage_function(SEP_angle))*indicator_Doppler_noise[station_1][station_2]+weather_percentage_function(SEP_angle)*np.exp(-distance_stations[station_1][station_2]/(2*distance_ionospheric))
+                                        block_weight[row_index][column_index] = correlation_coefficient*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
+                                        if row_index>column_index:
+                                            correlation_list.append(correlation_coefficient)
                             inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
 
                     # Remove all the observations from other transmitters
@@ -1039,7 +1154,7 @@ if __name__=="__main__":
     inv_weight_complex_total = (inv_weight_complex).tocsr()
 
     # Partial covariance
-    if PRIDE_boolean==False or correlation==0:
+    if PRIDE_boolean==False:
         partial_cov = np.transpose(estimation_information_matrix_sort)@(inv_weight_complex_total.sqrt())
 
     # Save sorted data
@@ -1053,8 +1168,23 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/doppler_residuals_sort.dat",residuals_sort,fmt='%.15e')
     np.savetxt(output_folder_path+"/vector_weights_sort.dat",vector_weights_sort,fmt='%.15e')
     np.savetxt(output_folder_path+"/observations_list_sort.dat",observations_list_sort,fmt='%.15e')
-    if PRIDE_boolean==False or correlation==0:
+    if PRIDE_boolean==False:
         np.savetxt(output_folder_path+"/partial_cov.dat",partial_cov,fmt='%.15e')
+
+    # Histogram correlation
+    
+    plt.figure(figsize=(15, 6))
+    plt.hist(correlation_list, bins = 20)
+    average_correlation = np.mean(correlation_list)
+    plt.axvline(x=average_correlation, color='k', linestyle='--',label='Mean = '+str(average_correlation))
+    plt.ylabel('Frequency [-]')
+    plt.xlabel('Correlation [-]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.grid()
+    plt.legend()
+    plt.savefig(output_folder_path+"/correlation.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
 
     ########################################################################################################################
     ################################################## COVARIANCE ANALYSIS #################################################

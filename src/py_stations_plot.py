@@ -25,6 +25,9 @@ if __name__=="__main__":
     ################################################## CREATE GROUND STATIONS AND LANDER ###################################
     ########################################################################################################################
     
+    output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output')
+    os.makedirs(output_folder_path,exist_ok=True)
+
     # Earth-based transmitters
     transmitters_dict = dict() #Taken from JPL web site
     transmitters_dict['Canberra']=np.array([-4460894.9170,2682361.5070,-3674748.1517]) # DSS 43
@@ -72,6 +75,7 @@ if __name__=="__main__":
     # Plot the antennas in a map
     cm = plt.get_cmap('gist_rainbow')
     plt.figure(figsize=(8,6), edgecolor='w')
+    plt.rcParams.update({'font.size': 14})
     m = Basemap(projection='cyl', resolution = 'h',
         llcrnrlat = -90, urcrnrlat = 90,
         llcrnrlon= -180, urcrnrlon = 180, suppress_ticks=False)
@@ -88,7 +92,7 @@ if __name__=="__main__":
         cartesian_state[4] = 0
         cartesian_state[5] = 0
         spherical_state = element_conversion.cartesian_to_spherical( cartesian_state )
-        m.scatter(np.rad2deg(spherical_state[2]), np.rad2deg(spherical_state[1]), s = 20, color = cm(j*50), label=i, edgecolors='black')
+        m.scatter(np.rad2deg(spherical_state[2]), np.rad2deg(spherical_state[1]), s = 50, color = cm(j*50), label=i, edgecolors='black')
         j+=1
 
     # Add scatter points (radio telescopes)
@@ -104,7 +108,7 @@ if __name__=="__main__":
         cartesian_state[4] = 0
         cartesian_state[5] = 0
         spherical_state = element_conversion.cartesian_to_spherical( cartesian_state )
-        m.scatter(np.rad2deg(spherical_state[2]), np.rad2deg(spherical_state[1]), s = 10, color = cm(j*20), marker=markers[j%len(markers)],label=i)
+        m.scatter(np.rad2deg(spherical_state[2]), np.rad2deg(spherical_state[1]), s = 50, color = cm(j*20), marker=markers[j%len(markers)],label=i)
         j+=1
     
     plt.xlabel("Longitude [deg]")
@@ -112,7 +116,7 @@ if __name__=="__main__":
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     draw_map(m)
 
-    plt.savefig('./output/DSN-EVN-stations.pdf',bbox_inches="tight")
+    plt.savefig(output_folder_path+'/DSN-EVN-stations.pdf',bbox_inches="tight")
 
     # RISE landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
     RISE_reflector_name = "RISE"
@@ -124,14 +128,15 @@ if __name__=="__main__":
     LaRa_reflector_latitude_deg = 18.3 #North degrees
     LaRa_reflector_longitude_deg = 335.37 #East degrees
     plt.figure(figsize=(8,6))
-    img_mars = mpimg.imread('./src/Mars_MGS_colorhillshade_mola_1024.jpg')
+    plt.rcParams.update({'font.size': 14})
+    img_mars = mpimg.imread(os.path.dirname(os.path.realpath(__file__))+'/Mars_MGS_colorhillshade_mola_1024.jpg')
     plt.scatter(RISE_reflector_longitude_deg,RISE_reflector_latitude_deg,s=70,c='purple',marker='o',edgecolors='white',label="InSight")
     plt.scatter(LaRa_reflector_longitude_deg-360,LaRa_reflector_latitude_deg,s=70,c='orange',marker='o',edgecolors='white',label="ExoMars")
     plt.xlabel("Longitude [deg]")
     plt.ylabel("Latitude [deg]")
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.legend(loc='upper right')#, bbox_to_anchor=(1, 0.5))
     plt.imshow(img_mars,extent = [-180,180,-90,90])
 
-    plt.savefig('./output/Mars-stations.pdf',bbox_inches="tight")
+    plt.savefig(output_folder_path+'/Mars-stations.pdf',bbox_inches="tight")
 
 print("--- %s seconds ---" % (time.time() - run_time))
