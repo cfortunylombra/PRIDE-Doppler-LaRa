@@ -279,7 +279,7 @@ if __name__=="__main__":
                 name_ground_station = name_line_ground_station.split("DBCODE=",1)[1].split()[0]
             
             # Since the Sebastien files do not have Hart15M and Hobart12 radio telescopes, they are not included in the simulation
-            if name_ground_station=="HART15M" or name_ground_station=="HOBART12" or name_ground_station=="WARK30M" or name_ground_station=="HOBART26":
+            if name_ground_station=="HART15M" or name_ground_station=="HOBART12" or name_ground_station=="WARK30M" or name_ground_station=="HOBART26" or name_ground_station=="IRBENE":
                 continue
             else:
                 x_coordinate_ground_station = float(coordinates_line_ground_station.split("X=",1)[1].split()[0])
