@@ -1306,12 +1306,13 @@ if __name__=="__main__":
     plt.close('all')
 
     # Plot to check the viability of the Sun
-    plt.figure(figsize=(15, 6))
+    plt.figure(figsize=(8, 6))
+    plt.rcParams.update({'font.size': 18})
     if len(RISE_observation_times_list)!=0: 
         plt.scatter((RISE_concatenated_times-observation_start_epoch)/constants.JULIAN_DAY,RISE_std_mHz_function((RISE_concatenated_times-RISE_observation_start_epoch_reference_noise)/constants.JULIAN_DAY))
     if len(LaRa_observation_times_list)!=0: 
         plt.scatter((LaRa_concatenated_times-observation_start_epoch)/constants.JULIAN_DAY,LaRa_std_noise_function(LaRa_concatenated_times)/10**(-3)*base_frequency)
-    plt.ylabel('Std noise [-]')
+    plt.ylabel('Std noise [mHz]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.grid()

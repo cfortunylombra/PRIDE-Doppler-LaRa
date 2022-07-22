@@ -58,7 +58,7 @@ if __name__=="__main__":
                 name_ground_station = name_line_ground_station.split("DBCODE=",1)[1].split()[0]
             
             # Since the Sebastien files do not have Hart15M and Hobart12 radio telescopes, they are not included in the simulation
-            if name_ground_station=="HART15M" or name_ground_station=="HOBART12":
+            if name_ground_station=="HART15M" or name_ground_station=="HOBART12" or name_ground_station=="WARK30M" or name_ground_station=="HOBART26" or name_ground_station=="IRBENE":
                 continue
             else:
                 x_coordinate_ground_station = float(coordinates_line_ground_station.split("X=",1)[1].split()[0])
@@ -75,7 +75,7 @@ if __name__=="__main__":
     # Plot the antennas in a map
     cm = plt.get_cmap('gist_rainbow')
     plt.figure(figsize=(8,6), edgecolor='w')
-    plt.rcParams.update({'font.size': 14})
+    plt.rcParams.update({'font.size': 18})
     m = Basemap(projection='cyl', resolution = 'h',
         llcrnrlat = -90, urcrnrlat = 90,
         llcrnrlon= -180, urcrnrlon = 180, suppress_ticks=False)
@@ -108,12 +108,12 @@ if __name__=="__main__":
         cartesian_state[4] = 0
         cartesian_state[5] = 0
         spherical_state = element_conversion.cartesian_to_spherical( cartesian_state )
-        m.scatter(np.rad2deg(spherical_state[2]), np.rad2deg(spherical_state[1]), s = 50, color = cm(j*20), marker=markers[j%len(markers)],label=i)
+        m.scatter(np.rad2deg(spherical_state[2]), np.rad2deg(spherical_state[1]), s = 30, color = cm(j*30), marker=markers[j%len(markers)],label=i)
         j+=1
     
     plt.xlabel("Longitude [deg]")
     plt.ylabel("Latitude [deg]")
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    #plt.legend(loc='center left', ncol=2 bbox_to_anchor=(1, 0.5))
     draw_map(m)
 
     plt.savefig(output_folder_path+'/DSN-EVN-stations.pdf',bbox_inches="tight")
@@ -128,10 +128,10 @@ if __name__=="__main__":
     LaRa_reflector_latitude_deg = 18.3 #North degrees
     LaRa_reflector_longitude_deg = 335.37 #East degrees
     plt.figure(figsize=(8,6))
-    plt.rcParams.update({'font.size': 14})
+    plt.rcParams.update({'font.size': 18})
     img_mars = mpimg.imread(os.path.dirname(os.path.realpath(__file__))+'/Mars_MGS_colorhillshade_mola_1024.jpg')
-    plt.scatter(RISE_reflector_longitude_deg,RISE_reflector_latitude_deg,s=70,c='purple',marker='o',edgecolors='white',label="InSight")
-    plt.scatter(LaRa_reflector_longitude_deg-360,LaRa_reflector_latitude_deg,s=70,c='orange',marker='o',edgecolors='white',label="ExoMars")
+    plt.scatter(RISE_reflector_longitude_deg,RISE_reflector_latitude_deg,s=100,c='purple',marker='o',edgecolors='white',label="InSight")
+    plt.scatter(LaRa_reflector_longitude_deg-360,LaRa_reflector_latitude_deg,s=100,c='orange',marker='o',edgecolors='white',label="ExoMars")
     plt.xlabel("Longitude [deg]")
     plt.ylabel("Latitude [deg]")
     plt.legend(loc='upper right')#, bbox_to_anchor=(1, 0.5))

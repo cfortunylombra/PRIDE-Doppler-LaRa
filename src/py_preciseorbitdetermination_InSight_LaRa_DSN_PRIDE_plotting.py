@@ -19,7 +19,7 @@ if __name__=="__main__":
     ################################################## FILES ###############################################################
     ########################################################################################################################
 
-    benchmark_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISETrue_LaRaTrue_PRIDETrueFalse_corr0.9')
+    benchmark_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISETrue_LaRaTrue_PRIDETrueFalse_corr0')
     main_folder = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISETrue_LaRaTrue_PRIDEcomplexTrueFalse')
     output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_comparison_plot')
     os.makedirs(output_folder_path,exist_ok=True)
@@ -33,7 +33,7 @@ if __name__=="__main__":
     time_bench_eval = np.loadtxt(benchmark_folder+'/time_plot.dat')
     time_eval = np.loadtxt(main_folder+'/time_plot.dat')
 
-    label_bench_eval = r'- DSN + PRIDE & $\rho$=0.9'
+    label_bench_eval = r'- DSN + PRIDE & $\rho$=0'
     label_eval = r'- DSN + PRIDE & variable $\rho$'
 
     # 1-sigma position as a function of time
