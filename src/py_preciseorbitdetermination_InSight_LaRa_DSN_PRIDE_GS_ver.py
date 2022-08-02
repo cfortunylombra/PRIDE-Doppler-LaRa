@@ -367,21 +367,21 @@ if __name__=="__main__":
     for LaRa_time_pointer in LaRa_observation_times_list:
 
         # Compute the the distances from the Sun to Mars and Earth
-        r1 = spice_interface.get_body_cartesian_position_at_epoch("Earth","Sun","ECLIPJ2000","NONE",LaRa_time_pointer)
-        r2 = spice_interface.get_body_cartesian_position_at_epoch("Mars","Sun","ECLIPJ2000","NONE",LaRa_time_pointer)
-
+        r_earthsun = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Earth","Sun","ECLIPJ2000","NONE",LaRa_time_pointer))
+        r_marssun = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Mars","Sun","ECLIPJ2000","NONE",LaRa_time_pointer))
+        r_earthmars = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Mars","Earth","ECLIPJ2000","NONE",LaRa_time_pointer))
         # Cosine rule in order to compute the SEP angle
-        LaRa_SEP_angle.append((np.pi-np.arccos(np.dot(r1,r2)/(np.linalg.norm(r1)*np.linalg.norm(r2))))/2)
+        LaRa_SEP_angle.append(np.arccos((r_earthsun**2+r_earthmars**2-r_marssun**2)/(2*r_earthsun*r_earthmars)))
 
         # Compute the solar plasma noise using the equations shown in IMPROVED DOPPLER TRACKING SYSTEMS FOR DEEP SPACE NAVIGATION
         if LaRa_SEP_angle[-1]>=np.deg2rad(0) and LaRa_SEP_angle[-1]<=np.deg2rad(90):
-            LaRa_solar_noise.append(1.76*10**(-14)*(np.sin(LaRa_SEP_angle[-1]))**(-1.98)+6.25*10**(-14)*(np.sin(LaRa_SEP_angle[-1]))**(0.06))
+            LaRa_solar_noise.append(0.21545336*10**(-3)/base_frequency+1.76*10**(-14)*(np.sin(LaRa_SEP_angle[-1]))**(-1.98)+6.25*10**(-14)*(np.sin(LaRa_SEP_angle[-1]))**(0.06))
             LaRa_time_solar_noise.append(LaRa_time_pointer)
         elif LaRa_SEP_angle[-1]>np.deg2rad(90) and LaRa_SEP_angle[-1]<=np.deg2rad(170):
-            LaRa_solar_noise.append((1.76*10**(-14)+6.25*10**(-14))*(np.sin(LaRa_SEP_angle[-1]))**(1.05))
+            LaRa_solar_noise.append(0.21545336*10**(-3)/base_frequency+(1.76*10**(-14)+6.25*10**(-14))*(np.sin(LaRa_SEP_angle[-1]))**(1.05))
             LaRa_time_solar_noise.append(LaRa_time_pointer)
         elif LaRa_SEP_angle[-1]>np.deg2rad(170) and LaRa_SEP_angle[-1]<=np.deg2rad(180):
-            LaRa_solar_noise.append(1.27*10**(-14))
+            LaRa_solar_noise.append(0.21545336*10**(-3)/base_frequency+1.27*10**(-14))
             LaRa_time_solar_noise.append(LaRa_time_pointer)
 
         LaRa_time_solar_SEP.append(LaRa_time_pointer)
@@ -598,16 +598,16 @@ if __name__=="__main__":
             if len(RISE_observation_times_dict[RISE_transmitter_names[RISE_pointer_link_ends]])!=0:
                 observation_simulation_settings.append(observation.tabulated_simulation_settings(observation.two_way_doppler_type,
                     observation_settings_list[RISE_pointer_link_ends],RISE_observation_times_dict[RISE_transmitter_names[RISE_pointer_link_ends]],
-                    viability_settings = RISE_viability_settings_list,reference_link_end_type = observation.receiver,
-                    noise_function = RISE_std_mHz_callable))
+                    viability_settings = RISE_viability_settings_list,reference_link_end_type = observation.receiver))#,
+                    #noise_function = RISE_std_mHz_callable))
 
     # Create observation simulation settings for LaRa
     if len(LaRa_observation_times_list)!=0:
         for LaRa_pointer_link_ends in range(0,LaRa_link_ends_length):
             observation_simulation_settings.append(observation.tabulated_simulation_settings(observation.two_way_doppler_type,
                 observation_settings_list[RISE_link_ends_length+LaRa_pointer_link_ends],LaRa_observation_times_list,
-                viability_settings = LaRa_viability_settings_list,reference_link_end_type = observation.transmitter,
-                noise_function = LaRa_std_mHz_callable))
+                viability_settings = LaRa_viability_settings_list,reference_link_end_type = observation.transmitter))#,
+                #noise_function = LaRa_std_mHz_callable))
     
     # Simulate required observation
     simulated_observations = estimation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)

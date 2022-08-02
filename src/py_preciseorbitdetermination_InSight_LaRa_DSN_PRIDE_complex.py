@@ -11,7 +11,7 @@ if __name__=="__main__":
     ########################################################################################################################
 
     import sys
-    sys.path.insert(0, "/home/cfortunylombra/tudat-bundle/cmake-build-release-wsl/tudatpy/")
+    sys.path.insert(0, "/home/carlos/tudat-bundle/build_release/tudatpy/")#sys.path.insert(0, "/home/cfortunylombra/tudat-bundle/cmake-build-release-wsl/tudatpy/")
     import os
     import numpy as np
     import datetime
@@ -476,21 +476,23 @@ if __name__=="__main__":
     for LaRa_time_pointer in LaRa_observation_times_list:
 
         # Compute the the distances from the Sun to Mars and Earth
-        r1 = spice_interface.get_body_cartesian_position_at_epoch("Earth","Sun","ECLIPJ2000","NONE",LaRa_time_pointer)
-        r2 = spice_interface.get_body_cartesian_position_at_epoch("Mars","Sun","ECLIPJ2000","NONE",LaRa_time_pointer)
+        r_earthsun = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Earth","Sun","ECLIPJ2000","NONE",LaRa_time_pointer))
+        r_marssun = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Mars","Sun","ECLIPJ2000","NONE",LaRa_time_pointer))
+        r_earthmars = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Mars","Earth","ECLIPJ2000","NONE",LaRa_time_pointer))
 
         # Cosine rule in order to compute the SEP angle
-        LaRa_SEP_angle.append((np.pi-np.arccos(np.dot(r1,r2)/(np.linalg.norm(r1)*np.linalg.norm(r2))))/2)
+        #LaRa_SEP_angle.append((np.pi-np.arccos(np.dot(r1,r2)/(np.linalg.norm(r1)*np.linalg.norm(r2))))/2)
+        LaRa_SEP_angle.append(np.arccos((r_earthsun**2+r_earthmars**2-r_marssun**2)/(2*r_earthsun*r_earthmars)))
 
         # Compute the solar plasma noise using the equations shown in IMPROVED DOPPLER TRACKING SYSTEMS FOR DEEP SPACE NAVIGATION
         if LaRa_SEP_angle[-1]>=np.deg2rad(0) and LaRa_SEP_angle[-1]<=np.deg2rad(90):
-            LaRa_solar_noise.append(1.76*10**(-14)*(np.sin(LaRa_SEP_angle[-1]))**(-1.98)+6.25*10**(-14)*(np.sin(LaRa_SEP_angle[-1]))**(0.06))
+            LaRa_solar_noise.append(0.21545336*10**(-3)/base_frequency+1.76*10**(-14)*(np.sin(LaRa_SEP_angle[-1]))**(-1.98)+6.25*10**(-14)*(np.sin(LaRa_SEP_angle[-1]))**(0.06))
             LaRa_time_solar_noise.append(LaRa_time_pointer)
         elif LaRa_SEP_angle[-1]>np.deg2rad(90) and LaRa_SEP_angle[-1]<=np.deg2rad(170):
-            LaRa_solar_noise.append((1.76*10**(-14)+6.25*10**(-14))*(np.sin(LaRa_SEP_angle[-1]))**(1.05))
+            LaRa_solar_noise.append(0.21545336*10**(-3)/base_frequency+(1.76*10**(-14)+6.25*10**(-14))*(np.sin(LaRa_SEP_angle[-1]))**(1.05))
             LaRa_time_solar_noise.append(LaRa_time_pointer)
         elif LaRa_SEP_angle[-1]>np.deg2rad(170) and LaRa_SEP_angle[-1]<=np.deg2rad(180):
-            LaRa_solar_noise.append(1.27*10**(-14))
+            LaRa_solar_noise.append(0.21545336*10**(-3)/base_frequency+1.27*10**(-14))
             LaRa_time_solar_noise.append(LaRa_time_pointer)
 
         LaRa_time_solar_SEP.append(LaRa_time_pointer)
@@ -845,6 +847,7 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/doppler_residuals.dat",doppler_residuals,fmt='%.15e')
     np.savetxt(output_folder_path+"/vector_weights.dat",vector_weights,fmt='%.15e')
     np.savetxt(output_folder_path+"/observations_list.dat",observations_list,fmt='%.15e')
+    np.savetxt(output_folder_path+"/LaRa_time_solar_SEP.dat",np.rad2deg(LaRa_SEP_angle),fmt='%.15e')
 
     # Sort index
     index_sort = np.argsort(concatenated_times)
@@ -957,6 +960,18 @@ if __name__=="__main__":
 
     # Save the correlation coefficients
     correlation_list = list()
+    weather_list = list()
+    indicator_Doppler_list = list()
+    indicator_weather_list = list()
+    Doppler_total_list = list()
+    weather_total_list = list()
+    correlation_dict = dict()
+    LaRa_stations = ['DSS 43','DSS 63','DSS 14','MEDICINA','WETTZELL','ONSALA60','EFLSBERG','WRT0','YEBES40M','TIANMA65','CEDUNA','BADARY','HARTRAO']
+    for i_station in LaRa_stations:
+        correlation_dict[i_station] = dict()
+        for j_station in LaRa_stations:
+            if i_station!=j_station:
+                correlation_dict[i_station][j_station] = list()
     
     # Delete arrays where two DSN have observation at the same time
     indices_delete = list()
@@ -1035,11 +1050,12 @@ if __name__=="__main__":
                     block_weight = (scipy.sparse.coo_matrix((split_count,split_count))).toarray()
 
                     # Compute the the distances from the Sun to Mars and Earth
-                    r1 = spice_interface.get_body_cartesian_position_at_epoch("Earth","Sun","ECLIPJ2000","NONE",concatenated_times_sort[start_index])
-                    r2 = spice_interface.get_body_cartesian_position_at_epoch("Mars","Sun","ECLIPJ2000","NONE",concatenated_times_sort[start_index])
+                    r_earthsun = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Earth","Sun","ECLIPJ2000","NONE",concatenated_times_sort[start_index]))
+                    r_marssun = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Mars","Sun","ECLIPJ2000","NONE",concatenated_times_sort[start_index]))
+                    r_earthmars = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Mars","Earth","ECLIPJ2000","NONE",concatenated_times_sort[start_index]))
 
                     # Cosine rule in order to compute the SEP angle
-                    SEP_angle = ((np.pi-np.arccos(np.dot(r1,r2)/(np.linalg.norm(r1)*np.linalg.norm(r2))))/2)
+                    SEP_angle = np.arccos((r_earthsun**2+r_earthmars**2-r_marssun**2)/(2*r_earthsun*r_earthmars))
 
                     indicator_Doppler_noise = indicator_Doppler_noise_function(SEP_angle)
 
@@ -1054,9 +1070,14 @@ if __name__=="__main__":
                                 station_2 = receivers_total[column_index]
                                 correlation_coefficient = (1-weather_percentage_function(SEP_angle))*indicator_Doppler_noise[station_1][station_2]+weather_percentage_function(SEP_angle)*np.exp(-distance_stations[station_1][station_2]/(2*distance_ionospheric))
                                 block_weight[row_index][column_index] = correlation_coefficient*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
-                                
                                 if row_index>column_index:
+                                    correlation_dict[station_1][station_2].append(correlation_coefficient)
                                     correlation_list.append(correlation_coefficient)
+                                    weather_list.append(weather_percentage_function(SEP_angle))
+                                    indicator_Doppler_list.append(indicator_Doppler_noise[station_1][station_2])
+                                    indicator_weather_list.append(np.exp(-distance_stations[station_1][station_2]/(2*distance_ionospheric)))
+                                    Doppler_total_list.append((1-weather_percentage_function(SEP_angle))*indicator_Doppler_noise[station_1][station_2])
+                                    weather_total_list.append(weather_percentage_function(SEP_angle)*np.exp(-distance_stations[station_1][station_2]/(2*distance_ionospheric)))
                     inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
 
             # When different transmitters are available
@@ -1087,11 +1108,12 @@ if __name__=="__main__":
                             block_weight = (scipy.sparse.coo_matrix((split_count,split_count))).toarray()
 
                             # Compute the the distances from the Sun to Mars and Earth
-                            r1 = spice_interface.get_body_cartesian_position_at_epoch("Earth","Sun","ECLIPJ2000","NONE",concatenated_times_sort[start_index])
-                            r2 = spice_interface.get_body_cartesian_position_at_epoch("Mars","Sun","ECLIPJ2000","NONE",concatenated_times_sort[start_index])
+                            r_earthsun = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Earth","Sun","ECLIPJ2000","NONE",concatenated_times_sort[start_index]))
+                            r_marssun = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Mars","Sun","ECLIPJ2000","NONE",concatenated_times_sort[start_index]))
+                            r_earthmars = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Mars","Earth","ECLIPJ2000","NONE",concatenated_times_sort[start_index]))
 
                             # Cosine rule in order to compute the SEP angle
-                            SEP_angle = ((np.pi-np.arccos(np.dot(r1,r2)/(np.linalg.norm(r1)*np.linalg.norm(r2))))/2)
+                            SEP_angle = np.arccos((r_earthsun**2+r_earthmars**2-r_marssun**2)/(2*r_earthsun*r_earthmars))
 
                             indicator_Doppler_noise = indicator_Doppler_noise_function(SEP_angle)
                             for row_index in range(0,split_count):
@@ -1106,7 +1128,13 @@ if __name__=="__main__":
                                         correlation_coefficient = (1-weather_percentage_function(SEP_angle))*indicator_Doppler_noise[station_1][station_2]+weather_percentage_function(SEP_angle)*np.exp(-distance_stations[station_1][station_2]/(2*distance_ionospheric))
                                         block_weight[row_index][column_index] = correlation_coefficient*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
                                         if row_index>column_index:
+                                            correlation_dict[station_1][station_2].append(correlation_coefficient)
                                             correlation_list.append(correlation_coefficient)
+                                            weather_list.append(weather_percentage_function(SEP_angle))
+                                            indicator_Doppler_list.append(indicator_Doppler_noise[station_1][station_2])
+                                            indicator_weather_list.append(np.exp(-distance_stations[station_1][station_2]/(2*distance_ionospheric)))
+                                            Doppler_total_list.append((1-weather_percentage_function(SEP_angle))*indicator_Doppler_noise[station_1][station_2])
+                                            weather_total_list.append(weather_percentage_function(SEP_angle)*np.exp(-distance_stations[station_1][station_2]/(2*distance_ionospheric)))
                             inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
 
                     # Remove all the observations from other transmitters
@@ -1168,21 +1196,58 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/doppler_residuals_sort.dat",residuals_sort,fmt='%.15e')
     np.savetxt(output_folder_path+"/vector_weights_sort.dat",vector_weights_sort,fmt='%.15e')
     np.savetxt(output_folder_path+"/observations_list_sort.dat",observations_list_sort,fmt='%.15e')
+    np.savetxt(output_folder_path+"/correlation_list.dat",correlation_list,fmt='%.15e')
+    np.savetxt(output_folder_path+"/weather_list.dat",weather_list,fmt='%.15e')
+    np.savetxt(output_folder_path+"/indicator_Doppler_list.dat",indicator_Doppler_list,fmt='%.15e')
+    np.savetxt(output_folder_path+"/indicator_weather_list.dat",indicator_weather_list,fmt='%.15e')
+    np.savetxt(output_folder_path+"/Doppler_total_list.dat",Doppler_total_list,fmt='%.15e')
+    np.savetxt(output_folder_path+"/weather_total_list.dat",weather_total_list,fmt='%.15e')
     if PRIDE_boolean==False:
         np.savetxt(output_folder_path+"/partial_cov.dat",partial_cov,fmt='%.15e')
 
+    import json
+    with open(output_folder_path+'/correlations.json', 'w') as fp:
+            json.dump(correlation_dict, fp)  
+
     # Histogram correlation
     
-    plt.figure(figsize=(15, 6))
+    plt.figure(figsize=(8, 5))
     plt.hist(correlation_list, bins = 20)
     average_correlation = np.mean(correlation_list)
     plt.axvline(x=average_correlation, color='k', linestyle='--',label='Mean = '+str(average_correlation))
     plt.ylabel('Frequency [-]')
     plt.xlabel('Correlation [-]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    #plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.grid()
     plt.legend()
     plt.savefig(output_folder_path+"/correlation.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    plt.figure(figsize=(8, 5))
+    plt.hist(weather_list, bins = 20)
+    plt.ylabel('Frequency [-]')
+    plt.xlabel('Weather Coeff [-]')
+    plt.grid()
+    plt.savefig(output_folder_path+"/weather_list.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    plt.figure(figsize=(8, 5))
+    plt.hist(indicator_weather_list, bins = 20)
+    plt.ylabel('Frequency [-]')
+    plt.xlabel('Weather Corr [-]')
+    plt.grid()
+    plt.savefig(output_folder_path+"/indicator_weather_list.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    plt.figure(figsize=(8, 5))
+    plt.hist(indicator_Doppler_list, bins = 20)
+    plt.ylabel('Frequency [-]')
+    plt.xlabel('Doppler Coeff [-]')
+    plt.grid()
+    plt.savefig(output_folder_path+"/indicator_Doppler_list.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
 
@@ -1306,19 +1371,20 @@ if __name__=="__main__":
     plt.close('all')
 
     # Plot to check the viability of the Sun
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(8, 4))
     plt.rcParams.update({'font.size': 18})
     if len(RISE_observation_times_list)!=0: 
         plt.scatter((RISE_concatenated_times-observation_start_epoch)/constants.JULIAN_DAY,RISE_std_mHz_function((RISE_concatenated_times-RISE_observation_start_epoch_reference_noise)/constants.JULIAN_DAY))
     if len(LaRa_observation_times_list)!=0: 
         plt.scatter((LaRa_concatenated_times-observation_start_epoch)/constants.JULIAN_DAY,LaRa_std_noise_function(LaRa_concatenated_times)/10**(-3)*base_frequency)
-    plt.ylabel('Std noise [mHz]')
+    plt.ylabel(r'1-$\sigma$ Doppler Residual [mHz]')
     plt.xlabel('Time [days]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    #plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.grid()
     plt.savefig(output_folder_path+"/std_noise_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all') 
+    plt.rcParams.update({'font.size': 10})
 
     # Plot to check the viability of the Sun v2
     plt.figure(figsize=(15, 6))
@@ -1451,6 +1517,7 @@ if __name__=="__main__":
     plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = False
     plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = True
     plt.imshow(np.abs(correlation_values[-1]))
+    np.savetxt(output_folder_path+"/final_mop_correlation.dat",correlation_values[-1],fmt='%.15e')
     plt.colorbar()
     #'''
     if len(LaRa_observation_times_list)==0:
@@ -1509,6 +1576,7 @@ if __name__=="__main__":
         end_RISE_observation_time = max(RISE_observation_times_list)
         idx_nearest = np.abs(end_RISE_observation_time-np.array(time_eval)).argmin()
         plt.imshow(np.abs(correlation_values[idx_nearest]))
+        np.savetxt(output_folder_path+"/RISE_mop_correlation.dat",correlation_values[idx_nearest],fmt='%.15e')
         plt.colorbar()
         #'''
         if len(LaRa_observation_times_list)==0:
@@ -1552,6 +1620,7 @@ if __name__=="__main__":
         plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = False
         plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = True
         plt.imshow(np.abs(correlation_matrix_LaRa))
+        np.savetxt(output_folder_path+"/LaRa_mop_correlation.dat",correlation_matrix_LaRa,fmt='%.15e')
         plt.colorbar()
         #'''
         if len(RISE_observation_times_list)==0:
@@ -1978,6 +2047,8 @@ if __name__=="__main__":
     plt.savefig(output_folder_path+"/polarmotionamp5_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
+
+    np.savetxt(output_folder_path+"/final_formalerrors_plot.dat",sigma_values[-1][:],fmt='%.15e')
 
     print('Is there any duplicated total time value? :',any(list(concatenated_times).count(x) > 1 for x in list(concatenated_times)))
 

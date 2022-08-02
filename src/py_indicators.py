@@ -260,7 +260,9 @@ if __name__=="__main__":
             if station_1 != station_2:
                 correlation_coefficient[station_1][station_2] = (1-weather_percentage_function(np.deg2rad(1)))*indicator_Doppler_noise[station_1][station_2]+weather_percentage_function(np.deg2rad(1))*np.exp(-distance_stations[station_1][station_2]/(2*distance_ionospheric))
 
-    print(correlation_coefficient)
+    #print(correlation_coefficient)
+
+    print(weather_percentage_function(np.pi))
 
     # Computation of correlation coefficient
     #station_1 = receivers_total[total_split+row_index]

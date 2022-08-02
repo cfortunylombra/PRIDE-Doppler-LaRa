@@ -362,6 +362,7 @@ if __name__=="__main__":
     plt.xlabel('Earth azimuth as seen by '+reflector_name+' [deg]')
     #plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend(loc='best')
+    plt.xlim((0,360))
     plt.grid()
     plt.savefig(output_folder_path+'/Earth_elevation_seen_'+reflector_name+'_vs_Earth_azimuth_seen_'+reflector_name+'.pdf',bbox_inches='tight')
     plt.show()
