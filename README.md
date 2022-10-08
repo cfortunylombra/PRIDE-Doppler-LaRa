@@ -51,6 +51,14 @@ The Python scripts used to plot, to verify and addiotional porpuses can be found
 
 ---
 
+### Thesis
+
+The report can be found here: https://bit.ly/3CgVHZ8
+
+The research project was in collaboration with the Royal Observatory of Belgium and the Joint Institute for VLBI ERIC.
+
+---
+
 ### Help
 
 In case a problem or issue related to code is found, please create a new issue in GitHub.
