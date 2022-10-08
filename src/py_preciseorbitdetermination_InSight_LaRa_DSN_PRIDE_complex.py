@@ -1,5 +1,5 @@
 """
-Description: Environment Setup for the Precise Orbit Determination (RISE and LaRa with DSN-PRIDE)
+Description: Environment Setup for the Precise Orbit Determination (RISE and LaRa with DSN-PRIDE) using the cross-correlation metric
 
 Author: C. Fortuny-Lombraña
 """

@@ -1,3 +1,8 @@
+"""
+Description: Save the data of the two indicators (cross-correlations)
+
+Author: C. Fortuny-Lombraña
+"""
 import time
 run_time = time.time()
 if __name__=="__main__":

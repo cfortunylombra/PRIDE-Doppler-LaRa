@@ -1,5 +1,5 @@
 """
-Description: Plot v7v
+Description: Plot v&v
 
 Author: C. Fortuny-Lombraña
 """

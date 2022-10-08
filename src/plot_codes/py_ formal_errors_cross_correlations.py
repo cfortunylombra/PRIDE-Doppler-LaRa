@@ -1,5 +1,5 @@
 """
-Description: Save the minimum Allan Deviation for InSight observation span
+Description: Plot correlations
 
 Author: C. Fortuny-Lombraña
 """

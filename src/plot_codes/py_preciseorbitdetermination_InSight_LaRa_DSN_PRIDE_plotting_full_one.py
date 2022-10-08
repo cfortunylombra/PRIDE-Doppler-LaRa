@@ -1,5 +1,5 @@
 """
-Description: Plot comparison between data
+Description: Plot data
 
 Author: C. Fortuny-Lombraña
 """

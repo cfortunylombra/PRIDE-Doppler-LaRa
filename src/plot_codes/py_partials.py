@@ -1,5 +1,5 @@
 """
-Description: Plot v7v
+Description: Plot partials
 
 Author: C. Fortuny-Lombraña
 """
