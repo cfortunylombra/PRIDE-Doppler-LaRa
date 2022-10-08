@@ -38,6 +38,16 @@ Inside `tudat-bundle`, the following GitHub are utilized:
 
 ### How to get started
 
+The `src` folder contains all the source codes. The most important Python files are the following:
+
+* `py_gsanalysis_LaRa.py` and `py_gsanalysis_InSight.py`: Preliminary analysis of the ExoMars-LaRa and InSight-RISE observations
+* `read_sebastian_files.py`: Read the Doppler residuals from InSight-RISE (real data)
+* `py_readrealobservations.py`: Functions to transform date to Julian days
+* `py_allandeviation.py`: Compute Allan deviations for the PRIDE observations
+* `py_preciseorbitdetermination_InSight_LaRa_DSN_PRIDE.py`: Environment Setup for the Precise Orbit Determination (RISE and LaRa with DSN-PRIDE) using a fixed cross-correlation of the Doppler observations between ground stations
+* `py_preciseorbitdetermination_InSight_LaRa_DSN_PRIDE_complex.py`: Environment Setup for the Precise Orbit Determination (RISE and LaRa with DSN-PRIDE) using a the metric developed of the cross-correlations at the ground stations
+
+The Python scripts used to plot, to verify and addiotional porpuses can be found in `plot_codes`,`verification_codes` and `additional_codes` folders.
 
 ---
 
