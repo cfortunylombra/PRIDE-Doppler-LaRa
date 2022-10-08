@@ -16,48 +16,49 @@ if __name__=="__main__":
     import numpy as np
     import matplotlib.pyplot as plt
     import matplotlib as mpl
+    from tudatpy.kernel import constants
 
     # Import data
     np.set_printoptions(suppress=False,precision=15)
-    xposition = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xposition_vandv_new1.dat"))
-    yposition = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/yposition_vandv_new1.dat"))
-    zposition = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/zposition_vandv_new1.dat"))
-    xdotvelocity = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xdotvelocity_vandv_new1.dat"))
-    ydotvelocity = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ydotvelocity_vandv_new1.dat"))
-    zdotvelocity = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/zdotvelocity_vandv_new1.dat"))
-    corefactor = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/corefactor_vandv_new1.dat"))
-    sigmaFCN = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/sigmaFCN_vandv_new1.dat"))
-    xLaRa = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xLaRa_vandv_new1.dat"))
-    yLaRa = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/yLaRa_vandv_new1.dat"))
-    zLaRa = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/zLaRa_vandv_new1.dat"))
-    cos1spin = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/cos1spin_vandv_new1.dat"))
-    sin1spin = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/sin1spin_vandv_new1.dat"))
-    cos2spin = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/cos2spin_vandv_new1.dat"))
-    sin2spin = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/sin2spin_vandv_new1.dat"))
-    cos3spin = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/cos3spin_vandv_new1.dat"))
-    sin3spin = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/sin3spin_vandv_new1.dat"))
-    cos4spin = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/cos4spin_vandv_new1.dat"))
-    sin4spin = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/sin4spin_vandv_new1.dat"))
-    xpcos1 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpcos1_vandv_new1.dat"))
-    xpsin1 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpsin1_vandv_new1.dat"))
-    ypcos1 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypcos1_vandv_new1.dat"))
-    ypsin1 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypsin1_vandv_new1.dat"))
-    xpcos2 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpcos2_vandv_new1.dat"))
-    xpsin2 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpsin2_vandv_new1.dat"))
-    ypcos2 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypcos2_vandv_new1.dat"))
-    ypsin2 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypsin2_vandv_new1.dat"))
-    xpcos3 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpcos3_vandv_new1.dat"))
-    xpsin3 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpsin3_vandv_new1.dat"))
-    ypcos3 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypcos3_vandv_new1.dat"))
-    ypsin3 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypsin3_vandv_new1.dat"))
-    xpcos4 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpcos4_vandv_new1.dat"))
-    xpsin4 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpsin4_vandv_new1.dat"))
-    ypcos4 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypcos4_vandv_new1.dat"))
-    ypsin4 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypsin4_vandv_new1.dat"))
-    xpcos5 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpcos5_vandv_new1.dat"))
-    xpsin5 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpsin5_vandv_new1.dat"))
-    ypcos5 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypcos5_vandv_new1.dat"))
-    ypsin5 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypsin5_vandv_new1.dat"))
+    xposition = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xposition_vandv_new2.dat"))
+    yposition = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/yposition_vandv_new2.dat"))
+    zposition = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/zposition_vandv_new2.dat"))
+    xdotvelocity = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xdotvelocity_vandv_new2.dat"))
+    ydotvelocity = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ydotvelocity_vandv_new2.dat"))
+    zdotvelocity = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/zdotvelocity_vandv_new2.dat"))
+    corefactor = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/corefactor_vandv_new2.dat"))
+    sigmaFCN = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/sigmaFCN_vandv_new2.dat"))
+    xLaRa = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xLaRa_vandv_new2.dat"))
+    yLaRa = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/yLaRa_vandv_new2.dat"))
+    zLaRa = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/zLaRa_vandv_new2.dat"))
+    cos1spin = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/cos1spin_vandv_new2.dat"))
+    sin1spin = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/sin1spin_vandv_new2.dat"))
+    cos2spin = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/cos2spin_vandv_new2.dat"))
+    sin2spin = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/sin2spin_vandv_new2.dat"))
+    cos3spin = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/cos3spin_vandv_new2.dat"))
+    sin3spin = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/sin3spin_vandv_new2.dat"))
+    cos4spin = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/cos4spin_vandv_new2.dat"))
+    sin4spin = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/sin4spin_vandv_new2.dat"))
+    xpcos1 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpcos1_vandv_new2.dat"))
+    xpsin1 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpsin1_vandv_new2.dat"))
+    ypcos1 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypcos1_vandv_new2.dat"))
+    ypsin1 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypsin1_vandv_new2.dat"))
+    xpcos2 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpcos2_vandv_new2.dat"))
+    xpsin2 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpsin2_vandv_new2.dat"))
+    ypcos2 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypcos2_vandv_new2.dat"))
+    ypsin2 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypsin2_vandv_new2.dat"))
+    xpcos3 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpcos3_vandv_new2.dat"))
+    xpsin3 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpsin3_vandv_new2.dat"))
+    ypcos3 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypcos3_vandv_new2.dat"))
+    ypsin3 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypsin3_vandv_new2.dat"))
+    xpcos4 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpcos4_vandv_new2.dat"))
+    xpsin4 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpsin4_vandv_new2.dat"))
+    ypcos4 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypcos4_vandv_new2.dat"))
+    ypsin4 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypsin4_vandv_new2.dat"))
+    xpcos5 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpcos5_vandv_new2.dat"))
+    xpsin5 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpsin5_vandv_new2.dat"))
+    ypcos5 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypcos5_vandv_new2.dat"))
+    ypsin5 = np.loadtxt(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypsin5_vandv_new2.dat"))
     
     # Initialize empty lists
     corr_list = list()
@@ -104,7 +105,7 @@ if __name__=="__main__":
     ypsin5_list = list()
 
     i = 0
-    for station in np.linspace(1,10,10):
+    for station in np.linspace(1,9,9):
         corr_list.append(np.linspace(0,9,10)/10)
         station_number_list.append(station*np.ones(10))
 
@@ -153,15 +154,15 @@ if __name__=="__main__":
     # xposition plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    colorline = plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    colorline = plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],xposition_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $x$ [m]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xposition_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -169,15 +170,15 @@ if __name__=="__main__":
     # yposition plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],yposition_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $y$ [m]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/yposition_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -185,15 +186,15 @@ if __name__=="__main__":
     # zposition plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],zposition_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $z$ [m]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/zposition_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -201,15 +202,15 @@ if __name__=="__main__":
     # xdotvelocity plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],xdotvelocity_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $\dot{x}$ [m/s]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xdotvelocity_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -217,15 +218,15 @@ if __name__=="__main__":
     # ydotvelocity plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],ydotvelocity_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $\dot{y}$ [m/s]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ydotvelocity_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -233,15 +234,15 @@ if __name__=="__main__":
     # zdotvelocity plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],zdotvelocity_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $\dot{z}$ [m/s]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/zdotvelocity_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -249,15 +250,15 @@ if __name__=="__main__":
     # corefactor plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],corefactor_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $F$ [-]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/corefactor_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -265,15 +266,16 @@ if __name__=="__main__":
     # sigmaFCN plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    #plt.gca().invert_yaxis()
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
-        plt.plot(corr_list[i],sigmaFCN_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
+    for i in range(0,9):
+        plt.plot(corr_list[i],np.rad2deg(sigmaFCN_list[i])*constants.JULIAN_DAY,'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
-    plt.ylabel(r"1-$\sigma$ $\sigma_{FCN}$ [rad/s]")
+    plt.ylabel(r"1-$\sigma$ $\sigma_{FCN}$ [deg/day]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/sigmaFCN_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -281,15 +283,15 @@ if __name__=="__main__":
     # xLaRa plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],xLaRa_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $x_{LaRa}$ [m]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xLaRa_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -297,15 +299,15 @@ if __name__=="__main__":
     # yLaRa plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],yLaRa_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $y_{LaRa}$ [m]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/yLaRa_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -313,15 +315,15 @@ if __name__=="__main__":
     # zLaRa plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],zLaRa_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $z_{LaRa}$ [m]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/zLaRa_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -330,15 +332,15 @@ if __name__=="__main__":
     # cos1spin plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],cos1spin_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $\phi^c_1$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/cos1spin_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -346,15 +348,15 @@ if __name__=="__main__":
     # sin1spin plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],sin1spin_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $\phi^s_1$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/sin1spin_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -362,15 +364,15 @@ if __name__=="__main__":
     # cos2spin plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],cos2spin_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $\phi^c_2$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/cos2spin_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -378,15 +380,15 @@ if __name__=="__main__":
     # sin2spin plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],sin2spin_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $\phi^s_2$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/sin2spin_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -394,15 +396,15 @@ if __name__=="__main__":
     # cos3spin plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],cos3spin_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $\phi^c_3$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/cos3spin_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -410,15 +412,15 @@ if __name__=="__main__":
     # sin3spin plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],sin3spin_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $\phi^s_3$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/sin3spin_plot.pdf"),bbox_inches="tight")
     plt.show() 
     plt.close("all") 
@@ -426,15 +428,15 @@ if __name__=="__main__":
     # cos4spin plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],cos4spin_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $\phi^c_4$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/cos4spin_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -442,15 +444,15 @@ if __name__=="__main__":
     # sin4spin plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],sin4spin_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ $\phi^s_4$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/sin4spin_plot.pdf"),bbox_inches="tight")
     plt.show() 
     plt.close("all")
@@ -458,15 +460,15 @@ if __name__=="__main__":
     # xpcos1 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],xpcos1_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${X_p}^c_1$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpcos1_plot.pdf"),bbox_inches="tight")
     plt.show() 
     plt.close("all")
@@ -474,15 +476,15 @@ if __name__=="__main__":
     # xpsin1 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],xpsin1_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${X_p}^s_1$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpsin1_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -490,15 +492,15 @@ if __name__=="__main__":
     # ypcos1 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],ypcos1_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${Y_p}^c_1$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypcos1_plot.pdf"),bbox_inches="tight")
     plt.show() 
     plt.close("all")
@@ -506,15 +508,15 @@ if __name__=="__main__":
     # ypsin1 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],ypsin1_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${Y_p}^s_1$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypsin1_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -522,15 +524,15 @@ if __name__=="__main__":
     # xpcos2 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],xpcos2_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${X_p}^c_2$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpcos2_plot.pdf"),bbox_inches="tight")
     plt.show() 
     plt.close("all")
@@ -538,15 +540,15 @@ if __name__=="__main__":
     # xpsin2 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],xpsin2_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${X_p}^s_2$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpsin2_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -554,15 +556,15 @@ if __name__=="__main__":
     # ypcos2 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],ypcos2_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${Y_p}^c_2$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypcos2_plot.pdf"),bbox_inches="tight")
     plt.show() 
     plt.close("all")
@@ -570,15 +572,15 @@ if __name__=="__main__":
     # ypsin2 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],ypsin2_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${Y_p}^s_2$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypsin2_plot.pdf"),bbox_inches="tight")
     plt.show() 
     plt.close("all")
@@ -586,15 +588,15 @@ if __name__=="__main__":
     # xpcos3 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],xpcos3_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${X_p}^c_3$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpcos3_plot.pdf"),bbox_inches="tight")
     plt.show() 
     plt.close("all")
@@ -602,15 +604,15 @@ if __name__=="__main__":
     # xpsin3 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],xpsin3_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${X_p}^s_3$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpsin3_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -618,15 +620,15 @@ if __name__=="__main__":
     # ypcos3 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],ypcos3_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${Y_p}^c_3$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypcos3_plot.pdf"),bbox_inches="tight")
     plt.show() 
     plt.close("all")
@@ -634,15 +636,15 @@ if __name__=="__main__":
     # ypsin3 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],ypsin3_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${Y_p}^s_3$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypsin3_plot.pdf"),bbox_inches="tight")
     plt.show() 
     plt.close("all")
@@ -650,15 +652,15 @@ if __name__=="__main__":
     # xpcos4 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],xpcos4_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${X_p}^c_C$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpcos4_plot.pdf"),bbox_inches="tight")
     plt.show() 
     plt.close("all")
@@ -666,15 +668,15 @@ if __name__=="__main__":
     # xpsin4 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],xpsin4_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${X_p}^s_C$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpsin4_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -682,15 +684,15 @@ if __name__=="__main__":
     # ypcos4 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],ypcos4_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${Y_p}^c_C$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypcos4_plot.pdf"),bbox_inches="tight")
     plt.show() 
     plt.close("all")
@@ -698,15 +700,15 @@ if __name__=="__main__":
     # ypsin4 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],ypsin4_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${Y_p}^s_C$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypsin4_plot.pdf"),bbox_inches="tight")
     plt.show() 
     plt.close("all")
@@ -714,15 +716,15 @@ if __name__=="__main__":
     # xpcos5 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],xpcos5_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${X_p}^c_4$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpcos5_plot.pdf"),bbox_inches="tight")
     plt.show() 
     plt.close("all")
@@ -730,15 +732,15 @@ if __name__=="__main__":
     # xpsin5 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],xpsin5_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${X_p}^s_4$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/xpsin5_plot.pdf"),bbox_inches="tight")
     plt.show()
     plt.close("all")
@@ -746,15 +748,15 @@ if __name__=="__main__":
     # ypcos5 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],ypcos5_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${Y_p}^c_4$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypcos5_plot.pdf"),bbox_inches="tight")
     plt.show() 
     plt.close("all")
@@ -762,15 +764,15 @@ if __name__=="__main__":
     # ypsin5 plot
     plt.figure(figsize=(6,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 10))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, 9))))
     plt.gca().ticklabel_format(useOffset=False)
-    for i in range(0,10):
+    for i in range(0,9):
         plt.plot(corr_list[i],ypsin5_list[i],'-o',label=str(int(station_number_list[i][0]))+" Station/s")
     #plt.legend()
     plt.xlabel(r"Correlation $\rho$ [-]")
     plt.ylabel(r"1-$\sigma$ ${Y_p}^s_4$ [mas]")
     plt.grid()
-    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=10),cmap=mpl.cm.jet),label='Number of Stations')
+    plt.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=1, vmax=9),cmap=mpl.cm.jet),label='Number of Stations')
     plt.savefig(os.path.dirname(os.path.realpath(__file__)).replace('/src',"/output/vandv/ypsin5_plot.pdf"),bbox_inches="tight")
     plt.show() 
     plt.close("all")

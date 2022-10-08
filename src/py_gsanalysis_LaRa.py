@@ -425,10 +425,11 @@ if __name__=="__main__":
 
     plt.figure(figsize=(15,6))
     colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(Earth_ground_station_list)-len(transmitter_names)))))
+    #plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(Earth_ground_station_list)-len(transmitter_names)))))
+    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(Earth_ground_station_list)))))
     for Earth_ground_station_pointer in Earth_ground_station_list:
-        if Earth_ground_station_pointer[1] in transmitter_names:
-            continue
+        #if Earth_ground_station_pointer[1] in transmitter_names:
+        #    continue
         plt.scatter((np.array(data_receiver[Earth_ground_station_pointer[1]]['Total']['Observation time at receiver'])-observation_start_epoch)/constants.JULIAN_DAY,
             np.rad2deg(data_receiver[Earth_ground_station_pointer[1]]['Total']['Elevation at receiver']),s=30,label=Earth_ground_station_pointer[1])
     plt.ylabel('Elevation at receivers [deg]')

@@ -848,6 +848,7 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/vector_weights.dat",vector_weights,fmt='%.15e')
     np.savetxt(output_folder_path+"/observations_list.dat",observations_list,fmt='%.15e')
     np.savetxt(output_folder_path+"/LaRa_time_solar_SEP.dat",np.rad2deg(LaRa_SEP_angle),fmt='%.15e')
+    np.savetxt(output_folder_path+"/LaRa_time_SEP.dat",LaRa_time_solar_SEP,fmt='%.15e')
 
     # Sort index
     index_sort = np.argsort(concatenated_times)
@@ -1374,10 +1375,10 @@ if __name__=="__main__":
     plt.figure(figsize=(8, 4))
     plt.rcParams.update({'font.size': 18})
     if len(RISE_observation_times_list)!=0: 
-        plt.scatter((RISE_concatenated_times-observation_start_epoch)/constants.JULIAN_DAY,RISE_std_mHz_function((RISE_concatenated_times-RISE_observation_start_epoch_reference_noise)/constants.JULIAN_DAY))
+        plt.scatter((RISE_concatenated_times-observation_start_epoch)/constants.JULIAN_DAY,RISE_std_mHz_function((RISE_concatenated_times-RISE_observation_start_epoch_reference_noise)/constants.JULIAN_DAY)*10**(-3)/base_frequency)
     if len(LaRa_observation_times_list)!=0: 
-        plt.scatter((LaRa_concatenated_times-observation_start_epoch)/constants.JULIAN_DAY,LaRa_std_noise_function(LaRa_concatenated_times)/10**(-3)*base_frequency)
-    plt.ylabel(r'1-$\sigma$ Doppler Residual [mHz]')
+        plt.scatter((LaRa_concatenated_times-observation_start_epoch)/constants.JULIAN_DAY,LaRa_std_noise_function(LaRa_concatenated_times))
+    plt.ylabel(r'1-$\sigma$ Doppler Residual [-]')
     plt.xlabel('Time [days]')
     #plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.grid()

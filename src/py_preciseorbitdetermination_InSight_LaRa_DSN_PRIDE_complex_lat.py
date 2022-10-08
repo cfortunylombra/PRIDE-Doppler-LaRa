@@ -1,5 +1,5 @@
 """
-Description: Precise Orbit Determination only with LaRa without viability settings (V&V)
+Description: Environment Setup for the Precise Orbit Determination (RISE and LaRa with DSN-PRIDE)
 
 Author: C. Fortuny-Lombraña
 """
@@ -11,7 +11,7 @@ if __name__=="__main__":
     ########################################################################################################################
 
     import sys
-    sys.path.insert(0, "/home/cfortunylombra/tudat-bundle/cmake-build-release-wsl/tudatpy/")
+    sys.path.insert(0, "/home/carlos/tudat-bundle/build_release/tudatpy/")#sys.path.insert(0, "/home/cfortunylombra/tudat-bundle/cmake-build-release-wsl/tudatpy/")
     import os
     import numpy as np
     import datetime
@@ -31,46 +31,38 @@ if __name__=="__main__":
     ################################################## CONSTANTS AND VARIABLES #############################################
     ########################################################################################################################
 
-    # days in a week
+    # Days in a week
     days_in_a_week = 7 #days
 
     # CPU number for parallel computing
     CPU_par = 14
 
-    # Booleans to understand whether we want to simulate together RISE and LaRa missions, or separetely
-    RISE_boolean = False
+    # Booleans to understand whether we want to simulate together RISE and LaRa missions, or separetely - These booleans can be swapped to FALSE
+    RISE_boolean = True
     LaRa_boolean = True
     
     if LaRa_boolean:
-        # PRIDE stations boolean
+        # PRIDE stations boolean - This boolean can be swapped to FALSE
         PRIDE_boolean = True
         
-        # Boolean for removing PRIDE stations only after the POD
+        # Boolean for removing PRIDE stations only after the POD - Just for verification of the W matrix
         remove_PRIDE_weight_boolean = False
 
-        # Define fixed correlation between PRIDE and DSN stations
-        correlation = 0
     else:
-        # PRIDE stations boolean
+        # PRIDE stations boolean - This boolean can be swapped to TRUE (Since RISE does not have any PRIDE stations=NO DIFFERENCE)
         PRIDE_boolean = False
         
-        # Boolean for removing PRIDE stations only after the POD 
+        # Boolean for removing PRIDE stations only after the POD - Jus for verification of the W matrix
         remove_PRIDE_weight_boolean = False
-        
-        # Define fixed correlation between PRIDE and DSN stations
-        correlation = 0
 
-    # Evaluation step 
+    # Evaluation step size for the plots of the formal errors as function of time - This int can be increased for decreasing the computation time
     step_eval = 1
 
-    # Receiving stations
-    receiving_station_number = 1
-
-    # Output folder
+    # Output folder - Creates new folders for the new plots
     if LaRa_boolean:
-        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/PODst'+str(receiving_station_number)+'_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean)+'_PRIDE'+str(PRIDE_boolean)+str(remove_PRIDE_weight_boolean)+'_corr'+str(correlation))
+        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/latLaRa_POD_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean)+'_PRIDEcomplex'+str(PRIDE_boolean)+str(remove_PRIDE_weight_boolean))
     else:
-        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean))
+        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/latLaRa_POD_RISE'+str(RISE_boolean)+'_LaRacomplex'+str(LaRa_boolean))
     os.makedirs(output_folder_path,exist_ok=True)
 
     if RISE_boolean:
@@ -104,7 +96,7 @@ if __name__=="__main__":
 
     # LaRa landing site, taken from "LaRa after RISE: Expected improvement in the Mars rotation and interior models"
     LaRa_reflector_name = "LaRa"
-    LaRa_reflector_latitude_deg = 18.3 #North degrees
+    LaRa_reflector_latitude_deg = -18.3 #North degrees
     LaRa_reflector_longitude_deg = 335.37 #East degrees
     LaRa_reflector_altitude = -2000 #m
 
@@ -112,13 +104,25 @@ if __name__=="__main__":
 
     # Earth-based transmitters
     transmitters_dict = dict() #Taken from JPL web site
+    transmitters_dict['DSS 43']=np.array([-4460894.9170,2682361.5070,-3674748.1517]) # DSS 43
+    transmitters_dict['DSS 34']=np.array([-4461147.0925,2682439.2385,-3674393.1332]) # DSS 34
+    transmitters_dict['DSS 35']=np.array([-4461273.4175,2682568.9283,-3674151.5223]) # DSS 35 (https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat)
+    transmitters_dict['DSS 36']=np.array([-4461168.7425,2682814.6603,-3674083.3303]) # DSS 36 (https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat)
+    transmitters_dict['DSS 65']=np.array([4849339.6448,-360427.6560,4114750.7428]) # DSS 65
     transmitters_dict['DSS 63']=np.array([4849092.5175,-360180.3480,4115109.2506]) # DSS 63
+    transmitters_dict['DSS 55']=np.array([4849525.2561,-360606.0932,4114495.0843]) # DSS 55
+    transmitters_dict['DSS 54']=np.array([4849434.4877,-360723.8999,4114618.8354]) # DSS 54
+    transmitters_dict['DSS 56']=np.array([4849421.500903,-360549.2280048,4114647.264832]) # DSS 56 (https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/stations/earth_topo_201023.tf)
+    transmitters_dict['DSS 14']=np.array([-2353621.4197,-4641341.4717,3677052.3178]) # DSS 14
+    transmitters_dict['DSS 26']=np.array([-2354890.7996,-4647166.3182,3668871.7546]) # DSS 26
+    transmitters_dict['DSS 24']=np.array([-2354906.7087,-4646840.0834,3669242.3207]) # DSS 24
+    transmitters_dict['DSS 25']=np.array([-2355022.0140,-4646953.2040,3669040.5666]) # DSS 25
 
     # Earth-based transmitter for RISE
     RISE_transmitter_names = ['DSS 43','DSS 34','DSS 35','DSS 36','DSS 65','DSS 63','DSS 55','DSS 54','DSS 56','DSS 14','DSS 26', 'DSS 24', 'DSS 25']
 
     # Earth-based transmitter for LaRa
-    LaRa_transmitter_names = ['DSS 63'] #CHANGED
+    LaRa_transmitter_names = ['DSS 43','DSS 63','DSS 14']
 
     # Viability settings for RISE
     RISE_earth_min = 10 #deg
@@ -131,6 +135,85 @@ if __name__=="__main__":
     LaRa_earth_max = 45 #deg
     LaRa_antenna_min_elevation = 10 #deg
     LaRa_body_avoidance_angle = 10 #deg
+
+    # Noise sources (X-band at tau=60s)
+    frequency_standard=10**(np.log10(8e-16)+1/2*(np.log10(1000)-np.log10(60)))
+    antenna_mechanical=1.6e-14
+    ground_electronics=10**(np.log10(2e-16)+1/2*(np.log10(1000)-np.log10(60)))
+    stochastic_spacecraft_motion=10**(np.log10(2e-16)+1/2*(np.log10(1000)-np.log10(60)))
+    receiver_thermal_noise=10**(np.log10(1e-16)+1/2*(np.log10(1000)-np.log10(60)))
+    spacecraft_transponder=1.8e-14
+    tropospheric_scintillation=6.5e-14
+
+    # Plasma noise function (tau=60s)
+    def plasma_noise_function(SEP_angle_value):
+        if SEP_angle_value>=np.deg2rad(0) and SEP_angle_value<=np.deg2rad(90):
+            return (1.76*10**(-14)*(np.sin(SEP_angle_value))**(-1.98)+6.25*10**(-14)*(np.sin(SEP_angle_value))**(0.06))
+        elif SEP_angle_value>np.deg2rad(90) and SEP_angle_value<=np.deg2rad(170):
+            return (1.76*10**(-14)+6.25*10**(-14))*(np.sin(SEP_angle_value))**(1.05)
+        elif SEP_angle_value>np.deg2rad(170) and SEP_angle_value<=np.deg2rad(180):
+            return 1.27*10**(-14)
+
+    # Common noise percentage
+    def common_Doppler_noise_percentage_function(SEP_angle_value):
+        # Noise sources (X-band at tau=60s)
+        frequency_standard=10**(np.log10(8e-16)+1/2*(np.log10(1000)-np.log10(60)))
+        antenna_mechanical=1.6e-14
+        ground_electronics=10**(np.log10(2e-16)+1/2*(np.log10(1000)-np.log10(60)))
+        stochastic_spacecraft_motion=10**(np.log10(2e-16)+1/2*(np.log10(1000)-np.log10(60)))
+        receiver_thermal_noise=10**(np.log10(1e-16)+1/2*(np.log10(1000)-np.log10(60)))
+        spacecraft_transponder=1.8e-14
+        tropospheric_scintillation=6.5e-14
+        plasma_noise = plasma_noise_function(SEP_angle_value)
+        
+        common_noise = np.sqrt(frequency_standard**2+plasma_noise**2+stochastic_spacecraft_motion**2+spacecraft_transponder**2+(tropospheric_scintillation/np.sqrt(2))**2)
+        total_noise = np.sqrt(frequency_standard**2+antenna_mechanical**2+ground_electronics**2+stochastic_spacecraft_motion**2+receiver_thermal_noise**2+spacecraft_transponder**2+tropospheric_scintillation**2+plasma_noise**2)
+        return common_noise**2/total_noise**2
+
+    def weather_percentage_function(SEP_angle_value):
+        frequency_standard=10**(np.log10(8e-16)+1/2*(np.log10(1000)-np.log10(60)))
+        antenna_mechanical=1.6e-14
+        ground_electronics=10**(np.log10(2e-16)+1/2*(np.log10(1000)-np.log10(60)))
+        stochastic_spacecraft_motion=10**(np.log10(2e-16)+1/2*(np.log10(1000)-np.log10(60)))
+        receiver_thermal_noise=10**(np.log10(1e-16)+1/2*(np.log10(1000)-np.log10(60)))
+        spacecraft_transponder=1.8e-14
+        tropospheric_scintillation=6.5e-14
+        plasma_noise = plasma_noise_function(SEP_angle_value)
+
+        weather_noise = np.sqrt(tropospheric_scintillation**2)
+        total_noise = np.sqrt(frequency_standard**2+antenna_mechanical**2+ground_electronics**2+stochastic_spacecraft_motion**2+receiver_thermal_noise**2+spacecraft_transponder**2+tropospheric_scintillation**2+plasma_noise**2)
+        return weather_noise**2/total_noise**2
+
+    # Min Doppler Noise from ED045 observations
+    min_Doppler_noise_real_data = dict()
+    min_Doppler_noise_real_data['MEDICINA'] = 1.1893669211845945e-13
+    min_Doppler_noise_real_data['WETTZELL'] = 5.523841298583862e-13
+    min_Doppler_noise_real_data['ONSALA60'] = 1.460047359922946e-13
+    min_Doppler_noise_real_data['EFLSBERG'] = 6.601389242000477e-14
+    min_Doppler_noise_real_data['WRT0'] = 2.8182590417184753e-13
+    min_Doppler_noise_real_data['YEBES40M'] = 1.0347841930949488e-13
+    min_Doppler_noise_real_data['TIANMA65'] = 3.799449475342986e-14
+    min_Doppler_noise_real_data['CEDUNA'] = 2.4417833773786286e-12
+    min_Doppler_noise_real_data['BADARY'] = 1.9464314322469196e-13
+    min_Doppler_noise_real_data['HARTRAO'] = 7.121852569380006e-13
+    min_Doppler_noise_real_data['IRBENE'] = 3.467891060872128e-10
+    for LaRa_transmitter in LaRa_transmitter_names:
+        min_Doppler_noise_real_data[LaRa_transmitter] = 2.564768287601929e-14
+
+    # Parameters chosen from an analysis performed
+    distance_ionospheric = 413e3
+
+    def indicator_Doppler_noise_function(SEP_angle_value):
+        common_Doppler_noise = common_Doppler_noise_percentage_function(SEP_angle_value)*min_Doppler_noise_real_data[LaRa_transmitter_names[0]]
+        
+        indicator_Doppler_noise = dict()
+        for station_1 in list(min_Doppler_noise_real_data.keys()):
+            indicator_Doppler_noise[station_1] = dict()
+            for station_2 in list(min_Doppler_noise_real_data.keys()):
+                if station_1 != station_2:
+                    linear_value = ((min_Doppler_noise_real_data[station_1]-common_Doppler_noise)+(min_Doppler_noise_real_data[station_2]-common_Doppler_noise))/(2*common_Doppler_noise+2*(plasma_noise_function(SEP_angle_value)-plasma_noise_function(np.pi)))
+                    indicator_Doppler_noise[station_1][station_2] = 2-2/(1+np.exp(-10**(-1/2)*linear_value))
+        return indicator_Doppler_noise
 
     ########################################################################################################################
     ################################################## CREATE ENVIRONMENT ##################################################
@@ -173,28 +256,45 @@ if __name__=="__main__":
     ########################################################################################################################
 
     # Empty dictionary for the radio telescopes coordinates
-    radio_telescopes_dict_full = dict()
-    radio_telescopes_dict_full["YEBES40M"] = np.array([4848761.7579,-261484.0570,4123085.1343])
-    radio_telescopes_dict_full["MEDICINA"] = np.array([4461369.5682,919597.2489,4449559.4702])
-    radio_telescopes_dict_full["EFLSBERG"] = np.array([4033947.1525,486990.8961,4900431.0604])
-    radio_telescopes_dict_full["WRT0"] = np.array([3828767.1338,442446.1588,5064921.5700])
-    radio_telescopes_dict_full["WETTZELL"] = np.array([4075539.5173,931735.6497,4801629.6028])
-    radio_telescopes_dict_full["ONSALA60"] = np.array([3370605.7035,711917.8146,5349830.9852])
-    #radio_telescopes_dict_full["IRBENE"] = np.array([3183649.341,1276902.985,5359264.715])
-    radio_telescopes_dict_full["HARTRAO"] = np.array([5085442.7721,2668263.9300,-2768696.6299])
-    radio_telescopes_dict_full["BADARY"] = np.array([-838201.2618,3865751.5589,4987670.8708])
-
     radio_telescopes_dict = dict()
-    for index in range(0,receiving_station_number-1):
-        radio_telescopes_dict[list(radio_telescopes_dict_full.keys())[index]] = radio_telescopes_dict_full[list(radio_telescopes_dict_full.keys())[index]]
-       
+
+    # Read the text file containing the name and cartesian coordinates of the radio telescopes
+    with open(os.path.dirname(os.path.realpath(__file__))+'/gs_locations.dat') as file:
+        lines = file.read().splitlines()
+        
+        # Variables
+        skiplines = 29 #lines to be removed from the description at the beginning of the text file
+        eachgroundstationlines = 6 #lines of specs that contains each ground stations
+
+        lines = lines[skiplines:]
+        number_ground_stations_file = int(len(lines)/eachgroundstationlines) #total number of ground stations 
+
+        for pointer_ground_station in range(0,number_ground_stations_file):
+            name_line_ground_station = lines[pointer_ground_station*eachgroundstationlines+1]
+            coordinates_line_ground_station = lines[pointer_ground_station*eachgroundstationlines+2]
+            
+            if len(name_line_ground_station.split("DBNAME=",1)) == 2:
+                name_ground_station = name_line_ground_station.split("DBNAME=",1)[1].split()[0]
+            elif len(name_line_ground_station.split("DBCODE=",1)) == 2:
+                name_ground_station = name_line_ground_station.split("DBCODE=",1)[1].split()[0]
+            
+            # Since the Sebastien files do not have Hart15M and Hobart12 radio telescopes, they are not included in the simulation
+            if name_ground_station=="HART15M" or name_ground_station=="HOBART12" or name_ground_station=="WARK30M" or name_ground_station=="HOBART26" or name_ground_station=="IRBENE":
+                continue
+            else:
+                x_coordinate_ground_station = float(coordinates_line_ground_station.split("X=",1)[1].split()[0])
+                y_coordinate_ground_station = float(coordinates_line_ground_station.split("Y=",1)[1].split()[0])
+                z_coordinate_ground_station = float(coordinates_line_ground_station.split("Z=",1)[1].split()[0])
+
+                radio_telescopes_dict[name_ground_station] = np.array([x_coordinate_ground_station,y_coordinate_ground_station,z_coordinate_ground_station])
+    
     # Earth-based ground station creation
     for pointer_ground_station in range(0,len(transmitters_dict.keys())):
         environment_setup.add_ground_station(
             bodies.get_body("Earth"),
             list(transmitters_dict.keys())[pointer_ground_station],
             transmitters_dict[list(transmitters_dict.keys())[pointer_ground_station]])
-    
+
     # Earth-based radio telescope creation
     for pointer_radio_telescope in range(0,len(radio_telescopes_dict.keys())):
         environment_setup.add_ground_station(
@@ -218,7 +318,16 @@ if __name__=="__main__":
          element_conversion.geodetic_position_type)
 
     Mars_ground_station_list = environment_setup.get_ground_station_list(bodies.get_body("Mars"))
-    
+
+    # Distance between stations
+    distance_stations = dict()
+    Earth_ground_station_dict = {**transmitters_dict,**radio_telescopes_dict}
+    for station_1 in Earth_ground_station_dict:
+        distance_stations[station_1] = dict()
+        for station_2 in Earth_ground_station_dict:
+            if station_1 != station_2:
+                distance_stations[station_1][station_2] = np.sqrt((Earth_ground_station_dict[station_1][0]-Earth_ground_station_dict[station_2][0])**2+(Earth_ground_station_dict[station_1][1]-Earth_ground_station_dict[station_2][1])**2+(Earth_ground_station_dict[station_1][2]-Earth_ground_station_dict[station_2][2])**2)
+
     ########################################################################################################################
     ################################################## CREATE ACCELERATION MODELS ##########################################
     ########################################################################################################################
@@ -370,7 +479,9 @@ if __name__=="__main__":
         r_earthsun = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Earth","Sun","ECLIPJ2000","NONE",LaRa_time_pointer))
         r_marssun = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Mars","Sun","ECLIPJ2000","NONE",LaRa_time_pointer))
         r_earthmars = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Mars","Earth","ECLIPJ2000","NONE",LaRa_time_pointer))
+
         # Cosine rule in order to compute the SEP angle
+        #LaRa_SEP_angle.append((np.pi-np.arccos(np.dot(r1,r2)/(np.linalg.norm(r1)*np.linalg.norm(r2))))/2)
         LaRa_SEP_angle.append(np.arccos((r_earthsun**2+r_earthmars**2-r_marssun**2)/(2*r_earthsun*r_earthmars)))
 
         # Compute the solar plasma noise using the equations shown in IMPROVED DOPPLER TRACKING SYSTEMS FOR DEEP SPACE NAVIGATION
@@ -430,8 +541,6 @@ if __name__=="__main__":
     # Number of link ends for ExoMars mission
     LaRa_link_ends_length = len(observation_settings_list)-RISE_link_ends_length
 
-    print(observation_settings_list)
-
     # Since simulated_observations orders the observations by alphabetical order, the sorted link ends list is determined
     link_ends_sort = list()
     DSN_link_ends_number = 0
@@ -444,13 +553,12 @@ if __name__=="__main__":
                 boolean_DSN_receiver = True
                 for receiver_pointer in Earth_ground_station_list:
                     # DSN receiving stations
-                    if transmitter_pointer[1] == receiver_pointer[1] and boolean_DSN_receiver:
+                    if len(transmitter_pointer[1]) == len(receiver_pointer[1]) and transmitter_pointer[1] < receiver_pointer[1] and boolean_DSN_receiver:
                         two_way_link_ends = dict()
                         two_way_link_ends[observation.transmitter] = ("Earth",transmitter_pointer[1])
                         two_way_link_ends[observation.reflector1] = ("Mars",LaRa_reflector_name)
                         two_way_link_ends[observation.receiver] = ("Earth",transmitter_pointer[1])
                         link_ends_sort.append(two_way_link_ends)
-                        print(two_way_link_ends)
                         DSN_link_ends_number+=1
                         boolean_DSN_receiver = False
 
@@ -472,7 +580,6 @@ if __name__=="__main__":
                 link_ends_sort.append(two_way_link_ends)
                 DSN_link_ends_number+=1
 
-    print(link_ends_sort)
     # Find the index position, transmitter and receiver for each link-end
     link_ends_numbers = list()
     link_ends_transmitter = list()
@@ -548,11 +655,11 @@ if __name__=="__main__":
     # Create observation viability settings and calculators for LaRa
     if len(LaRa_observation_times_list)!=0:
         LaRa_viability_settings_list = list()
-        #LaRa_viability_settings_list.append(observation.minimum_elevation_angle_viability(["Earth",""],np.deg2rad(LaRa_antenna_min_elevation)))
-        #LaRa_viability_settings_list.append(observation.minimum_elevation_angle_viability(["Mars",""],np.deg2rad(LaRa_earth_min)))
-        #LaRa_viability_settings_list.append(observation.maximum_elevation_angle_viability(["Mars",""],np.deg2rad(LaRa_earth_max)))
-        #LaRa_viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(LaRa_antenna_min_elevation)))
-        #LaRa_viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
+        LaRa_viability_settings_list.append(observation.minimum_elevation_angle_viability(["Earth",""],np.deg2rad(LaRa_antenna_min_elevation)))
+        LaRa_viability_settings_list.append(observation.minimum_elevation_angle_viability(["Mars",""],np.deg2rad(LaRa_earth_min)))
+        LaRa_viability_settings_list.append(observation.maximum_elevation_angle_viability(["Mars",""],np.deg2rad(LaRa_earth_max)))
+        LaRa_viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(LaRa_antenna_min_elevation)))
+        LaRa_viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
     
     #Change directory in order to read ResStatPerPass_ForCarlos.txt
     noise_folder_path = os.path.dirname(os.path.realpath(__file__))
@@ -598,16 +705,16 @@ if __name__=="__main__":
             if len(RISE_observation_times_dict[RISE_transmitter_names[RISE_pointer_link_ends]])!=0:
                 observation_simulation_settings.append(observation.tabulated_simulation_settings(observation.two_way_doppler_type,
                     observation_settings_list[RISE_pointer_link_ends],RISE_observation_times_dict[RISE_transmitter_names[RISE_pointer_link_ends]],
-                    viability_settings = RISE_viability_settings_list,reference_link_end_type = observation.receiver))#,
-                    #noise_function = RISE_std_mHz_callable))
+                    viability_settings = RISE_viability_settings_list,reference_link_end_type = observation.receiver,
+                    noise_function = RISE_std_mHz_callable))
 
     # Create observation simulation settings for LaRa
     if len(LaRa_observation_times_list)!=0:
         for LaRa_pointer_link_ends in range(0,LaRa_link_ends_length):
             observation_simulation_settings.append(observation.tabulated_simulation_settings(observation.two_way_doppler_type,
                 observation_settings_list[RISE_link_ends_length+LaRa_pointer_link_ends],LaRa_observation_times_list,
-                viability_settings = LaRa_viability_settings_list,reference_link_end_type = observation.transmitter))#,
-                #noise_function = LaRa_std_mHz_callable))
+                viability_settings = LaRa_viability_settings_list,reference_link_end_type = observation.transmitter,
+                noise_function = LaRa_std_mHz_callable))
     
     # Simulate required observation
     simulated_observations = estimation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
@@ -670,14 +777,16 @@ if __name__=="__main__":
 
     # Define noise levels for weights
     vector_weights = list()
-
-    # Define noise levels for weights for RISE
-    if len(RISE_observation_times_list)!=0: 
-        vector_weights.extend(list(RISE_std_mHz_function((RISE_concatenated_times-RISE_observation_start_epoch_reference_noise)/constants.JULIAN_DAY)*10**(-3)/base_frequency))
-
-    # Define noise levels for weights for LaRa
-    if len(LaRa_observation_times_list)!=0:
-        vector_weights.extend(list(LaRa_std_noise_function(LaRa_concatenated_times)))
+    link_ends = simulated_observations.concatenated_link_end_names
+    for index in range(0,len(concatenated_times_array)):
+        link_end_name = link_ends[index]
+        if link_end_name[observation.reflector1][1] == RISE_reflector_name:
+            vector_weights.extend(list([RISE_std_mHz_function((concatenated_times_array[index]-RISE_observation_start_epoch_reference_noise)/constants.JULIAN_DAY)*10**(-3)/base_frequency]))
+        if link_end_name[observation.reflector1][1] == LaRa_reflector_name:
+            if link_end_name[observation.transmitter] == link_end_name[observation.receiver]:
+                vector_weights.extend(list(LaRa_std_noise_function([concatenated_times_array[index]])))
+            else:
+                vector_weights.extend(list(LaRa_std_noise_function([concatenated_times_array[index]])))
 
     # Weights list becomes an array
     vector_weights = np.array(vector_weights)
@@ -717,6 +826,7 @@ if __name__=="__main__":
     concatenated_link_ends = np.array(simulated_observations.concatenated_link_ends)
     concatenated_link_end_names = simulated_observations.concatenated_link_end_names
     doppler_residuals = pod_output.residual_history
+    observations_list = np.array(simulated_observations.concatenated_observations)
 
     # Compute how many DSN link ends there are
     DSN_concatenated_link_ends = list()
@@ -736,6 +846,8 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/concatenated_link_end_names.dat",concatenated_link_end_names_list, fmt='%s')
     np.savetxt(output_folder_path+"/doppler_residuals.dat",doppler_residuals,fmt='%.15e')
     np.savetxt(output_folder_path+"/vector_weights.dat",vector_weights,fmt='%.15e')
+    np.savetxt(output_folder_path+"/observations_list.dat",observations_list,fmt='%.15e')
+    np.savetxt(output_folder_path+"/LaRa_time_solar_SEP.dat",np.rad2deg(LaRa_SEP_angle),fmt='%.15e')
 
     # Sort index
     index_sort = np.argsort(concatenated_times)
@@ -832,9 +944,34 @@ if __name__=="__main__":
     sort_concatenated_link_ends_names_dict.close()
     sort_concatenated_link_ends_names_dict.join()
 
+    # Function to sort observations
+    def sort_observations_func(index):
+        return observations_list[index]
+
+    # Sort cobservations
+    sort_observations_dict = Pool(CPU_par)
+    print("Sorting observations")
+    observations_list_sort = sort_observations_dict.map(sort_observations_func,index_sort)
+    sort_observations_dict.close()
+    sort_observations_dict.join()
+
     # Initialize inverted weighting matrix
-    #inv_weight_complex = (scipy.sparse.diags(1/np.array(vector_weights_sort)**2)).tocsr() #Same as correlation to 1
     inv_weight_complex = scipy.sparse.coo_matrix((0,0))
+
+    # Save the correlation coefficients
+    correlation_list = list()
+    weather_list = list()
+    indicator_Doppler_list = list()
+    indicator_weather_list = list()
+    Doppler_total_list = list()
+    weather_total_list = list()
+    correlation_dict = dict()
+    LaRa_stations = ['DSS 43','DSS 63','DSS 14','MEDICINA','WETTZELL','ONSALA60','EFLSBERG','WRT0','YEBES40M','TIANMA65','CEDUNA','BADARY','HARTRAO']
+    for i_station in LaRa_stations:
+        correlation_dict[i_station] = dict()
+        for j_station in LaRa_stations:
+            if i_station!=j_station:
+                correlation_dict[i_station][j_station] = list()
     
     # Delete arrays where two DSN have observation at the same time
     indices_delete = list()
@@ -865,6 +1002,7 @@ if __name__=="__main__":
             residuals_sort[start_index:end_index] = residuals_sort_short
             concatenated_link_end_names_list_sort[start_index:end_index] = np.array(concatenated_link_end_names_list_sort[start_index:end_index])[receiver_link_ends]
             vector_weights_sort[start_index:end_index] = np.array(vector_weights_sort[start_index:end_index])[receiver_link_ends]
+            observations_list_sort[start_index:end_index] = np.array(observations_list_sort[start_index:end_index])[receiver_link_ends]
             concatenated_link_ends_sort[start_index:end_index] = np.array(concatenated_link_ends_sort[start_index:end_index])[receiver_link_ends]
             
             # Understanding which transmitters and receivers are involved
@@ -901,7 +1039,7 @@ if __name__=="__main__":
                         if transmitters_total[row_index]==receivers_total[row_index]:
                             block_weight[0][0] = vector_weights_sort[start_index_block+row_index]**2
                             inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
-                        # When transmitter !=r receiver -> delete index
+                        # When transmitter != receiver -> delete index
                         else:
                             indices_delete.append(start_index_block+row_index)
 
@@ -910,6 +1048,17 @@ if __name__=="__main__":
                     # Number of receivers for a transmitter
                     split_count = transmitter_count_number[0]
                     block_weight = (scipy.sparse.coo_matrix((split_count,split_count))).toarray()
+
+                    # Compute the the distances from the Sun to Mars and Earth
+                    r_earthsun = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Earth","Sun","ECLIPJ2000","NONE",concatenated_times_sort[start_index]))
+                    r_marssun = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Mars","Sun","ECLIPJ2000","NONE",concatenated_times_sort[start_index]))
+                    r_earthmars = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Mars","Earth","ECLIPJ2000","NONE",concatenated_times_sort[start_index]))
+
+                    # Cosine rule in order to compute the SEP angle
+                    SEP_angle = np.arccos((r_earthsun**2+r_earthmars**2-r_marssun**2)/(2*r_earthsun*r_earthmars))
+
+                    indicator_Doppler_noise = indicator_Doppler_noise_function(SEP_angle)
+
                     for row_index in range(0,split_count):
                         for column_index in range(0,split_count):
                             # Diagonal element
@@ -917,7 +1066,18 @@ if __name__=="__main__":
                                 block_weight[row_index][column_index] = vector_weights_sort[start_index_block+row_index]**2
                             # Non-diagonal element
                             else:
-                                block_weight[row_index][column_index] = correlation*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
+                                station_1 = receivers_total[row_index]
+                                station_2 = receivers_total[column_index]
+                                correlation_coefficient = (1-weather_percentage_function(SEP_angle))*indicator_Doppler_noise[station_1][station_2]+weather_percentage_function(SEP_angle)*np.exp(-distance_stations[station_1][station_2]/(2*distance_ionospheric))
+                                block_weight[row_index][column_index] = correlation_coefficient*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
+                                if row_index>column_index:
+                                    correlation_dict[station_1][station_2].append(correlation_coefficient)
+                                    correlation_list.append(correlation_coefficient)
+                                    weather_list.append(weather_percentage_function(SEP_angle))
+                                    indicator_Doppler_list.append(indicator_Doppler_noise[station_1][station_2])
+                                    indicator_weather_list.append(np.exp(-distance_stations[station_1][station_2]/(2*distance_ionospheric)))
+                                    Doppler_total_list.append((1-weather_percentage_function(SEP_angle))*indicator_Doppler_noise[station_1][station_2])
+                                    weather_total_list.append(weather_percentage_function(SEP_angle)*np.exp(-distance_stations[station_1][station_2]/(2*distance_ionospheric)))
                     inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
 
             # When different transmitters are available
@@ -946,6 +1106,16 @@ if __name__=="__main__":
                         # When all the PRIDE observations are taken into account
                         else:
                             block_weight = (scipy.sparse.coo_matrix((split_count,split_count))).toarray()
+
+                            # Compute the the distances from the Sun to Mars and Earth
+                            r_earthsun = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Earth","Sun","ECLIPJ2000","NONE",concatenated_times_sort[start_index]))
+                            r_marssun = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Mars","Sun","ECLIPJ2000","NONE",concatenated_times_sort[start_index]))
+                            r_earthmars = np.linalg.norm(spice_interface.get_body_cartesian_position_at_epoch("Mars","Earth","ECLIPJ2000","NONE",concatenated_times_sort[start_index]))
+
+                            # Cosine rule in order to compute the SEP angle
+                            SEP_angle = np.arccos((r_earthsun**2+r_earthmars**2-r_marssun**2)/(2*r_earthsun*r_earthmars))
+
+                            indicator_Doppler_noise = indicator_Doppler_noise_function(SEP_angle)
                             for row_index in range(0,split_count):
                                 for column_index in range(0,split_count):
                                     # Diagonal element
@@ -953,7 +1123,18 @@ if __name__=="__main__":
                                         block_weight[row_index][column_index] = vector_weights_sort[start_index_block+row_index]**2
                                     # Non-diagonal element
                                     else:
-                                        block_weight[row_index][column_index] = correlation*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
+                                        station_1 = receivers_total[total_split+row_index]
+                                        station_2 = receivers_total[total_split+column_index]
+                                        correlation_coefficient = (1-weather_percentage_function(SEP_angle))*indicator_Doppler_noise[station_1][station_2]+weather_percentage_function(SEP_angle)*np.exp(-distance_stations[station_1][station_2]/(2*distance_ionospheric))
+                                        block_weight[row_index][column_index] = correlation_coefficient*vector_weights_sort[start_index_block+row_index]*vector_weights_sort[start_index_block+column_index]
+                                        if row_index>column_index:
+                                            correlation_dict[station_1][station_2].append(correlation_coefficient)
+                                            correlation_list.append(correlation_coefficient)
+                                            weather_list.append(weather_percentage_function(SEP_angle))
+                                            indicator_Doppler_list.append(indicator_Doppler_noise[station_1][station_2])
+                                            indicator_weather_list.append(np.exp(-distance_stations[station_1][station_2]/(2*distance_ionospheric)))
+                                            Doppler_total_list.append((1-weather_percentage_function(SEP_angle))*indicator_Doppler_noise[station_1][station_2])
+                                            weather_total_list.append(weather_percentage_function(SEP_angle)*np.exp(-distance_stations[station_1][station_2]/(2*distance_ionospheric)))
                             inv_weight_complex = scipy.sparse.block_diag((inv_weight_complex,np.linalg.inv(block_weight)))
 
                     # Remove all the observations from other transmitters
@@ -972,6 +1153,7 @@ if __name__=="__main__":
         concatenated_link_ends_sort.pop(index_delete)
         concatenated_link_end_names_list_sort.pop(index_delete)
         vector_weights_sort.pop(index_delete)
+        observations_list_sort.pop(index_delete)
 
     # Unit test for when remove_PRIDE_weight_boolean==TRUE, check whether the concatenated_times_sort is the same as concatenated_times_no_duplicated
     if remove_PRIDE_weight_boolean:
@@ -1000,7 +1182,7 @@ if __name__=="__main__":
     inv_weight_complex_total = (inv_weight_complex).tocsr()
 
     # Partial covariance
-    if PRIDE_boolean==False or correlation==0:
+    if PRIDE_boolean==False:
         partial_cov = np.transpose(estimation_information_matrix_sort)@(inv_weight_complex_total.sqrt())
 
     # Save sorted data
@@ -1013,19 +1195,69 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/concatenated_link_end_names_sort.dat",concatenated_link_end_names_list_sort, fmt='%s')
     np.savetxt(output_folder_path+"/doppler_residuals_sort.dat",residuals_sort,fmt='%.15e')
     np.savetxt(output_folder_path+"/vector_weights_sort.dat",vector_weights_sort,fmt='%.15e')
-    if PRIDE_boolean==False or correlation==0:
+    np.savetxt(output_folder_path+"/observations_list_sort.dat",observations_list_sort,fmt='%.15e')
+    np.savetxt(output_folder_path+"/correlation_list.dat",correlation_list,fmt='%.15e')
+    np.savetxt(output_folder_path+"/weather_list.dat",weather_list,fmt='%.15e')
+    np.savetxt(output_folder_path+"/indicator_Doppler_list.dat",indicator_Doppler_list,fmt='%.15e')
+    np.savetxt(output_folder_path+"/indicator_weather_list.dat",indicator_weather_list,fmt='%.15e')
+    np.savetxt(output_folder_path+"/Doppler_total_list.dat",Doppler_total_list,fmt='%.15e')
+    np.savetxt(output_folder_path+"/weather_total_list.dat",weather_total_list,fmt='%.15e')
+    if PRIDE_boolean==False:
         np.savetxt(output_folder_path+"/partial_cov.dat",partial_cov,fmt='%.15e')
+
+    import json
+    with open(output_folder_path+'/correlations.json', 'w') as fp:
+            json.dump(correlation_dict, fp)  
+
+    # Histogram correlation
+    
+    plt.figure(figsize=(8, 5))
+    plt.hist(correlation_list, bins = 20)
+    average_correlation = np.mean(correlation_list)
+    plt.axvline(x=average_correlation, color='k', linestyle='--',label='Mean = '+str(average_correlation))
+    plt.ylabel('Frequency [-]')
+    plt.xlabel('Correlation [-]')
+    #plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.grid()
+    plt.legend()
+    plt.savefig(output_folder_path+"/correlation.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    plt.figure(figsize=(8, 5))
+    plt.hist(weather_list, bins = 20)
+    plt.ylabel('Frequency [-]')
+    plt.xlabel('Weather Coeff [-]')
+    plt.grid()
+    plt.savefig(output_folder_path+"/weather_list.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    plt.figure(figsize=(8, 5))
+    plt.hist(indicator_weather_list, bins = 20)
+    plt.ylabel('Frequency [-]')
+    plt.xlabel('Weather Corr [-]')
+    plt.grid()
+    plt.savefig(output_folder_path+"/indicator_weather_list.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    plt.figure(figsize=(8, 5))
+    plt.hist(indicator_Doppler_list, bins = 20)
+    plt.ylabel('Frequency [-]')
+    plt.xlabel('Doppler Coeff [-]')
+    plt.grid()
+    plt.savefig(output_folder_path+"/indicator_Doppler_list.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
 
     ########################################################################################################################
     ################################################## COVARIANCE ANALYSIS #################################################
     ########################################################################################################################
 
     # Step evaluation
-    arange_eval = np.arange(0,len(concatenated_times_no_duplicated),step_eval)
+    arange_eval = np.arange(0,len(concatenated_times_no_duplicated),step_eval) 
     time_eval = [concatenated_times_no_duplicated[i] for i in arange_eval]
-
-    arange_eval = [arange_eval[-1]]
-    time_eval = [time_eval[-1]]
 
     np.savetxt(output_folder_path+"/time_plot.dat",time_eval,fmt='%.15e')
     
@@ -1104,9 +1336,9 @@ if __name__=="__main__":
 
     # Compute correlation matrix only for LaRa mission
     if len(LaRa_observation_times_list)!=0:
-        index_start_LaRa = list(concatenated_times_sort).index(min(LaRa_concatenated_times))-(list(concatenated_times_sort).count(min(LaRa_concatenated_times))-1)
+        index_start_LaRa = list(concatenated_times_sort).index(min(LaRa_concatenated_times))
         
-        inv_norm_covariance_LaRa_value = np.linalg.inv(np.transpose(estimation_information_matrix_sort[index_start_LaRa:])@scipy.sparse.diags(1/np.array(vector_weights_sort[index_start_LaRa:])**2)@estimation_information_matrix_sort[index_start_LaRa:]\
+        inv_norm_covariance_LaRa_value = np.linalg.inv(np.transpose(estimation_information_matrix_sort[index_start_LaRa:])@inv_weight_complex_total[index_start_LaRa:,index_start_LaRa:]@estimation_information_matrix_sort[index_start_LaRa:]\
                 +norm_inverse_a_priori_covariance)
 
         covariance_matrix_LaRa = np.zeros(np.shape(inv_norm_covariance_LaRa_value))
@@ -1139,18 +1371,53 @@ if __name__=="__main__":
     plt.close('all')
 
     # Plot to check the viability of the Sun
-    plt.figure(figsize=(15, 6))
+    plt.figure(figsize=(8, 4))
+    plt.rcParams.update({'font.size': 18})
     if len(RISE_observation_times_list)!=0: 
         plt.scatter((RISE_concatenated_times-observation_start_epoch)/constants.JULIAN_DAY,RISE_std_mHz_function((RISE_concatenated_times-RISE_observation_start_epoch_reference_noise)/constants.JULIAN_DAY))
     if len(LaRa_observation_times_list)!=0: 
         plt.scatter((LaRa_concatenated_times-observation_start_epoch)/constants.JULIAN_DAY,LaRa_std_noise_function(LaRa_concatenated_times)/10**(-3)*base_frequency)
-    plt.ylabel('Std noise [mHz]')
+    plt.ylabel(r'1-$\sigma$ Doppler Residual [mHz]')
     plt.xlabel('Time [days]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    #plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.grid()
     plt.savefig(output_folder_path+"/std_noise_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all') 
+    plt.rcParams.update({'font.size': 10})
+
+    # Plot to check the viability of the Sun v2
+    plt.figure(figsize=(15, 6))
+    plt.scatter((concatenated_times_sort-observation_start_epoch*np.ones(len(concatenated_times_sort)))/constants.JULIAN_DAY,vector_weights_sort)
+    plt.ylabel('Std noise [-]')
+    plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.grid()
+    plt.savefig(output_folder_path+"/weights_time.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close('all')
+
+    # Plot observations as a function of time
+    plt.figure(figsize=(15,6))
+    plt.scatter((concatenated_times_sort-observation_start_epoch*np.ones(len(concatenated_times_sort)))/constants.JULIAN_DAY,np.array(observations_list_sort)*constants.SPEED_OF_LIGHT)
+    plt.ylabel('Range rate [m/s]')
+    plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.grid()
+    plt.savefig(output_folder_path+"/observations_time.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close("all")
+
+    # Plot residual as a function of time
+    plt.figure(figsize=(15,6))
+    plt.scatter((concatenated_times_sort-observation_start_epoch*np.ones(len(concatenated_times_sort)))/constants.JULIAN_DAY,residuals_sort)
+    plt.ylabel('Residual [-]')
+    plt.xlabel('Time [days]')
+    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
+    plt.grid()
+    plt.savefig(output_folder_path+"/residuals_time.pdf",bbox_inches="tight")
+    plt.show()
+    plt.close("all")
     
     # Formal to apriori ratio
     plt.figure(figsize=(15, 6))
@@ -1161,20 +1428,20 @@ if __name__=="__main__":
     #'''
     if len(LaRa_observation_times_list)==0:
         plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     elif len(RISE_observation_times_list)==0:
         plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     else:
     #'''
         plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
@@ -1192,20 +1459,20 @@ if __name__=="__main__":
     #'''
     if len(LaRa_observation_times_list)==0:
         plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     elif len(RISE_observation_times_list)==0:
         plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     else:
     #'''
         plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
@@ -1223,20 +1490,20 @@ if __name__=="__main__":
     #'''
     if len(LaRa_observation_times_list)==0:
         plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     elif len(RISE_observation_times_list)==0:
         plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     else:
     #'''
         plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
@@ -1250,31 +1517,32 @@ if __name__=="__main__":
     plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = False
     plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = True
     plt.imshow(np.abs(correlation_values[-1]))
+    np.savetxt(output_folder_path+"/final_mop_correlation.dat",correlation_values[-1],fmt='%.15e')
     plt.colorbar()
     #'''
     if len(LaRa_observation_times_list)==0:
         plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
             r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
         plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
             r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
     elif len(RISE_observation_times_list)==0:
         plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
             r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
         plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
             r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
@@ -1282,13 +1550,13 @@ if __name__=="__main__":
     #'''
         plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
             r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
         plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
             r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+            r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
             r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
             r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
             r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
@@ -1308,18 +1576,19 @@ if __name__=="__main__":
         end_RISE_observation_time = max(RISE_observation_times_list)
         idx_nearest = np.abs(end_RISE_observation_time-np.array(time_eval)).argmin()
         plt.imshow(np.abs(correlation_values[idx_nearest]))
+        np.savetxt(output_folder_path+"/RISE_mop_correlation.dat",correlation_values[idx_nearest],fmt='%.15e')
         plt.colorbar()
         #'''
         if len(LaRa_observation_times_list)==0:
             plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
                 r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
-                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+                r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
                 r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
                 r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
                 r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
             plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
                 r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
-                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+                r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
                 r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
                 r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
                 r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
@@ -1327,13 +1596,13 @@ if __name__=="__main__":
         #'''
             plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
                 r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+                r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
                 r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
                 r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
                 r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
             plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
                 r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+                r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
                 r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
                 r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
                 r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
@@ -1351,18 +1620,19 @@ if __name__=="__main__":
         plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = False
         plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = True
         plt.imshow(np.abs(correlation_matrix_LaRa))
+        np.savetxt(output_folder_path+"/LaRa_mop_correlation.dat",correlation_matrix_LaRa,fmt='%.15e')
         plt.colorbar()
         #'''
         if len(RISE_observation_times_list)==0:
             plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
                 r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+                r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
                 r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
                 r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
                 r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
             plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
                 r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+                r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
                 r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
                 r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
                 r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
@@ -1370,13 +1640,13 @@ if __name__=="__main__":
         #'''
             plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
                 r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+                r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
                 r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
                 r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
                 r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
             plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
                 r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
+                r'$\phi^c_1$',r'$\phi^s_1$',r'$\phi^c_2$',r'$\phi^s_2$',r'$\phi^c_3$',r'$\phi^s_3$',r'$\phi^c_4$',r'$\phi^s_4$',
                 r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
                 r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
                 r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
@@ -1572,24 +1842,24 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/cos4spin_plot.dat",cos4spin_values,fmt='%.15e')
     np.savetxt(output_folder_path+"/sin4spin_plot.dat",sin4spin_values,fmt='%.15e')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(cos1spin_values)/mas,'-o',label=r'$\psi^c_1$')
+        np.array(cos1spin_values)/mas,'-o',label=r'$\phi^c_1$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(sin1spin_values)/mas,'-o',label=r'$\psi^s_1$')
+        np.array(sin1spin_values)/mas,'-o',label=r'$\phi^s_1$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(cos2spin_values)/mas,'-o',label=r'$\psi^c_2$')
+        np.array(cos2spin_values)/mas,'-o',label=r'$\phi^c_2$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(sin2spin_values)/mas,'-o',label=r'$\psi^s_2$')
+        np.array(sin2spin_values)/mas,'-o',label=r'$\phi^s_2$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(cos3spin_values)/mas,'-o',label=r'$\psi^c_3$')
+        np.array(cos3spin_values)/mas,'-o',label=r'$\phi^c_3$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(sin3spin_values)/mas,'-o',label=r'$\psi^s_3$')
+        np.array(sin3spin_values)/mas,'-o',label=r'$\phi^s_3$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(cos4spin_values)/mas,'-o',label=r'$\psi^c_4$')
+        np.array(cos4spin_values)/mas,'-o',label=r'$\phi^c_4$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(sin4spin_values)/mas,'-o',label=r'$\psi^s_4$')
+        np.array(sin4spin_values)/mas,'-o',label=r'$\phi^s_4$')
     if RISE_boolean and LaRa_boolean:
         plt.axvline(x=(LaRa_observation_times_list[0]-observation_start_epoch)/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
-    plt.ylabel(r'1-$\sigma$ $\psi$ [mas]')
+    plt.ylabel(r'1-$\sigma$ $\phi$ [mas]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend()
@@ -1777,6 +2047,8 @@ if __name__=="__main__":
     plt.savefig(output_folder_path+"/polarmotionamp5_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
+
+    np.savetxt(output_folder_path+"/final_formalerrors_plot.dat",sigma_values[-1][:],fmt='%.15e')
 
     print('Is there any duplicated total time value? :',any(list(concatenated_times).count(x) > 1 for x in list(concatenated_times)))
 

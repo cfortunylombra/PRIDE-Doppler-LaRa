@@ -1,5 +1,5 @@
 """
-Description: Precise Orbit Determination only with LaRa without viability settings (V&V)
+Description: Environment Setup for the Precise Orbit Determination (RISE and LaRa with DSN-PRIDE)
 
 Author: C. Fortuny-Lombraña
 """
@@ -38,7 +38,7 @@ if __name__=="__main__":
     CPU_par = 14
 
     # Booleans to understand whether we want to simulate together RISE and LaRa missions, or separetely
-    RISE_boolean = False
+    RISE_boolean = True
     LaRa_boolean = True
     
     if LaRa_boolean:
@@ -63,14 +63,11 @@ if __name__=="__main__":
     # Evaluation step 
     step_eval = 1
 
-    # Receiving stations
-    receiving_station_number = 1
-
     # Output folder
     if LaRa_boolean:
-        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/PODst'+str(receiving_station_number)+'_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean)+'_PRIDE'+str(PRIDE_boolean)+str(remove_PRIDE_weight_boolean)+'_corr'+str(correlation))
+        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISEnoint'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean)+'_PRIDE'+str(PRIDE_boolean)+str(remove_PRIDE_weight_boolean)+'_corr'+str(correlation))
     else:
-        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISE'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean))
+        output_folder_path = os.path.dirname(os.path.realpath(__file__)).replace('/src','/output/POD_RISEnoint'+str(RISE_boolean)+'_LaRa'+str(LaRa_boolean))
     os.makedirs(output_folder_path,exist_ok=True)
 
     if RISE_boolean:
@@ -112,13 +109,25 @@ if __name__=="__main__":
 
     # Earth-based transmitters
     transmitters_dict = dict() #Taken from JPL web site
+    transmitters_dict['DSS 43']=np.array([-4460894.9170,2682361.5070,-3674748.1517]) # DSS 43
+    transmitters_dict['DSS 34']=np.array([-4461147.0925,2682439.2385,-3674393.1332]) # DSS 34
+    transmitters_dict['DSS 35']=np.array([-4461273.4175,2682568.9283,-3674151.5223]) # DSS 35 (https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat)
+    transmitters_dict['DSS 36']=np.array([-4461168.7425,2682814.6603,-3674083.3303]) # DSS 36 (https://www.aoc.nrao.edu/software/sched/catalogs/locations.dat)
+    transmitters_dict['DSS 65']=np.array([4849339.6448,-360427.6560,4114750.7428]) # DSS 65
     transmitters_dict['DSS 63']=np.array([4849092.5175,-360180.3480,4115109.2506]) # DSS 63
+    transmitters_dict['DSS 55']=np.array([4849525.2561,-360606.0932,4114495.0843]) # DSS 55
+    transmitters_dict['DSS 54']=np.array([4849434.4877,-360723.8999,4114618.8354]) # DSS 54
+    transmitters_dict['DSS 56']=np.array([4849421.500903,-360549.2280048,4114647.264832]) # DSS 56 (https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/stations/earth_topo_201023.tf)
+    transmitters_dict['DSS 14']=np.array([-2353621.4197,-4641341.4717,3677052.3178]) # DSS 14
+    transmitters_dict['DSS 26']=np.array([-2354890.7996,-4647166.3182,3668871.7546]) # DSS 26
+    transmitters_dict['DSS 24']=np.array([-2354906.7087,-4646840.0834,3669242.3207]) # DSS 24
+    transmitters_dict['DSS 25']=np.array([-2355022.0140,-4646953.2040,3669040.5666]) # DSS 25
 
     # Earth-based transmitter for RISE
     RISE_transmitter_names = ['DSS 43','DSS 34','DSS 35','DSS 36','DSS 65','DSS 63','DSS 55','DSS 54','DSS 56','DSS 14','DSS 26', 'DSS 24', 'DSS 25']
 
     # Earth-based transmitter for LaRa
-    LaRa_transmitter_names = ['DSS 63'] #CHANGED
+    LaRa_transmitter_names = ['DSS 43','DSS 63','DSS 14']
 
     # Viability settings for RISE
     RISE_earth_min = 10 #deg
@@ -173,28 +182,45 @@ if __name__=="__main__":
     ########################################################################################################################
 
     # Empty dictionary for the radio telescopes coordinates
-    radio_telescopes_dict_full = dict()
-    radio_telescopes_dict_full["YEBES40M"] = np.array([4848761.7579,-261484.0570,4123085.1343])
-    radio_telescopes_dict_full["MEDICINA"] = np.array([4461369.5682,919597.2489,4449559.4702])
-    radio_telescopes_dict_full["EFLSBERG"] = np.array([4033947.1525,486990.8961,4900431.0604])
-    radio_telescopes_dict_full["WRT0"] = np.array([3828767.1338,442446.1588,5064921.5700])
-    radio_telescopes_dict_full["WETTZELL"] = np.array([4075539.5173,931735.6497,4801629.6028])
-    radio_telescopes_dict_full["ONSALA60"] = np.array([3370605.7035,711917.8146,5349830.9852])
-    #radio_telescopes_dict_full["IRBENE"] = np.array([3183649.341,1276902.985,5359264.715])
-    radio_telescopes_dict_full["HARTRAO"] = np.array([5085442.7721,2668263.9300,-2768696.6299])
-    radio_telescopes_dict_full["BADARY"] = np.array([-838201.2618,3865751.5589,4987670.8708])
-
     radio_telescopes_dict = dict()
-    for index in range(0,receiving_station_number-1):
-        radio_telescopes_dict[list(radio_telescopes_dict_full.keys())[index]] = radio_telescopes_dict_full[list(radio_telescopes_dict_full.keys())[index]]
-       
+
+    # Read the text file containing the name and cartesian coordinates of the radio telescopes
+    with open(os.path.dirname(os.path.realpath(__file__))+'/gs_locations.dat') as file:
+        lines = file.read().splitlines()
+        
+        # Variables
+        skiplines = 29 #lines to be removed from the description at the beginning of the text file
+        eachgroundstationlines = 6 #lines of specs that contains each ground stations
+
+        lines = lines[skiplines:]
+        number_ground_stations_file = int(len(lines)/eachgroundstationlines) #total number of ground stations 
+
+        for pointer_ground_station in range(0,number_ground_stations_file):
+            name_line_ground_station = lines[pointer_ground_station*eachgroundstationlines+1]
+            coordinates_line_ground_station = lines[pointer_ground_station*eachgroundstationlines+2]
+            
+            if len(name_line_ground_station.split("DBNAME=",1)) == 2:
+                name_ground_station = name_line_ground_station.split("DBNAME=",1)[1].split()[0]
+            elif len(name_line_ground_station.split("DBCODE=",1)) == 2:
+                name_ground_station = name_line_ground_station.split("DBCODE=",1)[1].split()[0]
+            
+            # Since the Sebastien files do not have Hart15M and Hobart12 radio telescopes, they are not included in the simulation
+            if name_ground_station=="HART15M" or name_ground_station=="HOBART12" or name_ground_station=="WARK30M" or name_ground_station=="HOBART26" or name_ground_station=="IRBENE":
+                continue
+            else:
+                x_coordinate_ground_station = float(coordinates_line_ground_station.split("X=",1)[1].split()[0])
+                y_coordinate_ground_station = float(coordinates_line_ground_station.split("Y=",1)[1].split()[0])
+                z_coordinate_ground_station = float(coordinates_line_ground_station.split("Z=",1)[1].split()[0])
+
+                radio_telescopes_dict[name_ground_station] = np.array([x_coordinate_ground_station,y_coordinate_ground_station,z_coordinate_ground_station])
+    
     # Earth-based ground station creation
     for pointer_ground_station in range(0,len(transmitters_dict.keys())):
         environment_setup.add_ground_station(
             bodies.get_body("Earth"),
             list(transmitters_dict.keys())[pointer_ground_station],
             transmitters_dict[list(transmitters_dict.keys())[pointer_ground_station]])
-    
+
     # Earth-based radio telescope creation
     for pointer_radio_telescope in range(0,len(radio_telescopes_dict.keys())):
         environment_setup.add_ground_station(
@@ -218,7 +244,7 @@ if __name__=="__main__":
          element_conversion.geodetic_position_type)
 
     Mars_ground_station_list = environment_setup.get_ground_station_list(bodies.get_body("Mars"))
-    
+
     ########################################################################################################################
     ################################################## CREATE ACCELERATION MODELS ##########################################
     ########################################################################################################################
@@ -430,8 +456,6 @@ if __name__=="__main__":
     # Number of link ends for ExoMars mission
     LaRa_link_ends_length = len(observation_settings_list)-RISE_link_ends_length
 
-    print(observation_settings_list)
-
     # Since simulated_observations orders the observations by alphabetical order, the sorted link ends list is determined
     link_ends_sort = list()
     DSN_link_ends_number = 0
@@ -444,13 +468,12 @@ if __name__=="__main__":
                 boolean_DSN_receiver = True
                 for receiver_pointer in Earth_ground_station_list:
                     # DSN receiving stations
-                    if transmitter_pointer[1] == receiver_pointer[1] and boolean_DSN_receiver:
+                    if len(transmitter_pointer[1]) == len(receiver_pointer[1]) and transmitter_pointer[1] < receiver_pointer[1] and boolean_DSN_receiver:
                         two_way_link_ends = dict()
                         two_way_link_ends[observation.transmitter] = ("Earth",transmitter_pointer[1])
                         two_way_link_ends[observation.reflector1] = ("Mars",LaRa_reflector_name)
                         two_way_link_ends[observation.receiver] = ("Earth",transmitter_pointer[1])
                         link_ends_sort.append(two_way_link_ends)
-                        print(two_way_link_ends)
                         DSN_link_ends_number+=1
                         boolean_DSN_receiver = False
 
@@ -472,7 +495,6 @@ if __name__=="__main__":
                 link_ends_sort.append(two_way_link_ends)
                 DSN_link_ends_number+=1
 
-    print(link_ends_sort)
     # Find the index position, transmitter and receiver for each link-end
     link_ends_numbers = list()
     link_ends_transmitter = list()
@@ -548,11 +570,11 @@ if __name__=="__main__":
     # Create observation viability settings and calculators for LaRa
     if len(LaRa_observation_times_list)!=0:
         LaRa_viability_settings_list = list()
-        #LaRa_viability_settings_list.append(observation.minimum_elevation_angle_viability(["Earth",""],np.deg2rad(LaRa_antenna_min_elevation)))
-        #LaRa_viability_settings_list.append(observation.minimum_elevation_angle_viability(["Mars",""],np.deg2rad(LaRa_earth_min)))
-        #LaRa_viability_settings_list.append(observation.maximum_elevation_angle_viability(["Mars",""],np.deg2rad(LaRa_earth_max)))
-        #LaRa_viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(LaRa_antenna_min_elevation)))
-        #LaRa_viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
+        LaRa_viability_settings_list.append(observation.minimum_elevation_angle_viability(["Earth",""],np.deg2rad(LaRa_antenna_min_elevation)))
+        LaRa_viability_settings_list.append(observation.minimum_elevation_angle_viability(["Mars",""],np.deg2rad(LaRa_earth_min)))
+        LaRa_viability_settings_list.append(observation.maximum_elevation_angle_viability(["Mars",""],np.deg2rad(LaRa_earth_max)))
+        LaRa_viability_settings_list.append(observation.body_avoidance_viability(["Earth",""],"Sun",np.deg2rad(LaRa_antenna_min_elevation)))
+        LaRa_viability_settings_list.append(observation.body_occultation_viability(("Earth",""),"Moon"))
     
     #Change directory in order to read ResStatPerPass_ForCarlos.txt
     noise_folder_path = os.path.dirname(os.path.realpath(__file__))
@@ -598,16 +620,16 @@ if __name__=="__main__":
             if len(RISE_observation_times_dict[RISE_transmitter_names[RISE_pointer_link_ends]])!=0:
                 observation_simulation_settings.append(observation.tabulated_simulation_settings(observation.two_way_doppler_type,
                     observation_settings_list[RISE_pointer_link_ends],RISE_observation_times_dict[RISE_transmitter_names[RISE_pointer_link_ends]],
-                    viability_settings = RISE_viability_settings_list,reference_link_end_type = observation.receiver))#,
-                    #noise_function = RISE_std_mHz_callable))
+                    viability_settings = RISE_viability_settings_list,reference_link_end_type = observation.receiver,
+                    noise_function = RISE_std_mHz_callable))
 
     # Create observation simulation settings for LaRa
     if len(LaRa_observation_times_list)!=0:
         for LaRa_pointer_link_ends in range(0,LaRa_link_ends_length):
             observation_simulation_settings.append(observation.tabulated_simulation_settings(observation.two_way_doppler_type,
                 observation_settings_list[RISE_link_ends_length+LaRa_pointer_link_ends],LaRa_observation_times_list,
-                viability_settings = LaRa_viability_settings_list,reference_link_end_type = observation.transmitter))#,
-                #noise_function = LaRa_std_mHz_callable))
+                viability_settings = LaRa_viability_settings_list,reference_link_end_type = observation.transmitter,
+                noise_function = LaRa_std_mHz_callable))
     
     # Simulate required observation
     simulated_observations = estimation.simulate_observations(observation_simulation_settings, observation_simulators, bodies)
@@ -670,14 +692,16 @@ if __name__=="__main__":
 
     # Define noise levels for weights
     vector_weights = list()
-
-    # Define noise levels for weights for RISE
-    if len(RISE_observation_times_list)!=0: 
-        vector_weights.extend(list(RISE_std_mHz_function((RISE_concatenated_times-RISE_observation_start_epoch_reference_noise)/constants.JULIAN_DAY)*10**(-3)/base_frequency))
-
-    # Define noise levels for weights for LaRa
-    if len(LaRa_observation_times_list)!=0:
-        vector_weights.extend(list(LaRa_std_noise_function(LaRa_concatenated_times)))
+    link_ends = simulated_observations.concatenated_link_end_names
+    for index in range(0,len(concatenated_times_array)):
+        link_end_name = link_ends[index]
+        if link_end_name[observation.reflector1][1] == RISE_reflector_name:
+            vector_weights.extend(list([RISE_std_mHz_function((concatenated_times_array[index]-RISE_observation_start_epoch_reference_noise)/constants.JULIAN_DAY)*10**(-3)/base_frequency]))
+        if link_end_name[observation.reflector1][1] == LaRa_reflector_name:
+            if link_end_name[observation.transmitter] == link_end_name[observation.receiver]:
+                vector_weights.extend(list(LaRa_std_noise_function([concatenated_times_array[index]])))
+            else:
+                vector_weights.extend(list(LaRa_std_noise_function([concatenated_times_array[index]])))
 
     # Weights list becomes an array
     vector_weights = np.array(vector_weights)
@@ -717,6 +741,7 @@ if __name__=="__main__":
     concatenated_link_ends = np.array(simulated_observations.concatenated_link_ends)
     concatenated_link_end_names = simulated_observations.concatenated_link_end_names
     doppler_residuals = pod_output.residual_history
+    observations_list = np.array(simulated_observations.concatenated_observations)
 
     # Compute how many DSN link ends there are
     DSN_concatenated_link_ends = list()
@@ -736,6 +761,7 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/concatenated_link_end_names.dat",concatenated_link_end_names_list, fmt='%s')
     np.savetxt(output_folder_path+"/doppler_residuals.dat",doppler_residuals,fmt='%.15e')
     np.savetxt(output_folder_path+"/vector_weights.dat",vector_weights,fmt='%.15e')
+    np.savetxt(output_folder_path+"/observations_list.dat",observations_list,fmt='%.15e')
 
     # Sort index
     index_sort = np.argsort(concatenated_times)
@@ -790,7 +816,7 @@ if __name__=="__main__":
 
     # Function to sort estimation information matrix
     def sort_estimation_information_matrix_func(index):
-        return estimation_information_matrix[index][:]
+        return estimation_information_matrix[index][6:]
 
     # Sort concatenated times
     sort_estimation_information_matrix_dict = Pool(CPU_par)
@@ -832,6 +858,17 @@ if __name__=="__main__":
     sort_concatenated_link_ends_names_dict.close()
     sort_concatenated_link_ends_names_dict.join()
 
+    # Function to sort observations
+    def sort_observations_func(index):
+        return observations_list[index]
+
+    # Sort cobservations
+    sort_observations_dict = Pool(CPU_par)
+    print("Sorting observations")
+    observations_list_sort = sort_observations_dict.map(sort_observations_func,index_sort)
+    sort_observations_dict.close()
+    sort_observations_dict.join()
+
     # Initialize inverted weighting matrix
     #inv_weight_complex = (scipy.sparse.diags(1/np.array(vector_weights_sort)**2)).tocsr() #Same as correlation to 1
     inv_weight_complex = scipy.sparse.coo_matrix((0,0))
@@ -865,6 +902,7 @@ if __name__=="__main__":
             residuals_sort[start_index:end_index] = residuals_sort_short
             concatenated_link_end_names_list_sort[start_index:end_index] = np.array(concatenated_link_end_names_list_sort[start_index:end_index])[receiver_link_ends]
             vector_weights_sort[start_index:end_index] = np.array(vector_weights_sort[start_index:end_index])[receiver_link_ends]
+            observations_list_sort[start_index:end_index] = np.array(observations_list_sort[start_index:end_index])[receiver_link_ends]
             concatenated_link_ends_sort[start_index:end_index] = np.array(concatenated_link_ends_sort[start_index:end_index])[receiver_link_ends]
             
             # Understanding which transmitters and receivers are involved
@@ -972,6 +1010,7 @@ if __name__=="__main__":
         concatenated_link_ends_sort.pop(index_delete)
         concatenated_link_end_names_list_sort.pop(index_delete)
         vector_weights_sort.pop(index_delete)
+        observations_list_sort.pop(index_delete)
 
     # Unit test for when remove_PRIDE_weight_boolean==TRUE, check whether the concatenated_times_sort is the same as concatenated_times_no_duplicated
     if remove_PRIDE_weight_boolean:
@@ -1013,6 +1052,7 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/concatenated_link_end_names_sort.dat",concatenated_link_end_names_list_sort, fmt='%s')
     np.savetxt(output_folder_path+"/doppler_residuals_sort.dat",residuals_sort,fmt='%.15e')
     np.savetxt(output_folder_path+"/vector_weights_sort.dat",vector_weights_sort,fmt='%.15e')
+    np.savetxt(output_folder_path+"/observations_list_sort.dat",observations_list_sort,fmt='%.15e')
     if PRIDE_boolean==False or correlation==0:
         np.savetxt(output_folder_path+"/partial_cov.dat",partial_cov,fmt='%.15e')
 
@@ -1021,16 +1061,13 @@ if __name__=="__main__":
     ########################################################################################################################
 
     # Step evaluation
-    arange_eval = np.arange(0,len(concatenated_times_no_duplicated),step_eval)
+    arange_eval = np.arange(0,len(concatenated_times_no_duplicated),step_eval) 
     time_eval = [concatenated_times_no_duplicated[i] for i in arange_eval]
-
-    arange_eval = [arange_eval[-1]]
-    time_eval = [time_eval[-1]]
 
     np.savetxt(output_folder_path+"/time_plot.dat",time_eval,fmt='%.15e')
     
     # Normalized inverse a priori covariance
-    norm_inverse_a_priori_covariance = np.diag(inverse_a_priori_covariance.diagonal()/(estimation_information_matrix_normalization**2))
+    norm_inverse_a_priori_covariance = np.diag(inverse_a_priori_covariance.diagonal()[6:]/(estimation_information_matrix_normalization[6:]**2))
 
     # Function for the normalized covariance matrix
     def norm_covariance_matrix_func(time_index):
@@ -1061,7 +1098,7 @@ if __name__=="__main__":
         for i in range(0,np.shape(inv_covariance_matrix_values[time_index])[0]):
             for j in range(0,np.shape(inv_covariance_matrix_values[time_index])[1]):
                 covariance_matrix[i][j] = inv_covariance_matrix_values[time_index][i][j]/\
-                   (estimation_information_matrix_normalization[i]*estimation_information_matrix_normalization[j])
+                   (estimation_information_matrix_normalization[i+6]*estimation_information_matrix_normalization[j+6])
         return covariance_matrix 
 
     # Compute the unnormalized covariance matrix using several CPUs
@@ -1104,9 +1141,9 @@ if __name__=="__main__":
 
     # Compute correlation matrix only for LaRa mission
     if len(LaRa_observation_times_list)!=0:
-        index_start_LaRa = list(concatenated_times_sort).index(min(LaRa_concatenated_times))-(list(concatenated_times_sort).count(min(LaRa_concatenated_times))-1)
+        index_start_LaRa = list(concatenated_times_sort).index(min(LaRa_concatenated_times))
         
-        inv_norm_covariance_LaRa_value = np.linalg.inv(np.transpose(estimation_information_matrix_sort[index_start_LaRa:])@scipy.sparse.diags(1/np.array(vector_weights_sort[index_start_LaRa:])**2)@estimation_information_matrix_sort[index_start_LaRa:]\
+        inv_norm_covariance_LaRa_value = np.linalg.inv(np.transpose(estimation_information_matrix_sort[index_start_LaRa:])@inv_weight_complex_total[index_start_LaRa:,index_start_LaRa:]@estimation_information_matrix_sort[index_start_LaRa:]\
                 +norm_inverse_a_priori_covariance)
 
         covariance_matrix_LaRa = np.zeros(np.shape(inv_norm_covariance_LaRa_value))
@@ -1125,336 +1162,13 @@ if __name__=="__main__":
 
     ########################################################################################################################
     ################################################## PLOTS ###############################################################
-    ########################################################################################################################
-
-    # True to form ratio histogram
-    plt.figure(figsize=(15, 6))
-    plt.hist(np.abs(true_to_form_estimation_error_ratio), bins = 8)
-    plt.ylabel('Frequency [-]')
-    plt.xlabel('True to form ratio [-]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
-    plt.grid()
-    plt.savefig(output_folder_path+"/true_to_form_ratio.pdf",bbox_inches="tight")
-    plt.show()
-    plt.close('all')
-
-    # Plot to check the viability of the Sun
-    plt.figure(figsize=(15, 6))
-    if len(RISE_observation_times_list)!=0: 
-        plt.scatter((RISE_concatenated_times-observation_start_epoch)/constants.JULIAN_DAY,RISE_std_mHz_function((RISE_concatenated_times-RISE_observation_start_epoch_reference_noise)/constants.JULIAN_DAY))
-    if len(LaRa_observation_times_list)!=0: 
-        plt.scatter((LaRa_concatenated_times-observation_start_epoch)/constants.JULIAN_DAY,LaRa_std_noise_function(LaRa_concatenated_times)/10**(-3)*base_frequency)
-    plt.ylabel('Std noise [mHz]')
-    plt.xlabel('Time [days]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
-    plt.grid()
-    plt.savefig(output_folder_path+"/std_noise_time.pdf",bbox_inches="tight")
-    plt.show()
-    plt.close('all') 
-    
-    # Formal to apriori ratio
-    plt.figure(figsize=(15, 6))
-    plt.plot(range(0,len(apriori_vector)),np.abs(pod_output.formal_errors/apriori_vector[:]),'o--')
-    plt.ylabel('Formal to Apriori Ratio')
-    plt.xlabel('Estimated Parameters')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
-    #'''
-    if len(LaRa_observation_times_list)==0:
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-    elif len(RISE_observation_times_list)==0:
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-    else:
-    #'''
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-    plt.grid()
-    plt.savefig(output_folder_path+"/formal_to_a_priori_test.pdf",bbox_inches="tight")
-    plt.show()
-    plt.close('all')
-
-    # Formal to apriori ratio
-    plt.figure(figsize=(15, 6))
-    plt.plot(range(0,len(apriori_vector)),np.abs(sigma_values[-1][:]/apriori_vector[:]),'o--')
-    plt.ylabel('Formal to Apriori Ratio')
-    plt.xlabel('Estimated Parameters')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
-    #'''
-    if len(LaRa_observation_times_list)==0:
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-    elif len(RISE_observation_times_list)==0:
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-    else:
-    #'''
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-    plt.grid()
-    plt.savefig(output_folder_path+"/formal_to_a_priori.pdf",bbox_inches="tight")
-    plt.show()
-    plt.close('all')
-
-    # Formal to apriori ratio simple
-    plt.figure(figsize=(15, 6))
-    plt.plot(range(6,len(apriori_vector)),np.abs(sigma_values[-1][6:]/apriori_vector[6:]),'o--')
-    plt.ylabel('Formal to Apriori Ratio')
-    plt.xlabel('Estimated Parameters')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
-    #'''
-    if len(LaRa_observation_times_list)==0:
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-    elif len(RISE_observation_times_list)==0:
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-    else:
-    #'''
-        plt.xticks(range(0,len(apriori_vector)),labels=['x','y','z',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-    plt.grid()
-    plt.savefig(output_folder_path+"/formal_to_a_priori_simple.pdf",bbox_inches="tight")
-    plt.show()
-    plt.close('all')
-
-    # Final correlation matrix 
-    plt.figure(figsize=(18,18))
-    plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = False
-    plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = True
-    plt.imshow(np.abs(correlation_values[-1]))
-    plt.colorbar()
-    #'''
-    if len(LaRa_observation_times_list)==0:
-        plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
-            r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-        plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
-            r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-    elif len(RISE_observation_times_list)==0:
-        plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
-            r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-        plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
-            r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-    else:
-    #'''
-        plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
-            r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-        plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
-            r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-            r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-            r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-            r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-            r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-    plt.grid()
-    plt.title('Final Correlation Matrix - Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
-    plt.savefig(output_folder_path+"/correlation_matrix_final.pdf",bbox_inches="tight")
-    plt.show()
-    plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = True
-    plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = False
-    plt.close('all')
-
-    # RISE correlation matrix 
-    if len(RISE_observation_times_list)!=0:
-        plt.figure(figsize=(18,18))
-        plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = False
-        plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = True
-        end_RISE_observation_time = max(RISE_observation_times_list)
-        idx_nearest = np.abs(end_RISE_observation_time-np.array(time_eval)).argmin()
-        plt.imshow(np.abs(correlation_values[idx_nearest]))
-        plt.colorbar()
-        #'''
-        if len(LaRa_observation_times_list)==0:
-            plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
-                r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
-                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-                r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-                r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-                r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-            plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
-                r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',
-                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-                r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-                r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-                r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-        else:
-        #'''
-            plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
-                r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-                r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-                r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-                r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-            plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
-                r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-                r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-                r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-                r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-        plt.grid()
-        plt.title('RISE Correlation Matrix - Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
-        plt.savefig(output_folder_path+"/correlation_matrix_RISE.pdf",bbox_inches="tight")
-        plt.show()
-        plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = True
-        plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = False
-        plt.close('all')
-
-    # LaRa correlation matrix 
-    if len(LaRa_observation_times_list)!=0:
-        plt.figure(figsize=(18,18))
-        plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = False
-        plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = True
-        plt.imshow(np.abs(correlation_matrix_LaRa))
-        plt.colorbar()
-        #'''
-        if len(RISE_observation_times_list)==0:
-            plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
-                r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-                r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-                r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-                r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-            plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
-                r'$\sigma_{FCN}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-                r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-                r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-                r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-        else:
-        #'''
-            plt.xticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
-                r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-                r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-                r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-                r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-            plt.yticks(range(0,len(apriori_vector)),labels=['$x$','$y$','$z$',r'$\dot{x}$',r'$\dot{y}$',r'$\dot{z}$','F',
-                r'$\sigma_{FCN}$',r'$x_{{RISE}}$',r'$y_{{RISE}}$',r'$z_{{RISE}}$',r'$x_{{LaRa}}$',r'$y_{{LaRa}}$',r'$z_{{LaRa}}$',
-                r'$\psi^c_1$',r'$\psi^s_1$',r'$\psi^c_2$',r'$\psi^s_2$',r'$\psi^c_3$',r'$\psi^s_3$',r'$\psi^c_4$',r'$\psi^s_4$',
-                r'$Xp^c_1$',r'$Xp^s_1$',r'$Yp^c_1$',r'$Yp^s_1$',r'$Xp^c_2$',r'$Xp^s_2$',r'$Yp^c_2$',r'$Yp^s_2$',
-                r'$Xp^c_3$',r'$Xp^s_3$',r'$Yp^c_3$',r'$Yp^s_3$',r'$Xp^c_4$',r'$Xp^s_4$',r'$Yp^c_4$',r'$Yp^s_4$',
-                r'$Xp^c_5$',r'$Xp^s_5$',r'$Yp^c_5$',r'$Yp^s_5$'])
-        plt.grid()
-        plt.title('LaRa Correlation Matrix - Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
-        plt.savefig(output_folder_path+"/correlation_matrix_LaRa.pdf",bbox_inches="tight")
-        plt.show()
-        plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = True
-        plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = False
-        plt.close('all')
-    
-    # 1-sigma position as a function of time
-    plt.figure(figsize=(15, 6))
-    colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(apriori_vector[0:3])))))
-    x_values = list()
-    y_values = list()
-    z_values = list()
-    for time_index in range(0,len(time_eval)):
-        x_values.append(sigma_values[time_index][0])
-        y_values.append(sigma_values[time_index][1])
-        z_values.append(sigma_values[time_index][2])
-    np.savetxt(output_folder_path+"/xposition_plot.dat",x_values,fmt='%.15e')
-    np.savetxt(output_folder_path+"/yposition_plot.dat",y_values,fmt='%.15e')
-    np.savetxt(output_folder_path+"/zposition_plot.dat",z_values,fmt='%.15e')
-    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        x_values,'-o',label='$x$')
-    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        y_values,'-o',label='$y$')
-    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        z_values,'-o',label='$z$')
-    if RISE_boolean and LaRa_boolean:
-        plt.axvline(x=(LaRa_observation_times_list[0]-observation_start_epoch)/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
-    plt.ylabel(r'1-$\sigma$ x,y,z [m]')
-    plt.xlabel('Time [days]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
-    plt.grid()
-    plt.legend()
-    plt.savefig(output_folder_path+"/positionvalues_time.pdf",bbox_inches="tight")
-    plt.show()
-    plt.close('all')
-
-    # 1-sigma position as a velocity of time
-    plt.figure(figsize=(15, 6))
-    colormap = plt.cm.gist_ncar
-    plt.gca().set_prop_cycle(plt.cycler('color', plt.cm.jet(np.linspace(0, 1, len(apriori_vector[3:6])))))
-    xdot_values = list()
-    ydot_values = list()
-    zdot_values = list()
-    for time_index in range(0,len(time_eval)):
-        xdot_values.append(sigma_values[time_index][3])
-        ydot_values.append(sigma_values[time_index][4])
-        zdot_values.append(sigma_values[time_index][5])
-    np.savetxt(output_folder_path+"/xdotvelocity_plot.dat",xdot_values,fmt='%.15e')
-    np.savetxt(output_folder_path+"/ydotvelocity_plot.dat",ydot_values,fmt='%.15e')
-    np.savetxt(output_folder_path+"/zdotvelocity_plot.dat",zdot_values,fmt='%.15e')
-    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        xdot_values,'-o',label=r'$\dot{x}$')
-    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        ydot_values,'-o',label=r'$\dot{y}$')
-    plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        zdot_values,'-o',label=r'$\dot{z}$')
-    if RISE_boolean and LaRa_boolean:
-        plt.axvline(x=(LaRa_observation_times_list[0]-observation_start_epoch)/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
-    plt.ylabel(r'1-$\sigma$ $\dot{x}$,$\dot{y}$,$\dot{z}$ [m/s]')
-    plt.xlabel('Time [days]')
-    plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
-    plt.grid()
-    plt.legend()
-    plt.savefig(output_folder_path+"/velocityvalues_time.pdf",bbox_inches="tight")
-    plt.show()
-    plt.close('all')
+    ########################################################################################################################   
 
     # 1-sigma F as a function of time
     plt.figure(figsize=(15, 6))
     F_values = list()
     for time_index in range(0,len(time_eval)):
-        F_values.append(sigma_values[time_index][6])
+        F_values.append(sigma_values[time_index][0])
     np.savetxt(output_folder_path+"/corefactor_plot.dat",F_values,fmt='%.15e')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         F_values,'-o',label='F')
@@ -1473,7 +1187,7 @@ if __name__=="__main__":
     plt.figure(figsize=(15, 6))
     sigma_FCN_values = list()
     for time_index in range(0,len(time_eval)):
-        sigma_FCN_values.append(sigma_values[time_index][7])
+        sigma_FCN_values.append(sigma_values[time_index][1])
     np.savetxt(output_folder_path+"/sigmaFCN_plot.dat",sigma_FCN_values,fmt='%.15e')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
         sigma_FCN_values,'-o',label=r'$\sigma_{FCN}$')
@@ -1502,14 +1216,14 @@ if __name__=="__main__":
         zLaRalander_values = list()
     for time_index in range(0,len(time_eval)):
         if len(RISE_observation_times_list)!=0:
-            xRISElander_values.append(sigma_values[time_index][8])
-            yRISElander_values.append(sigma_values[time_index][9])
-            zRISElander_values.append(sigma_values[time_index][10])
+            xRISElander_values.append(sigma_values[time_index][2])
+            yRISElander_values.append(sigma_values[time_index][3])
+            zRISElander_values.append(sigma_values[time_index][4])
         
         if len(LaRa_observation_times_list)!=0:
-            xLaRalander_values.append(sigma_values[time_index][8+add_par])
-            yLaRalander_values.append(sigma_values[time_index][9+add_par])
-            zLaRalander_values.append(sigma_values[time_index][10+add_par])
+            xLaRalander_values.append(sigma_values[time_index][2+add_par])
+            yLaRalander_values.append(sigma_values[time_index][3+add_par])
+            zLaRalander_values.append(sigma_values[time_index][4+add_par])
 
     if len(RISE_observation_times_list)!=0:
         np.savetxt(output_folder_path+"/xRISE_plot.dat",xRISElander_values,fmt='%.15e')
@@ -1555,14 +1269,14 @@ if __name__=="__main__":
     cos4spin_values = list()
     sin4spin_values = list()
     for time_index in range(0,len(time_eval)):
-        cos1spin_values.append(sigma_values[time_index][11+add_par])
-        sin1spin_values.append(sigma_values[time_index][12+add_par])
-        cos2spin_values.append(sigma_values[time_index][13+add_par])
-        sin2spin_values.append(sigma_values[time_index][14+add_par])
-        cos3spin_values.append(sigma_values[time_index][15+add_par])
-        sin3spin_values.append(sigma_values[time_index][16+add_par])
-        cos4spin_values.append(sigma_values[time_index][17+add_par])
-        sin4spin_values.append(sigma_values[time_index][18+add_par])
+        cos1spin_values.append(sigma_values[time_index][5+add_par])
+        sin1spin_values.append(sigma_values[time_index][6+add_par])
+        cos2spin_values.append(sigma_values[time_index][7+add_par])
+        sin2spin_values.append(sigma_values[time_index][8+add_par])
+        cos3spin_values.append(sigma_values[time_index][9+add_par])
+        sin3spin_values.append(sigma_values[time_index][10+add_par])
+        cos4spin_values.append(sigma_values[time_index][11+add_par])
+        sin4spin_values.append(sigma_values[time_index][12+add_par])
     np.savetxt(output_folder_path+"/cos1spin_plot.dat",cos1spin_values,fmt='%.15e')
     np.savetxt(output_folder_path+"/sin1spin_plot.dat",sin1spin_values,fmt='%.15e')
     np.savetxt(output_folder_path+"/cos2spin_plot.dat",cos2spin_values,fmt='%.15e')
@@ -1572,24 +1286,24 @@ if __name__=="__main__":
     np.savetxt(output_folder_path+"/cos4spin_plot.dat",cos4spin_values,fmt='%.15e')
     np.savetxt(output_folder_path+"/sin4spin_plot.dat",sin4spin_values,fmt='%.15e')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(cos1spin_values)/mas,'-o',label=r'$\psi^c_1$')
+        np.array(cos1spin_values)/mas,'-o',label=r'$\phi^c_1$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(sin1spin_values)/mas,'-o',label=r'$\psi^s_1$')
+        np.array(sin1spin_values)/mas,'-o',label=r'$\phi^s_1$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(cos2spin_values)/mas,'-o',label=r'$\psi^c_2$')
+        np.array(cos2spin_values)/mas,'-o',label=r'$\phi^c_2$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(sin2spin_values)/mas,'-o',label=r'$\psi^s_2$')
+        np.array(sin2spin_values)/mas,'-o',label=r'$\phi^s_2$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(cos3spin_values)/mas,'-o',label=r'$\psi^c_3$')
+        np.array(cos3spin_values)/mas,'-o',label=r'$\phi^c_3$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(sin3spin_values)/mas,'-o',label=r'$\psi^s_3$')
+        np.array(sin3spin_values)/mas,'-o',label=r'$\phi^s_3$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(cos4spin_values)/mas,'-o',label=r'$\psi^c_4$')
+        np.array(cos4spin_values)/mas,'-o',label=r'$\phi^c_4$')
     plt.plot((time_eval-observation_start_epoch*np.ones(len(time_eval)))/constants.JULIAN_DAY,
-        np.array(sin4spin_values)/mas,'-o',label=r'$\psi^s_4$')
+        np.array(sin4spin_values)/mas,'-o',label=r'$\phi^s_4$')
     if RISE_boolean and LaRa_boolean:
         plt.axvline(x=(LaRa_observation_times_list[0]-observation_start_epoch)/constants.JULIAN_DAY, color='k', linestyle='--',label='Start of LaRa mission')
-    plt.ylabel(r'1-$\sigma$ $\psi$ [mas]')
+    plt.ylabel(r'1-$\sigma$ $\phi$ [mas]')
     plt.xlabel('Time [days]')
     plt.title('Start Date: '+str(datetime.datetime(2000,1,1,12,0,0)+datetime.timedelta(seconds=observation_start_epoch)))
     plt.legend()
@@ -1607,10 +1321,10 @@ if __name__=="__main__":
     ypcos1_values = list()
     ypsin1_values = list()
     for time_index in range(0,len(time_eval)):
-        xpcos1_values.append(sigma_values[time_index][19+add_par])
-        xpsin1_values.append(sigma_values[time_index][20+add_par])
-        ypcos1_values.append(sigma_values[time_index][21+add_par])
-        ypsin1_values.append(sigma_values[time_index][22+add_par])
+        xpcos1_values.append(sigma_values[time_index][13+add_par])
+        xpsin1_values.append(sigma_values[time_index][14+add_par])
+        ypcos1_values.append(sigma_values[time_index][15+add_par])
+        ypsin1_values.append(sigma_values[time_index][16+add_par])
     np.savetxt(output_folder_path+"/xpcos1_plot.dat",xpcos1_values,fmt='%.15e')
     np.savetxt(output_folder_path+"/xpsin1_plot.dat",xpsin1_values,fmt='%.15e')
     np.savetxt(output_folder_path+"/ypcos1_plot.dat",ypcos1_values,fmt='%.15e')
@@ -1643,10 +1357,10 @@ if __name__=="__main__":
     ypcos2_values = list()
     ypsin2_values = list()
     for time_index in range(0,len(time_eval)):
-        xpcos2_values.append(sigma_values[time_index][23+add_par])
-        xpsin2_values.append(sigma_values[time_index][24+add_par])
-        ypcos2_values.append(sigma_values[time_index][25+add_par])
-        ypsin2_values.append(sigma_values[time_index][26+add_par])
+        xpcos2_values.append(sigma_values[time_index][17+add_par])
+        xpsin2_values.append(sigma_values[time_index][18+add_par])
+        ypcos2_values.append(sigma_values[time_index][19+add_par])
+        ypsin2_values.append(sigma_values[time_index][20+add_par])
     np.savetxt(output_folder_path+"/xpcos2_plot.dat",xpcos2_values,fmt='%.15e')
     np.savetxt(output_folder_path+"/xpsin2_plot.dat",xpsin2_values,fmt='%.15e')
     np.savetxt(output_folder_path+"/ypcos2_plot.dat",ypcos2_values,fmt='%.15e')
@@ -1679,10 +1393,10 @@ if __name__=="__main__":
     ypcos3_values = list()
     ypsin3_values = list()
     for time_index in range(0,len(time_eval)):
-        xpcos3_values.append(sigma_values[time_index][27+add_par])
-        xpsin3_values.append(sigma_values[time_index][28+add_par])
-        ypcos3_values.append(sigma_values[time_index][29+add_par])
-        ypsin3_values.append(sigma_values[time_index][30+add_par])
+        xpcos3_values.append(sigma_values[time_index][21+add_par])
+        xpsin3_values.append(sigma_values[time_index][22+add_par])
+        ypcos3_values.append(sigma_values[time_index][23+add_par])
+        ypsin3_values.append(sigma_values[time_index][24+add_par])
     np.savetxt(output_folder_path+"/xpcos3_plot.dat",xpcos3_values,fmt='%.15e')
     np.savetxt(output_folder_path+"/xpsin3_plot.dat",xpsin3_values,fmt='%.15e')
     np.savetxt(output_folder_path+"/ypcos3_plot.dat",ypcos3_values,fmt='%.15e')
@@ -1715,10 +1429,10 @@ if __name__=="__main__":
     ypcos4_values = list()
     ypsin4_values = list()
     for time_index in range(0,len(time_eval)):
-        xpcos4_values.append(sigma_values[time_index][31+add_par])
-        xpsin4_values.append(sigma_values[time_index][32+add_par])
-        ypcos4_values.append(sigma_values[time_index][33+add_par])
-        ypsin4_values.append(sigma_values[time_index][34+add_par]) 
+        xpcos4_values.append(sigma_values[time_index][25+add_par])
+        xpsin4_values.append(sigma_values[time_index][26+add_par])
+        ypcos4_values.append(sigma_values[time_index][27+add_par])
+        ypsin4_values.append(sigma_values[time_index][28+add_par]) 
     np.savetxt(output_folder_path+"/xpcos4_plot.dat",xpcos4_values,fmt='%.15e')
     np.savetxt(output_folder_path+"/xpsin4_plot.dat",xpsin4_values,fmt='%.15e')
     np.savetxt(output_folder_path+"/ypcos4_plot.dat",ypcos4_values,fmt='%.15e')
@@ -1751,10 +1465,10 @@ if __name__=="__main__":
     ypcos5_values = list()
     ypsin5_values = list()
     for time_index in range(0,len(time_eval)):
-        xpcos5_values.append(sigma_values[time_index][35+add_par])
-        xpsin5_values.append(sigma_values[time_index][36+add_par])
-        ypcos5_values.append(sigma_values[time_index][37+add_par])
-        ypsin5_values.append(sigma_values[time_index][38+add_par])
+        xpcos5_values.append(sigma_values[time_index][29+add_par])
+        xpsin5_values.append(sigma_values[time_index][30+add_par])
+        ypcos5_values.append(sigma_values[time_index][31+add_par])
+        ypsin5_values.append(sigma_values[time_index][32+add_par])
     np.savetxt(output_folder_path+"/xpcos5_plot.dat",xpcos5_values,fmt='%.15e')
     np.savetxt(output_folder_path+"/xpsin5_plot.dat",xpsin5_values,fmt='%.15e')
     np.savetxt(output_folder_path+"/ypcos5_plot.dat",ypcos5_values,fmt='%.15e')
@@ -1777,6 +1491,8 @@ if __name__=="__main__":
     plt.savefig(output_folder_path+"/polarmotionamp5_time.pdf",bbox_inches="tight")
     plt.show()
     plt.close('all')
+
+    np.savetxt(output_folder_path+"/final_formalerrors_plot.dat",sigma_values[-1][:],fmt='%.15e')
 
     print('Is there any duplicated total time value? :',any(list(concatenated_times).count(x) > 1 for x in list(concatenated_times)))
 

@@ -380,13 +380,14 @@ if __name__=="__main__":
 
                     # First plot: y_axis_fdets vs x_axis_fdets
                     plt.figure()
+                    plt.rcParams.update({'font.size': 16})
                     plt.plot(data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][x_axis_fdets][start_index:end_index],\
                         data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y_axis_fdets][start_index:end_index],'bo-')
                     plt.xlabel(x_axis_fdets)
                     plt.ylabel(y_axis_fdets)
-                    plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_label))
+                    #plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_label))
                     plt.grid()
-                    plt.savefig(output_figures_path+'/SNR_vs_time.pdf',bbox_inches="tight")
+                    plt.savefig(output_figures_path+'/SNR_vs_time_'+fdets_station_pointer+'.png',bbox_inches="tight")
                     plt.show()
                     plt.close('all')
                     
@@ -408,9 +409,9 @@ if __name__=="__main__":
                         data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y2_axis_fdets][start_index:end_index],'ko-')
                     plt.xlabel(x_axis_fdets)
                     plt.ylabel(y2_axis_fdets)
-                    plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_label))
+                    #plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_label))
                     plt.grid()
-                    plt.savefig(output_figures_path+'/Doppler_noise_vs_time.pdf',bbox_inches="tight")
+                    plt.savefig(output_figures_path+'/Doppler_noise_vs_time_'+fdets_station_pointer+'.png',bbox_inches="tight")
                     plt.show()
                     plt.close('all')
 
@@ -420,7 +421,7 @@ if __name__=="__main__":
                         data_fdets[fdets_station_pointer][fdets_station_starttime_pointer][y3_axis_fdets][start_index:end_index],'ko-')
                     plt.xlabel(x_axis_fdets)
                     plt.ylabel(y3_axis_fdets)
-                    plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_label))
+                    #plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_label))
                     plt.grid()
                     plt.savefig(output_figures_path+'/Freq_vs_time.pdf',bbox_inches="tight")
                     plt.show()
@@ -444,11 +445,11 @@ if __name__=="__main__":
                     plt.yscale('log')
                     plt.xlabel('Tau [s]')
                     plt.ylabel('Allan Deviation')
-                    plt.legend([plot1,plot2],['Real Measurements','White Noise'])
-                    plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_label))
+                    plt.legend([plot1,plot2],['Observed','White Noise'])
+                    #plt.title(fdets_station_pointer+' station at '+fdets_station_starttime_pointer+' - Part: '+str(jump_label))
                     plt.grid()
                     plt.axis('equal')
-                    plt.savefig(output_figures_path+'/allan_deviation.pdf',bbox_inches="tight")
+                    plt.savefig(output_figures_path+'/allan_deviation_'+fdets_station_pointer+'.png',bbox_inches="tight")
                     plt.show()
                     plt.close('all')
 
